@@ -1,0 +1,83 @@
+name: Build Spoof Zygisk Module
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Android SDK and NDK
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          ls -la cmdline-tools.zip || echo "Download failed!"
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
+          ls -la $ANDROID_HOME/cmdline-tools/cmdline-tools || echo "Adjusting move..."
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest 2>/dev/null || mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager || echo "sdkmanager not found!"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
+          echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+
+      - name: Accept Android SDK licenses
+        run: |
+          echo "ANDROID_HOME is set to: $ANDROID_HOME"
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager || echo "sdkmanager missing!"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake zip
+
+      - name: Fetch Zygisk Headers
+        run: |
+          mkdir -p zygisk
+          wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
+          ls -la zygisk/zygisk.hh || echo "Failed to fetch zygisk.hh!"
+
+      - name: Build Project (arm64-v8a)
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          build-dir: build
+          args: |
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
+            -DANDROID_ABI=arm64-v8a
+            -DANDROID_PLATFORM=android-34
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+
+      - name: Package Zygisk Module
+        run: |
+          mkdir -p spoof_module/zygisk
+          echo "id=spoof_module" > spoof_module/module.prop
+          echo "name=Spoof Zygisk Module" >> spoof_module/module.prop
+          echo "version=v1.0" >> spoof_module/module.prop
+          echo "versionCode=1" >> spoof_module/module.prop
+          echo "author=You" >> spoof_module/module.prop
+          echo "description=Spoofs device properties for specific apps" >> spoof_module/module.prop
+          cp build/libarm64-v8a.so spoof_module/zygisk/arm64-v8a.so
+          chmod 755 spoof_module/zygisk/arm64-v8a.so
+          zip -r spoof_module.zip spoof_module
+          ls -la spoof_module/zygisk/
+
+      - name: Upload Module ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: spoof_module
+          path: spoof_module.zip
