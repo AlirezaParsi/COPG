@@ -75,7 +75,7 @@ jobs:
           chmod 755 spoof_module/zygisk/arm64-v8a.so
           zip -r spoof_module.zip spoof_module
           ls -la spoof_module/zygisk/
-          cp build/libarm64-v8a.so ..
+          cp build/libarm64-v8a.so ~
 
       - name: Upload Module ZIP
         uses: actions/upload-artifact@v4
