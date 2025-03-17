@@ -19,7 +19,7 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
 
 ## Installation
 1. **Download the Module**:
-   - Grab the latest Update from the [Releases](https://github.com/AlirezaParsi/game-spoofer/releases) page or build it yourself (see below).
+   - Grab the latest Update from the [Releases](https://github.com/AlirezaParsi/COPG/releases) page or build it yourself (see below).
 
 2. **Install via Magisk/KSU**:
    - Open the Magisk app or KernelSU manager.
