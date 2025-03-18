@@ -115,8 +115,8 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=SpoofDeviceModule
           name=✨ AlirezaParsi's Device Spoofer ✨
-          version=1.0
-          versionCode=1
+          version=1.0.3
+          versionCode=103
           author=AlirezaParsi
           description=🚀 Spoof your device for CODM - PUBGM - Mobile legends more games will be added
           support=https://t.me/AlirezaParsi
