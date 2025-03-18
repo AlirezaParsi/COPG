@@ -1,10 +1,10 @@
-name: Build Spoof Zygisk Module
+name: Build lib
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "update" ]  # Only trigger on the update branch
   pull_request:
-    branches: [ "main" ]
+    branches: [ "update" ]  # Only trigger PRs targeting the update branch
 
 jobs:
   build:
@@ -28,7 +28,6 @@ jobs:
           ls -la cmdline-tools.zip || echo "Download failed!"
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
           ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
-          # Ensure the directory structure is correct
           if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
             mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
@@ -39,13 +38,11 @@ jobs:
             exit 1
           fi
           ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
-          # Verify sdkmanager exists
           if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
             echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
             exit 1
           fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          # Install required components
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
           echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
@@ -74,6 +71,13 @@ jobs:
             -DANDROID_ABI=arm64-v8a
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+      - name: Check arm64-v8a output
+        run: |
+          if [ ! -f "build/arm64-v8a/libspoof.so" ]; then
+            echo "Error: arm64-v8a library not built!"
+            ls -la build/arm64-v8a
+            exit 1
+          fi
 
       - name: Build Project (armeabi-v7a)
         uses: threeal/cmake-action@v2.1.0
@@ -84,12 +88,19 @@ jobs:
             -DANDROID_ABI=armeabi-v7a
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+      - name: Check armeabi-v7a output
+        run: |
+          if [ ! -f "build/armeabi-v7a/libspoof.so" ]; then
+            echo "Error: armeabi-v7a library not built!"
+            ls -la build/armeabi-v7a
+            exit 1
+          fi
 
       - name: Prepare module structure
         run: |
           mkdir -p spoof_module/zygisk
-          cp build/arm64-v8a/libarm64-v8a.so spoof_module/zygisk/arm64-v8a.so
-          cp build/armeabi-v7a/libarmeabi-v7a.so spoof_module/zygisk/armeabi-v7a.so
+          cp build/arm64-v8a/libspoof.so spoof_module/zygisk/arm64-v8a.so
+          cp build/armeabi-v7a/libspoof.so spoof_module/zygisk/armeabi-v7a.so
           chmod 755 spoof_module/zygisk/arm64-v8a.so
           chmod 755 spoof_module/zygisk/armeabi-v7a.so
 
