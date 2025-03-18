@@ -2,9 +2,16 @@ name: Build Spoof Zygisk Module
 
 on:
   push:
-    branches: [ "update" ]  # Only trigger on the update branch
+    branches: [ "update" ]  # Trigger on push to update branch
   pull_request:
-    branches: [ "update" ]  # Only trigger PRs targeting the update branch
+    branches: [ "update" ]  # Trigger on PRs to update branch
+  workflow_dispatch:        # Allow manual trigger with input
+    inputs:
+      upload_to_release:
+        description: 'Upload ZIP to GitHub Release?'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   build:
@@ -171,8 +178,27 @@ jobs:
           zip -r ../COPG.zip .
           cd ..
 
-      - name: Upload Module ZIP
+      - name: Upload Module ZIP as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: COPG
           path: COPG.zip
+
+      - name: Upload ZIP to GitHub Release
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true'
+        run: |
+          # Set release tag based on version from module.prop
+          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
+          TAG="v$VERSION"
+
+          # Create or update release
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
+            --draft \
+            || gh release edit "$TAG" --draft
+
+          # Upload the ZIP to the release
+          gh release upload "$TAG" COPG.zip --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
