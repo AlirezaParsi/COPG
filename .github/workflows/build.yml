@@ -9,6 +9,9 @@ on:
         required: true
         default: false
 
+permissions:
+  contents: write          # Grant write access to repository contents (includes releases)
+
 jobs:
   build:
     runs-on: ubuntu-24.04
