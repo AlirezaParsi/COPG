@@ -1,6 +1,6 @@
-# Game Spoofer
+# COPG (COD+PUBG=COPG)
 
-Game Spoofer is a Zygisk module designed to spoof device properties for specific Android games, such as Call of Duty Mobile and PUBG Mobile. It modifies the `android.os.Build` fields in the game's runtime to bypass device checks, allowing you to play on unsupported devices or emulate different hardware.
+COPG is a Zygisk module designed to spoof device properties for specific Android games, such as Call of Duty Mobile and PUBG Mobile. It modifies the `android.os.Build` fields in the game's runtime to bypass device checks, allowing you to play on unsupported devices or emulate different hardware.
 
 ## Features
 - Spoofs device properties (e.g., model, brand) for targeted apps.
