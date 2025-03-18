@@ -23,12 +23,12 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
 2. **Install via Magisk/KSU**:
    - Open the Magisk app or KernelSU manager.
    - Go to "Modules" > "Install from storage".
-   - Select `COPG-spoof.zip` and flash it.
+   - Select `COPG.zip` and flash it.
    - Reboot your device.
 
 3. **Verify**:
-   - Check the Magisk/KSU Modules tab to ensure "Spoof Zygisk Module" is enabled.
-   - Run `adb shell logcat | grep COPG` to confirm loading (e.g., "Spoofed to Lenovo TB-9707F").
+   - Check the Magisk/KSU Modules tab to ensure "COPG Zygisk Module" is enabled.
+   - Go to Zygisk Next settings and check if COPG module is enabled.
 
 ## Usage
 - Launch COD Mobile or PUBG Mobile.
@@ -46,7 +46,7 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
 2. **Steps**:
    - Clone this repo: `git clone https://github.com/yourusername/COPG.git`
    - Push changes to trigger the GitHub Actions workflow (`.github/workflows/build.yml`).
-   - Download `spoof_module.zip` from the workflow artifacts.
+   - Download `COPG.zip` from the workflow artifacts unzip(Because artifact output is zip inside zip) and install`COPG.zip` with Magisk/KSU.
 
 ## Troubleshooting
 - **Not Detected**: Ensure Zygisk Next is installed and active (Magisk Settings > Zygisk > On).
