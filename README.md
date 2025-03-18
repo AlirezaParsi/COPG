@@ -6,7 +6,7 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
 - Spoofs device properties (e.g., model, brand) for targeted apps.
 - Currently supports:
   - Call of Duty Mobile (`com.activision.callofduty.shooter`) - Spoofs as Lenovo TB-9707F.
-  - PUBG Mobile (`com.tencent.ig`) - Spoofs as Xiaomi 2210132G.
+  - PUBG Mobile (`com.tencent.ig, com.pubg.imobile` ) - Spoofs as Xiaomi 2210132G.
 - Lightweight and built with Zygisk for seamless injection.
 - Compatible with Magisk (Zygisk enabled) or KernelSU with Zygisk Next.
 
@@ -45,13 +45,13 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
    - GitHub Actions (workflow included).
 
 2. **Steps**:
-   - Clone this repo: `git clone https://github.com/yourusername/game-spoofer.git`
+   - Clone this repo: `git clone https://github.com/yourusername/COPG.git`
    - Push changes to trigger the GitHub Actions workflow (`.github/workflows/build.yml`).
    - Download `spoof_module.zip` from the workflow artifacts.
 
 ## Troubleshooting
 - **Not Detected**: Ensure Zygisk Next is installed and active (Magisk Settings > Zygisk > On).
-- **No Spoofing**: Check logs with `adb logcat | grep COPG` for errors.
+- **No Spoofing**: Check logs with `adb logcat | grep SpoofModule` for errors.
 - **Game Crashes**: Verify your device’s architecture (arm64-v8a) and Android version compatibility.
 
 ## License
