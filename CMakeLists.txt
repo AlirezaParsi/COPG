@@ -18,4 +18,5 @@ target_link_libraries(
     log
 )
 
-set_target_properties(spoof PROPERTIES OUTPUT_NAME "arm64-v8a")
+# Remove this line to let NDK set the output name based on ANDROID_ABI
+# set_target_properties(spoof PROPERTIES OUTPUT_NAME "arm64-v8a")
