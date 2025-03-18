@@ -10,7 +10,7 @@
 #define PUBG_PACKAGE "com.tencent.ig"
 #define BGMI_PACKAGE "com.pubg.imobile"  // Added BGMI package
 
-static class SpoofModule : public zygisk::ModuleBase {
+class SpoofModule : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
         this->api = api;
