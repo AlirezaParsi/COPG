@@ -51,7 +51,7 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
 ## Troubleshooting
 - **Not Detected**: Ensure Zygisk Next is installed and active (Magisk Settings > Zygisk > On).
 - **No Spoofing**: Check logs with `adb logcat | grep SpoofModule` for errors.
-- **Game Crashes**: Verify your device’s architecture (arm64-v8a) and Android version compatibility.
+- **Game Crashes**: Verify your device’s Android version compatibility.
 
 ## License
 This project is licensed under the [All Rights Reserved License](#license). Unauthorized copying, modification, or distribution is prohibited without explicit permission from the author.
