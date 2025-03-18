@@ -15,7 +15,6 @@ Game Spoofer is a Zygisk module designed to spoof device properties for specific
   - Magisk v24+ with Zygisk enabled, or
   - KernelSU with Zygisk Next installed (download from [ZygiskNext releases](https://github.com/Dr-TSNG/ZygiskNext)).
 - Android 9.0 (API 28) or higher (tested up to Android 14).
-- ARM64-v8a architecture (64-bit devices).
 
 ## Installation
 1. **Download the Module**:
