@@ -1,11 +1,7 @@
 name: Build Spoof Zygisk Module
 
 on:
-  push:
-    branches: [ "update" ]  # Trigger on push to update branch
-  pull_request:
-    branches: [ "update" ]  # Trigger on PRs to update branch
-  workflow_dispatch:        # Allow manual trigger with input
+  workflow_dispatch:        # Only trigger manually
     inputs:
       upload_to_release:
         description: 'Upload ZIP to GitHub Release?'
@@ -185,7 +181,7 @@ jobs:
           path: COPG.zip
 
       - name: Upload ZIP to GitHub Release
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true'
+        if: github.event.inputs.upload_to_release == 'true'
         run: |
           # Set release tag based on version from module.prop
           VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
