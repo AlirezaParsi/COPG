@@ -8,6 +8,7 @@
 
 #define COD_PACKAGE "com.activision.callofduty.shooter"
 #define PUBG_PACKAGE "com.tencent.ig"
+#define BGMI_PACKAGE "com.pubg.imobile"  // Added BGMI package
 
 static class SpoofModule : public zygisk::ModuleBase {
 public:
@@ -27,8 +28,9 @@ public:
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         LOGD("Specializing app: %s", package_name);
 
-        if (strcmp(package_name, COD_PACKAGE) == 0 || strcmp(package_name, PUBG_PACKAGE) == 0) {
-            // Keep module loaded for hooking
+        if (strcmp(package_name, COD_PACKAGE) == 0 || 
+            strcmp(package_name, PUBG_PACKAGE) == 0 || 
+            strcmp(package_name, BGMI_PACKAGE) == 0) {  // Added BGMI check
             LOGD("Target app detected, proceeding with spoofing");
         } else {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
@@ -47,6 +49,8 @@ public:
             spoofLenovo();
         } else if (strcmp(package_name, PUBG_PACKAGE) == 0) {
             spoofXiaomi();
+        } else if (strcmp(package_name, BGMI_PACKAGE) == 0) {  // Added BGMI handling
+            spoofXiaomi();  // Using same spoof as PUBG Global, you can modify this
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
