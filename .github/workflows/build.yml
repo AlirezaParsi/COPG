@@ -122,7 +122,8 @@ jobs:
           versionCode=103
           author=AlirezaParsi
           description=🚀 Spoof your device for CODM - PUBGM - Mobile legends more games will be added
-          support=https://t.me/AlirezaParsi
+          support=https://t.me/theaosp
+          updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/update/update.json
           minMagisk=20.4
           EOF
 
