@@ -25,15 +25,35 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           mkdir -p $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          ls -la cmdline-tools.zip || echo "Download failed!"
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest 2>/dev/null || mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
+          # Ensure the directory structure is correct
+          if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          else
+            echo "Unexpected directory structure after unzip:"
+            ls -la $ANDROID_HOME/cmdline-tools
+            exit 1
+          fi
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
+          # Verify sdkmanager exists
+          if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            exit 1
+          fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          # Install required components
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
           echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          echo "ANDROID_HOME is: $ANDROID_HOME"
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "bin directory missing!"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
       - name: Install build tools
         run: |
