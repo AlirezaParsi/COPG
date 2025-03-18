@@ -116,8 +116,8 @@ jobs:
 
           # Create module.prop
           cat > module/module.prop << 'EOF'
-          id=SpoofDeviceModule
-          name=✨ AlirezaParsi's Device Spoofer ✨
+          id=COPG
+          name=✨ COPG spoof ✨
           version=1.0.3
           versionCode=103
           author=AlirezaParsi
