@@ -1,22 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
-project(SpoofDeviceModule)
+project(SpoofModule)
 
-add_library(
-    spoof
-    SHARED
-    zygisk/spoof.cpp
-)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-target_include_directories(
-    spoof
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/zygisk
-)
+add_library(spoof SHARED spoof_module.cpp)
 
-target_link_libraries(
-    spoof
-    log
-)
+find_library(log-lib log)
 
-# Remove this line to let NDK set the output name based on ANDROID_ABI
-# set_target_properties(spoof PROPERTIES OUTPUT_NAME "arm64-v8a")
+include_directories(${CMAKE_SOURCE_DIR}/zygisk)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+target_link_libraries(spoof ${log-lib})
