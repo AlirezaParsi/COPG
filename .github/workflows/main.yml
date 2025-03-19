@@ -15,14 +15,14 @@ on:
         default: false
 
 permissions:
-  contents: write          
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-    environment: Telegram  
+    environment: Telegram
 
-    steps Organics steps:
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
@@ -83,6 +83,7 @@ jobs:
             -DANDROID_ABI=arm64-v8a
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+
       - name: Check arm64-v8a output
         run: |
           if [ ! -f "build/arm64-v8a/libspoof.so" ]; then
@@ -100,6 +101,7 @@ jobs:
             -DANDROID_ABI=armeabi-v7a
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+
       - name: Check armeabi-v7a output
         run: |
           if [ ! -f "build/armeabi-v7a/libspoof.so" ]; then
@@ -132,9 +134,6 @@ jobs:
           EOF
           chmod 755 module/uninstall.sh
           cat > module/META-INF/com/google/android/update-binary << 'EOF'
-          #################
-          # Initialization
-          #################
           umask 022
           ui_print() { echo "$1"; }
           require_new_magisk() {
@@ -143,9 +142,6 @@ jobs:
             ui_print "*******************************"
             exit 1
           }
-          #########################
-          # Load util_functions.sh
-          #########################
           OUTFD=$2
           ZIPFILE=$3
           [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
