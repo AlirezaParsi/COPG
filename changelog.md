@@ -1,5 +1,8 @@
 Support Group:
 https://t.me/TheAOSP
+# v2.2
+- Cache JNI Calls for faster app game launch.
+- removed logd for even faster launch.
 # v2.1.1
 - fix s24 ultra in config.json
 # v2.1
