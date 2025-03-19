@@ -1,5 +1,7 @@
 Support Group:
 https://t.me/TheAOSP
+# v2.1.1
+- fix s24 ultra in config.json
 # v2.1
 - now you can add your game to config yourself and you don't need to ask for new update
 - config direction: /data/adb/modules/COPG/config.json
