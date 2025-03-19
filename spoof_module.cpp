@@ -23,13 +23,18 @@ public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
         this->api = api;
         this->env = env;
-        LOGD("SpoofModule loaded");
+        buildClass = env->FindClass("android/os/Build");
+        if (buildClass) {
+            modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
+            brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
+            deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
+            manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
+        }
         loadConfig();
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs* args) override {
         if (!args || !args->nice_name) {
-            LOGD("No app info, skipping");
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
@@ -37,15 +42,13 @@ public:
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         if (package_map.find(package_name) == package_map.end()) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-        } else {
-            LOGD("Target app detected: %s", package_name);
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        if (!args || !args->nice_name || package_map.empty()) return;
+        if (!args || !args->nice_name || package_map.empty() || !buildClass) return;
 
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         if (!package_name) return;
@@ -63,6 +66,8 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
+    jclass buildClass = nullptr;
+    jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, manufacturerField = nullptr;
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -73,8 +78,6 @@ private:
 
         try {
             json config = json::parse(file);
-            LOGD("Config parsed successfully");
-
             for (auto& [key, value] : config.items()) {
                 if (key.find("_DEVICE") != std::string::npos) continue;
 
@@ -103,22 +106,10 @@ private:
     }
 
     void spoofDevice(const char* brand, const char* device, const char* manufacturer, const char* model) {
-        jclass buildClass = env->FindClass("android/os/Build");
-        if (!buildClass) {
-            LOGD("Failed to find Build class");
-            return;
-        }
-
-        jfieldID modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
-        jfieldID brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
-        jfieldID deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
-        jfieldID manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
-
-        env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(model));
-        env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(brand));
-        env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(device));
-        env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(manufacturer));
-        LOGD("Spoofed to %s %s (%s)", brand, device, model);
+        if (modelField) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(model));
+        if (brandField) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(brand));
+        if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(device));
+        if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(manufacturer));
     }
 };
 
