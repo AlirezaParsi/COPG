@@ -1,0 +1,211 @@
+name: building json
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_release:
+        description: 'Upload ZIP to GitHub Release?'
+        type: boolean
+        required: true
+        default: false
+      upload_to_telegram:
+        description: 'Upload ZIP to Telegram?'
+        type: boolean
+        required: true
+        default: false
+      branch:
+        description: 'Branch to build from'
+        type: string
+        required: true
+        default: 'JSON'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    environment: Telegram
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Android SDK and NDK
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          ls -la cmdline-tools.zip || echo "Download failed!"
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
+          if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          else
+            echo "Unexpected directory structure after unzip:"
+            ls -la $ANDROID_HOME/cmdline-tools
+            exit 1
+          fi
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
+          if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            exit 1
+          fi
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
+          echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+
+      - name: Accept Android SDK licenses
+        run: |
+          echo "ANDROID_HOME is: $ANDROID_HOME"
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "bin directory missing!"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake zip
+
+      - name: Fetch Zygisk Headers and JSON Library
+        run: |
+          mkdir -p zygisk include/nlohmann
+          wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
+          wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
+
+      - name: Fetch config.json
+        run: |
+          wget https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
+          ls -la config.json || echo "Failed to download config.json!"
+
+      - name: Build Project (arm64-v8a)
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          build-dir: build/arm64-v8a
+          args: |
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
+            -DANDROID_ABI=arm64-v8a
+            -DANDROID_PLATFORM=android-34
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+
+      - name: Check arm64-v8a output
+        run: |
+          if [ ! -f "build/arm64-v8a/libspoof.so" ]; then
+            echo "Error: arm64-v8a library not built!"
+            ls -la build/arm64-v8a
+            exit 1
+          fi
+
+      - name: Build Project (armeabi-v7a)
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          build-dir: build/armeabi-v7a
+          args: |
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
+            -DANDROID_ABI=armeabi-v7a
+            -DANDROID_PLATFORM=android-34
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+
+      - name: Check armeabi-v7a output
+        run: |
+          if [ ! -f "build/armeabi-v7a/libspoof.so" ]; then
+            echo "Error: armeabi-v7a library not built!"
+            ls -la build/armeabi-v7a
+            exit 1
+          fi
+
+      - name: Prepare module structure
+        run: |
+          mkdir -p module/zygisk
+          mkdir -p module/META-INF/com/google/android
+          cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
+          cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
+          chmod 755 module/zygisk/arm64-v8a.so
+          chmod 755 module/zygisk/armeabi-v7a.so
+          cat > module/module.prop << 'EOF'
+          id=COPG
+          name=✨ COPG spoof ✨
+          version=2
+          versionCode=200
+          author=AlirezaParsi
+          description=Spoof your device for games
+          support=https://t.me/theaosp
+          updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/update/update.json
+          minMagisk=20.4
+          EOF
+          cat > module/uninstall.sh << 'EOF'
+          rm -rf /data/adb/modules/SpoofDeviceModule
+          EOF
+          chmod 755 module/uninstall.sh
+          cat > module/META-INF/com/google/android/update-binary << 'EOF'
+          umask 022
+          ui_print() { echo "$1"; }
+          require_new_magisk() {
+            ui_print "*******************************"
+            ui_print " Please install Magisk v20.4+! "
+            ui_print "*******************************"
+            exit 1
+          }
+          OUTFD=$2
+          ZIPFILE=$3
+          [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
+          . /data/adb/magisk/util_functions.sh
+          [ $MAGISK_VER_CODE -lt 20400 ] && require_new_magisk
+          install_module
+          exit 0
+          EOF
+          chmod 755 module/META-INF/com/google/android/update-binary
+          cat > module/META-INF/com/google/android/updater-script << 'EOF'
+          #MAGISK
+          EOF
+          cp config.json module/config.json
+
+      - name: Package module into ZIP
+        run: |
+          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
+          ZIP_NAME="COPG-v$VERSION.zip"
+          cd module
+          zip -r "../$ZIP_NAME" .
+          cd ..
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload Module ZIP as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: COPG
+          path: ${{ env.ZIP_NAME }}
+
+      - name: Upload ZIP to GitHub Release
+        if: github.event.inputs.upload_to_release == 'true'
+        run: |
+          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
+          TAG="v$VERSION"
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
+            --draft \
+            || gh release edit "$TAG" --draft
+          gh release upload "$TAG" ${{ env.ZIP_NAME }} --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to Telegram
+        if: github.event.inputs.upload_to_telegram == 'true'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          document: ${{ env.ZIP_NAME }}
+          message: |
+            New COPG Spoof Module Build
+            Version: ${{ env.VERSION }}
+            Built on: ${{ github.run_id }} @ ${{ github.sha }}
