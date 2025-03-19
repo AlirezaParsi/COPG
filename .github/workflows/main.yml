@@ -15,13 +15,14 @@ on:
         default: false
 
 permissions:
-  contents: write          # Grant write access to repository contents (includes releases)
+  contents: write          
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+    environment: Telegram  
 
-    steps:
+    steps Organics steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
@@ -189,7 +190,6 @@ jobs:
 
       - name: Upload ZIP to Telegram
         if: github.event.inputs.upload_to_telegram == 'true'
-        environment: Telegram
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
