@@ -1,6 +1,6 @@
 {
-  "version": "v1.0.5",
-  "zipUrl": "https://github.com/AlirezaParsi/COPG/releases/download/v1.0.5/COPG-v1.0.5.zip",
-  "versionCode": "105",
+  "version": "v2",
+  "zipUrl": "https://github.com/AlirezaParsi/COPG/releases/download/v2/COPG-v2.zip",
+  "versionCode": "200",
   "changelog": "https://raw.githubusercontent.com/AlirezaParsi/COPG/update/changelog.md"
 }
