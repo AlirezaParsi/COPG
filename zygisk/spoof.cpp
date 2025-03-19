@@ -39,8 +39,8 @@ public:
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         if (!package_name) return;
 
-        // M11 Packages
-        if (isPackageInList(package_name, m11_packages, 17)) {
+        // Red Magic 9 Packages
+        if (isPackageInList(package_name, redmagic9_packages, 18)) {  // Renamed from m11_packages
             spoofDevice("ZTE", "NX769J", "ZTE", "NX769J");
         }
         // BS4 Packages
@@ -72,12 +72,16 @@ public:
             spoofDevice("Asus", "ROG Phone", "Asus", "ASUS_Z01QD");
         }
         // ROG6 Packages
-        else if (isPackageInList(package_name, rog6_packages, 5)) {
+        else if (isPackageInList(package_name, rog6_packages, 4)) {
             spoofDevice("Asus", "ROG Phone 6", "Asus", "ASUS_AI2201");
         }
         // Lenovo Tablet Packages
         else if (isPackageInList(package_name, lenovo_tablet_packages, 4)) {
             spoofDevice("Lenovo", "TB-9707F", "Lenovo", "Lenovo TB-9707F");
+        }
+        // Samsung S24 Ultra Packages
+        else if (isPackageInList(package_name, s24ultra_packages, 1)) {
+            spoofDevice("samsung", "e3q", "samsung", "SM-S928B");
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
@@ -88,13 +92,13 @@ private:
     JNIEnv* env;
 
     // Package lists from config
-    const char* m11_packages[17] = {
+    const char* redmagic9_packages[18] = {  // Renamed from m11_packages
         "com.mobilelegends.mi", "com.supercell.brawlstars", "com.blizzard.diablo.immortal",
         "com.netease.newspike", "com.activision.callofduty.warzone", "com.pubg.newstate",
         "com.gamedevltd.destinywarfare", "com.pikpok.dr2.play", "com.CarXTech.highWay",
         "com.nekki.shadowfight3", "com.nekki.shadowfightarena", "com.gameloft.android.ANMP.GloftA8HM",
         "com.nekki.shadowfight", "com.ea.game.nfs14_row", "com.ea.games.r3_row",
-        "com.supercell.squad", "com.blitzteam.battleprime"
+        "com.supercell.squad", "com.blitzteam.battleprime", "com.tencent.tmgp.gnyx"
     };
 
     const char* bs4_packages[1] = {"com.proximabeta.mf.uamo"};
@@ -124,19 +128,20 @@ private:
 
     const char* rog_packages[2] = {"com.dts.freefireth", "com.dts.freefirethmax"};
 
-    const char* rog6_packages[5] = {
-        "com.ea.gp.fifamobile", "com.gameloft.android.ANMP.GloftA9HM",
+    const char* rog6_packages[4] = {
+        "com.gameloft.android.ANMP.GloftA9HM",
         "com.madfingergames.legends", "com.pearlabyss.blackdesertm",
         "com.pearlabyss.blackdesertm.gl"
     };
 
-    // Updated Lenovo tablet packages to include all COD Mobile variants
     const char* lenovo_tablet_packages[4] = {
-        "com.activision.callofduty.shooter",  // COD Mobile (Global)
-        "com.garena.game.codm",               // COD Mobile (Garena)
-        "com.tencent.tmgp.kr.codm",           // COD Mobile (Korea)
-        "com.vng.codmvn"                      // COD Mobile (Vietnam)
+        "com.activision.callofduty.shooter",
+        "com.garena.game.codm",
+        "com.tencent.tmgp.kr.codm",
+        "com.vng.codmvn"
     };
+
+    const char* s24ultra_packages[1] = {"com.ea.gp.fifamobile"};
 
     bool isPackageInList(const char* package, const char* list[], int size) {
         for (int i = 0; i < size; i++) {
@@ -146,7 +151,7 @@ private:
     }
 
     bool isTargetPackage(const char* package) {
-        return isPackageInList(package, m11_packages, 17) ||
+        return isPackageInList(package, redmagic9_packages, 18) ||  // Renamed from m11_packages
                isPackageInList(package, bs4_packages, 1) ||
                isPackageInList(package, mi11tp_packages, 4) ||
                isPackageInList(package, mi13p_packages, 8) ||
@@ -154,8 +159,9 @@ private:
                isPackageInList(package, op9p_packages, 3) ||
                isPackageInList(package, f5_packages, 1) ||
                isPackageInList(package, rog_packages, 2) ||
-               isPackageInList(package, rog6_packages, 5) ||
-               isPackageInList(package, lenovo_tablet_packages, 4);  // Updated count to 4
+               isPackageInList(package, rog6_packages, 4) ||
+               isPackageInList(package, lenovo_tablet_packages, 4) ||
+               isPackageInList(package, s24ultra_packages, 1);
     }
 
     void spoofDevice(const char* brand, const char* device, const char* manufacturer, const char* model) {
