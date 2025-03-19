@@ -4,11 +4,19 @@
 #include <zygisk.hh>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <unordered_map>
 
 #define LOG_TAG "SpoofModule"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 using json = nlohmann::json;
+
+struct DeviceInfo {
+    std::string brand;
+    std::string device;
+    std::string manufacturer;
+    std::string model;
+};
 
 class SpoofModule : public zygisk::ModuleBase {
 public:
@@ -27,42 +35,25 @@ public:
         }
 
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
-        LOGD("Specializing app: %s", package_name);
-
-        if (isTargetPackage(package_name)) {
-            LOGD("Target app detected, proceeding with spoofing");
-        } else {
+        if (package_map.find(package_name) == package_map.end()) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+        } else {
+            LOGD("Target app detected: %s", package_name);
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        if (!args || !args->nice_name || config.empty()) return;
+        if (!args || !args->nice_name || package_map.empty()) return;
 
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         if (!package_name) return;
 
-        for (auto& [key, value] : config.items()) {
-            if (key.find("_DEVICE") != std::string::npos) continue;
-
-            auto packages = value.get<std::vector<std::string>>();
-            for (const auto& pkg : packages) {
-                if (strcmp(package_name, pkg.c_str()) == 0) {
-                    std::string device_key = key + "_DEVICE";
-                    if (config.contains(device_key)) {
-                        auto device = config[device_key];
-                        spoofDevice(
-                            device["BRAND"].get<std::string>().c_str(),
-                            device["DEVICE"].get<std::string>().c_str(),
-                            device["MANUFACTURER"].get<std::string>().c_str(),
-                            device["MODEL"].get<std::string>().c_str()
-                        );
-                        break;
-                    }
-                }
-            }
+        auto it = package_map.find(package_name);
+        if (it != package_map.end()) {
+            const DeviceInfo& info = it->second;
+            spoofDevice(info.brand.c_str(), info.device.c_str(), info.manufacturer.c_str(), info.model.c_str());
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
@@ -71,7 +62,7 @@ public:
 private:
     zygisk::Api* api;
     JNIEnv* env;
-    json config;
+    std::unordered_map<std::string, DeviceInfo> package_map;
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -81,27 +72,34 @@ private:
         }
 
         try {
-            config = json::parse(file);
-            LOGD("Config loaded successfully");
+            json config = json::parse(file);
+            LOGD("Config parsed successfully");
+
+            for (auto& [key, value] : config.items()) {
+                if (key.find("_DEVICE") != std::string::npos) continue;
+
+                auto packages = value.get<std::vector<std::string>>();
+                std::string device_key = key + "_DEVICE";
+                if (!config.contains(device_key)) continue;
+
+                auto device = config[device_key];
+                DeviceInfo info {
+                    device["BRAND"].get<std::string>(),
+                    device["DEVICE"].get<std::string>(),
+                    device["MANUFACTURER"].get<std::string>(),
+                    device["MODEL"].get<std::string>()
+                };
+
+                for (const auto& pkg : packages) {
+                    package_map[pkg] = info;
+                }
+            }
+            LOGD("Loaded %zu package mappings", package_map.size());
         } catch (const json::exception& e) {
             LOGD("JSON parse error: %s", e.what());
         }
 
         file.close();
-    }
-
-    bool isTargetPackage(const char* package) {
-        if (config.empty()) return false;
-
-        for (auto& [key, value] : config.items()) {
-            if (key.find("_DEVICE") != std::string::npos) continue;
-
-            auto packages = value.get<std::vector<std::string>>();
-            for (const auto& pkg : packages) {
-                if (strcmp(package, pkg.c_str()) == 0) return true;
-            }
-        }
-        return false;
     }
 
     void spoofDevice(const char* brand, const char* device, const char* manufacturer, const char* model) {
