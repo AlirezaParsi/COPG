@@ -34,17 +34,51 @@ COPG is a Zygisk module that spoofs device properties for specific Android games
 - **Default Examples**:
   - COD Mobile (`com.activision.callofduty.shooter`): Spoofs as Lenovo TB-9707F.
   - PUBG Mobile (`com.tencent.ig`): Spoofs as Xiaomi Mi 13 Pro (2210132G).
+  - Mobile Legends (`com.mobile.legends`): Spoofs as POCO F5 (23049PCD8G).
 - **How It Works**:
   - On boot, it loads `config.json` into a fast memory list (~150ms one-time).
   - When you open a listed app, it spoofs in ~1ms—no noticeable delay.
 - **Adding Apps**: Edit `config.json` (see below), push it to `/data/adb/modules/COPG/`, and reboot.
 
 ### Customizing `config.json`
-- Format:
+- Format (example from full config):
   ```json
   {
-    "PACKAGES_REDMAGIC9": ["com.mobile.legends", "com.supercell.brawlstars"],
-    "PACKAGES_REDMAGIC9_DEVICE": {"BRAND": "ZTE", "DEVICE": "NX769J", "MANUFACTURER": "ZTE", "MODEL": "NX769J"},
-    "PACKAGES_COD": ["com.activision.callofduty.shooter"],
-    "PACKAGES_COD_DEVICE": {"BRAND": "Lenovo", "DEVICE": "TB-9707F", "MANUFACTURER": "Lenovo", "MODEL": "Lenovo TB-9707F"}
+    "PACKAGES_REDMAGIC9": [
+        "com.mobilelegends.mi",
+        "com.supercell.brawlstars"
+    ],
+    "PACKAGES_REDMAGIC9_DEVICE": {
+        "BRAND": "ZTE",
+        "DEVICE": "NX769J",
+        "MANUFACTURER": "ZTE",
+        "MODEL": "NX769J"
+    },
+    "PACKAGES_F5": [
+        "com.mobile.legends"
+    ],
+    "PACKAGES_F5_DEVICE": {
+        "BRAND": "POCO",
+        "DEVICE": "POCO F5",
+        "MANUFACTURER": "Xiaomi",
+        "MODEL": "23049PCD8G"
+    },
+    "PACKAGES_LENOVO_TABLET": [
+        "com.activision.callofduty.shooter"
+    ],
+    "PACKAGES_LENOVO_TABLET_DEVICE": {
+        "BRAND": "Lenovo",
+        "DEVICE": "TB-9707F",
+        "MANUFACTURER": "Lenovo",
+        "MODEL": "Lenovo TB-9707F"
+    },
+    "PACKAGES_MI13P": [
+        "com.tencent.ig"
+    ],
+    "PACKAGES_MI13P_DEVICE": {
+        "BRAND": "Xiaomi",
+        "DEVICE": "Mi 13 Pro",
+        "MANUFACTURER": "Xiaomi",
+        "MODEL": "2210132G"
+    }
   }
