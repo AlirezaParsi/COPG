@@ -17,12 +17,12 @@ COPG is a Zygisk module that spoofs device properties for specific Android games
 
 ## Installation
 1. **Download the Module**:
-   - Get the latest `COPG-v2.zip` from the [Releases](https://github.com/AlirezaParsi/COPG/releases) page or build it yourself (see below).
+   - Get the latest `COPG.zip` from the [Releases](https://github.com/AlirezaParsi/COPG/releases) page or build it yourself (see below).
 
 2. **Install via Magisk/KSU**:
    - Open Magisk or KernelSU manager.
    - Go to "Modules" > "Install from storage".
-   - Pick `COPG-v2.zip` and flash it.
+   - Pick `COPG.zip` and flash it.
    - Reboot your device.
 
 3. **Verify**:
