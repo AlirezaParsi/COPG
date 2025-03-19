@@ -1,58 +1,50 @@
 # COPG
 
-COPG is a Zygisk module designed to spoof device properties for specific Android games, such as Call of Duty Mobile and PUBG Mobile. It modifies the `android.os.Build` fields in the game's runtime to bypass device checks, allowing you to play on unsupported devices or emulate different hardware.
+COPG is a Zygisk module that spoofs device properties for specific Android games, like Call of Duty Mobile and PUBG Mobile. It tweaks the `android.os.Build` fields (e.g., model, brand) at runtime to trick games into thinking your phone is a different device—perfect for bypassing device checks or playing on unsupported hardware.
 
 ## Features
-- Spoofs device properties (e.g., model, brand) for targeted apps.
-- Lightweight and built with Zygisk for seamless injection.
-- Compatible with Magisk (Zygisk enabled) or KernelSU with Zygisk Next.
+- Spoofs device info (model, brand, etc.) for targeted apps listed in `config.json`.
+- Super fast: Adds only ~1ms to app launch time with optimized lookups and cached JNI calls.
+- Flexible: Update the spoof list by editing `config.json`—no rebuild needed.
+- Lightweight: Built with Zygisk for smooth injection into app processes.
+- Works with Magisk (Zygisk enabled) or KernelSU with Zygisk Next.
 
 ## Requirements
 - Rooted Android device with:
-  - Magisk v24+ with Zygisk enabled, or
-  - KernelSU with Zygisk Next installed (download from [ZygiskNext releases](https://github.com/Dr-TSNG/ZygiskNext)).
+  - Magisk v24+ (Zygisk enabled), or
+  - KernelSU with Zygisk Next (get it from [ZygiskNext releases](https://github.com/Dr-TSNG/ZygiskNext)).
 - Android 9.0 (API 28) or higher (tested up to Android 14).
 
 ## Installation
 1. **Download the Module**:
-   - Grab the latest Update from the [Releases](https://github.com/AlirezaParsi/COPG/releases) page or build it yourself (see below).
+   - Get the latest `COPG-v2.zip` from the [Releases](https://github.com/AlirezaParsi/COPG/releases) page or build it yourself (see below).
 
 2. **Install via Magisk/KSU**:
-   - Open the Magisk app or KernelSU manager.
+   - Open Magisk or KernelSU manager.
    - Go to "Modules" > "Install from storage".
-   - Select `COPG.zip` and flash it.
+   - Pick `COPG-v2.zip` and flash it.
    - Reboot your device.
 
 3. **Verify**:
-   - Check the Magisk/KSU Modules tab to ensure "COPG Zygisk Module" is enabled.
-   - Go to Zygisk Next settings and check if COPG module is enabled.
+   - In Magisk/KSU, check the Modules tab—look for "✨ COPG spoof ✨" as enabled.
+   - In Zygisk settings, confirm COPG is active.
 
 ## Usage
-- Launch COD Mobile or PUBG Mobile.
-- The module automatically spoofs device properties for these apps:
-  - COD Mobile: Appears as Lenovo TB-9707F.
-  - PUBG Mobile: Appears as Xiaomi 2210132G.
-- No manual configuration needed!
+- The module uses `/data/adb/modules/COPG/config.json` to decide which apps to spoof and what device info to use.
+- **Default Examples**:
+  - COD Mobile (`com.activision.callofduty.shooter`): Spoofs as Lenovo TB-9707F.
+  - PUBG Mobile (`com.tencent.ig`): Spoofs as Xiaomi Mi 13 Pro (2210132G).
+- **How It Works**:
+  - On boot, it loads `config.json` into a fast memory list (~150ms one-time).
+  - When you open a listed app, it spoofs in ~1ms—no noticeable delay.
+- **Adding Apps**: Edit `config.json` (see below), push it to `/data/adb/modules/COPG/`, and reboot.
 
-## Building from Source
-1. **Prerequisites**:
-   - Android NDK r27 (27.0.12077973).
-   - CMake 3.21+.
-   - GitHub Actions (workflow included).
-
-2. **Steps**:
-   - Clone this repo: `git clone https://github.com/yourusername/COPG.git`
-   - Push changes to trigger the GitHub Actions workflow (`.github/workflows/build.yml`).
-   - Download `COPG.zip` from the workflow artifacts unzip(Because artifact output is zip inside zip) and install`COPG.zip` with Magisk/KSU.
-
-## Troubleshooting
-- **Not Detected**: Ensure Zygisk Next is installed and active (Magisk Settings > Zygisk > On).
-- **No Spoofing**: Check logs with `adb logcat | grep SpoofModule` for errors.
-- **Game Crashes**: Verify your device’s Android version compatibility.
-
-## License
-This project is licensed under the [All Rights Reserved License](#license). Unauthorized copying, modification, or distribution is prohibited without explicit permission from the author.
-
-## Credits
-- Built with inspiration from [Zygisk module sample](https://github.com/topjohnwu/zygisk-module-sample).
-
+### Customizing `config.json`
+- Format:
+  ```json
+  {
+    "PACKAGES_REDMAGIC9": ["com.mobile.legends", "com.supercell.brawlstars"],
+    "PACKAGES_REDMAGIC9_DEVICE": {"BRAND": "ZTE", "DEVICE": "NX769J", "MANUFACTURER": "ZTE", "MODEL": "NX769J"},
+    "PACKAGES_COD": ["com.activision.callofduty.shooter"],
+    "PACKAGES_COD_DEVICE": {"BRAND": "Lenovo", "DEVICE": "TB-9707F", "MANUFACTURER": "Lenovo", "MODEL": "Lenovo TB-9707F"}
+  }
