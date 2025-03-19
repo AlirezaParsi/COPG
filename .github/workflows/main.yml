@@ -118,8 +118,8 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2
-          versionCode=200
+          version=2.0.2
+          versionCode=202
           author=AlirezaParsi
           description=Spoof your device for games
           support=https://t.me/theaosp
@@ -186,6 +186,7 @@ jobs:
 
       - name: Upload ZIP to Telegram
         if: github.event.inputs.upload_to_telegram == 'true'
+        environment: Telegram  # Specify the Telegram environment
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -193,5 +194,5 @@ jobs:
           document: COPG.zip
           message: |
             New COPG Spoof Module Build
-            Version: ${{ github.event.inputs.upload_to_release == 'true' && format('v{0}', steps.prepare_module.outputs.version) || '2' }}
+            Version: 2
             Built on: ${{ github.run_id }} @ ${{ github.sha }}
