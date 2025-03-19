@@ -134,12 +134,12 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2
-          versionCode=200
+          version=2.1
+          versionCode=210
           author=AlirezaParsi
           description=Spoof your device for games
           support=https://t.me/theaosp
-          updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/update/update.json
+          updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/update.json
           minMagisk=20.4
           EOF
           cat > module/uninstall.sh << 'EOF'
