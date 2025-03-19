@@ -76,12 +76,8 @@ public:
             spoofDevice("Asus", "ROG Phone 6", "Asus", "ASUS_AI2201");
         }
         // Lenovo Tablet Packages
-        else if (isPackageInList(package_name, lenovo_tablet_packages, 1)) {
+        else if (isPackageInList(package_name, lenovo_tablet_packages, 4)) {
             spoofDevice("Lenovo", "TB-9707F", "Lenovo", "Lenovo TB-9707F");
-        }
-        // Sony Xperia 5 Packages
-        else if (isPackageInList(package_name, sony_xperia5_packages, 3)) {
-            spoofDevice("Sony", "Xperia 5 IV", "Sony", "XQ-CQ54");
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
@@ -110,8 +106,9 @@ private:
 
     const char* mi13p_packages[8] = {
         "com.levelinfinite.sgameGlobal", "com.tencent.tmgp.sgame",
-        "com.pubg.imobile", "com.pubg.krmobile", "com.rekoo.pubgm",
-        "com.tencent.ig", "com.tencent.tmgp.pubgmhd", "com.vng.pubgmobile"
+        "com.pubg.krmobile", "com.rekoo.pubgm",
+        "com.tencent.tmgp.pubgmhd", "com.vng.pubgmobile",
+        "com.pubg.imobile", "com.tencent.ig"
     };
 
     const char* op8p_packages[4] = {
@@ -133,10 +130,12 @@ private:
         "com.pearlabyss.blackdesertm.gl"
     };
 
-    const char* lenovo_tablet_packages[1] = {"com.activision.callofduty.shooter"};
-
-    const char* sony_xperia5_packages[3] = {
-        "com.garena.game.codm", "com.tencent.tmgp.kr.codm", "com.vng.codmvn"
+    // Updated Lenovo tablet packages to include all COD Mobile variants
+    const char* lenovo_tablet_packages[4] = {
+        "com.activision.callofduty.shooter",  // COD Mobile (Global)
+        "com.garena.game.codm",               // COD Mobile (Garena)
+        "com.tencent.tmgp.kr.codm",           // COD Mobile (Korea)
+        "com.vng.codmvn"                      // COD Mobile (Vietnam)
     };
 
     bool isPackageInList(const char* package, const char* list[], int size) {
@@ -156,8 +155,7 @@ private:
                isPackageInList(package, f5_packages, 1) ||
                isPackageInList(package, rog_packages, 2) ||
                isPackageInList(package, rog6_packages, 5) ||
-               isPackageInList(package, lenovo_tablet_packages, 1) ||  
-               isPackageInList(package, sony_xperia5_packages, 3);
+               isPackageInList(package, lenovo_tablet_packages, 4);  // Updated count to 4
     }
 
     void spoofDevice(const char* brand, const char* device, const char* manufacturer, const char* model) {
