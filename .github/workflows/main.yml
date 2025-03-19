@@ -160,15 +160,18 @@ jobs:
 
       - name: Package module into ZIP
         run: |
+          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
+          ZIP_NAME="COPG-v$VERSION.zip"
           cd module
-          zip -r ../COPG.zip .
+          zip -r "../$ZIP_NAME" .
           cd ..
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Upload Module ZIP as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: COPG
-          path: COPG.zip
+          path: ${{ env.ZIP_NAME }}
 
       - name: Upload ZIP to GitHub Release
         if: github.event.inputs.upload_to_release == 'true'
@@ -180,19 +183,19 @@ jobs:
             --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
             --draft \
             || gh release edit "$TAG" --draft
-          gh release upload "$TAG" COPG.zip --clobber
+          gh release upload "$TAG" ${{ env.ZIP_NAME }} --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload ZIP to Telegram
         if: github.event.inputs.upload_to_telegram == 'true'
-        environment: Telegram  # Specify the Telegram environment
+        environment: Telegram
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          document: COPG.zip
+          document: ${{ env.ZIP_NAME }}
           message: |
             New COPG Spoof Module Build
-            Version: 2
+            Version: ${{ env.VERSION }}
             Built on: ${{ github.run_id }} @ ${{ github.sha }}
