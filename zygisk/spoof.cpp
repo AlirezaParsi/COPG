@@ -81,7 +81,7 @@ public:
         }
         // Samsung S24 Ultra Packages
         else if (isPackageInList(package_name, s24ultra_packages, 1)) {
-            spoofDevice("samsung", "e3q", "samsung", "SM-S928B");
+            spoofDevice("samsung", "SM-S921B", "samsung", "SM-S921B");
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
