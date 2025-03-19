@@ -134,8 +134,8 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2.1.1
-          versionCode=211
+          version=2.2
+          versionCode=220
           author=AlirezaParsi
           description=Spoof your device for games
           support=https://t.me/theaosp
