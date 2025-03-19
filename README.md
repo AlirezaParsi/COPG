@@ -4,11 +4,6 @@ COPG is a Zygisk module designed to spoof device properties for specific Android
 
 ## Features
 - Spoofs device properties (e.g., model, brand) for targeted apps.
-- Currently supports:
-  - Call of Duty Mobile (`com.activision.callofduty.shooter`) - Spoofs as Lenovo TB-9707F.
-  - PUBG Mobile (`com.tencent.ig, com.pubg.imobile` ) - Spoofs as Xiaomi 2210132G.
-  - Mobile legends spoof as Samsung Galaxy s24 ultra.
-  - Fortnite spoof as Samsung Galaxy s24 ultra.
 - Lightweight and built with Zygisk for seamless injection.
 - Compatible with Magisk (Zygisk enabled) or KernelSU with Zygisk Next.
 
