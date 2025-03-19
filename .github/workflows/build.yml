@@ -118,8 +118,8 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=1.0.3
-          versionCode=103
+          version=1.0.5
+          versionCode=105
           author=AlirezaParsi
           description=🚀 Spoof your device for CODM - PUBGM - Mobile legends more games will be added
           support=https://t.me/theaosp
