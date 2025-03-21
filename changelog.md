@@ -1,5 +1,9 @@
 Support Group:
 https://t.me/TheAOSP
+# v2.5
+- added better spoof for Call of duty anti-cheat
+- **Note**: getting banned at your own risk
+
 # v2.3
 - added action button for downloading updated config if needed
 - added Zygisk check for installing module
