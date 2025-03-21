@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <thread>
 
 using json = nlohmann::json;
 
@@ -16,23 +17,37 @@ struct DeviceInfo {
     std::string device;
     std::string manufacturer;
     std::string model;
-    std::string fingerprint; // Renamed from 'ondata_fingerprint' for clarity
+    std::string fingerprint;
     std::string build_id;
     std::string display;
     std::string product;
     std::string version_release;
     std::string serial;
-    std::string cpuinfo;        // New: Spoofed /proc/cpuinfo content
-    std::string serial_content; // New: Spoofed serial file content
+    std::string cpuinfo;
+    std::string serial_content;
 };
 
-// Function pointers for original functions
+// Static function pointers for hooks
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
 static orig_read_t orig_read = nullptr;
+
+// Static global variables
 static DeviceInfo current_info;
-static int fake_fd = -1; // Dummy file descriptor for spoofed files
+static jclass buildClass = nullptr;
+static jclass versionClass = nullptr;
+static jfieldID modelField = nullptr;
+static jfieldID brandField = nullptr;
+static jfieldID deviceField = nullptr;
+static jfieldID manufacturerField = nullptr;
+static jfieldID fingerprintField = nullptr;
+static jfieldID buildIdField = nullptr;
+static jfieldID displayField = nullptr;
+static jfieldID productField = nullptr;
+static jfieldID versionReleaseField = nullptr;
+static jfieldID sdkIntField = nullptr;
+static jfieldID serialField = nullptr;
 
 class SpoofModule : public zygisk::ModuleBase {
 public:
@@ -40,22 +55,27 @@ public:
         this->api = api;
         this->env = env;
 
-        buildClass = env->FindClass("android/os/Build");
-        if (buildClass) {
-            modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
-            brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
-            deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
-            manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
-            fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
-            buildIdField = env->GetStaticFieldID(buildClass, "ID", "Ljava/lang/String;");
-            displayField = env->GetStaticFieldID(buildClass, "DISPLAY", "Ljava/lang/String;");
-            productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
-            versionClass = env->FindClass("android/os/Build$VERSION");
+        // Initialize static fields once
+        if (!buildClass) {
+            buildClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build"));
+            if (buildClass) {
+                modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
+                brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
+                deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
+                manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
+                fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
+                buildIdField = env->GetStaticFieldID(buildClass, "ID", "Ljava/lang/String;");
+                displayField = env->GetStaticFieldID(buildClass, "DISPLAY", "Ljava/lang/String;");
+                productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
+                serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
+            }
+        }
+        if (!versionClass) {
+            versionClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build$VERSION"));
             if (versionClass) {
                 versionReleaseField = env->GetStaticFieldID(versionClass, "RELEASE", "Ljava/lang/String;");
                 sdkIntField = env->GetStaticFieldID(versionClass, "SDK_INT", "I");
             }
-            serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
         }
 
         void* handle = dlopen("libc.so", RTLD_LAZY);
@@ -102,6 +122,14 @@ public:
             spoofSystemProperties(current_info);
             hookNativeGetprop();
             hookNativeRead();
+
+            // Periodic re-spoofing thread to handle mid-game resets
+            std::thread([this]() {
+                while (true) {
+                    spoofDevice(current_info);
+                    std::this_thread::sleep_for(std::chrono::seconds(5));
+                }
+            }).detach();
         }
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
@@ -110,11 +138,6 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
-    jclass buildClass = nullptr, versionClass = nullptr;
-    jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, 
-             manufacturerField = nullptr, fingerprintField = nullptr, 
-             buildIdField = nullptr, displayField = nullptr, productField = nullptr, 
-             versionReleaseField = nullptr, sdkIntField = nullptr, serialField = nullptr;
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -135,20 +158,14 @@ private:
                 info.model = device["MODEL"].get<std::string>();
                 info.fingerprint = device.contains("FINGERPRINT") ? 
                     device["FINGERPRINT"].get<std::string>() : "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys";
-                info.build_id = device.contains("BUILD_ID") ? 
-                    device["BUILD_ID"].get<std::string>() : "";
-                info.display = device.contains("DISPLAY") ? 
-                    device["DISPLAY"].get<std::string>() : "";
-                info.product = device.contains("PRODUCT") ? 
-                    device["PRODUCT"].get<std::string>() : info.device;
+                info.build_id = device.contains("BUILD_ID") ? device["BUILD_ID"].get<std::string>() : "";
+                info.display = device.contains("DISPLAY") ? device["DISPLAY"].get<std::string>() : "";
+                info.product = device.contains("PRODUCT") ? device["PRODUCT"].get<std::string>() : info.device;
                 info.version_release = device.contains("VERSION_RELEASE") ? 
                     device["VERSION_RELEASE"].get<std::string>() : "";
-                info.serial = device.contains("SERIAL") ? 
-                    device["SERIAL"].get<std::string>() : "";
-                info.cpuinfo = device.contains("CPUINFO") ? 
-                    device["CPUINFO"].get<std::string>() : "";
-                info.serial_content = device.contains("SERIAL_CONTENT") ? 
-                    device["SERIAL_CONTENT"].get<std::string>() : "";
+                info.serial = device.contains("SERIAL") ? device["SERIAL"].get<std::string>() : "";
+                info.cpuinfo = device.contains("CPUINFO") ? device["CPUINFO"].get<std::string>() : "";
+                info.serial_content = device.contains("SERIAL_CONTENT") ? device["SERIAL_CONTENT"].get<std::string>() : "";
 
                 for (const auto& pkg : packages) package_map[pkg] = info;
             }
