@@ -94,7 +94,9 @@ jobs:
         run: |
           git clone https://github.com/jmpews/Dobby.git dobby
           cd dobby
-          # Only copy platform_builder.py, run from repo root
+          # Overwrite platform_builder.py with fixed version
+          echo "$PLATFORM_BUILDER_PY" > scripts/platform_builder.py
+          chmod +x scripts/platform_builder.py
           ls -la  # Debug: Show repo contents
           python3 scripts/platform_builder.py \
             --platform=android \
@@ -106,6 +108,141 @@ jobs:
           cp build/android/armeabi-v7a/libdobby.a ../dobby/libdobby-armv7-a.a
           cp include/dobby.h ../dobby/dobby.h
           cd ..
+        env:
+          PLATFORM_BUILDER_PY: |
+            import os
+            import shlex
+            import re
+            import shutil
+            import subprocess
+            import sys
+            import logging
+
+            import argparse
+
+            platforms = {
+              "macos": ["x86_64", "arm64", "arm64e"],
+              "iphoneos": ["arm64", "arm64e"],
+              "linux": ["x86", "x86_64", "arm", "arm64"],
+              "android": ["x86", "x86_64", "armeabi-v7a", "arm64-v8a"]
+            }
+
+            class PlatformBuilder(object):
+              cmake_args = list()
+              cmake_build_type = "Release"
+              cmake_build_verbose = False
+              cmake_build_dir = ""
+
+              library_build_type = "static"
+
+              project_dir = ""
+              output_dir = ""
+
+              shared_output_name = ""
+              static_output_name = ""
+
+              platform = ""
+              arch = ""
+
+              def __init__(self, project_dir, library_build_type, platform, arch):
+                self.project_dir = project_dir
+                self.library_build_type = library_build_type
+                self.platform = platform
+                self.arch = arch
+
+                self.cmake_build_dir = f"{self.project_dir}/build/cmake-build-{platform}-{arch}"
+                self.output_dir = f"{self.project_dir}/build/{platform}/{arch}"
+
+                self.cmake = "cmake" if PlatformBuilder.cmake_dir is None else f"{PlatformBuilder.cmake_dir}/bin/cmake"
+                self.clang = "clang" if PlatformBuilder.llvm_dir is None else f"{PlatformBuilder.llvm_dir}/bin/clang"
+                self.clangxx = "clang++" if PlatformBuilder.llvm_dir is None else f"{PlatformBuilder.llvm_dir}/bin/clang++"
+
+                self.setup_common_args()
+
+              def cmake_generate_build_system(self):
+                cmake_cmd_options = ["-S {}".format(self.project_dir), "-B {}".format(self.cmake_build_dir)]
+                cmd = [self.cmake] + cmake_cmd_options + self.cmake_args
+                cmd_line = " ".join(shlex.quote(arg) for arg in cmd)
+                print(cmd_line)
+                os.system(cmd_line)
+
+              def setup_common_args(self):
+                self.cmake_args += [f"-DCMAKE_C_COMPILER={self.clang}", f"-DCMAKE_CXX_COMPILER={self.clangxx}"]
+                self.cmake_args += ["-DCMAKE_BUILD_TYPE={}".format(self.cmake_build_type)]
+
+              def build(self):
+                subprocess.run(["mkdir", "-p", self.output_dir], check=True)
+                self.cmake_generate_build_system()
+
+                build_cmd = "cmake --build . --clean-first --target dobby --target dobby_static -- -j8"
+                subprocess.run(build_cmd, cwd=self.cmake_build_dir, shell=True, check=True)
+
+                os.makedirs(self.output_dir, exist_ok=True)
+                if os.path.exists(f"{self.cmake_build_dir}/{self.shared_output_name}"):
+                  os.system(f"cp {self.cmake_build_dir}/{self.shared_output_name} {self.output_dir}")
+                if os.path.exists(f"{self.cmake_build_dir}/{self.static_output_name}"):
+                  os.system(f"cp {self.cmake_build_dir}/{self.static_output_name} {self.output_dir}")
+
+            class AndroidPlatformBuilder(PlatformBuilder):
+              def __init__(self, android_ndk_dir, project_dir, library_build_type, arch):
+                super().__init__(project_dir, library_build_type, "android", arch)
+                self.shared_output_name = "libdobby.so"
+                self.static_output_name = "libdobby.a"
+                android_api_level = 21 if arch in ["arm64-v8a", "x86_64"] else 19
+                self.cmake_args += [
+                  "-DCMAKE_SYSTEM_NAME=Android",
+                  f"-DCMAKE_ANDROID_NDK={android_ndk_dir}",
+                  f"-DCMAKE_ANDROID_ARCH_ABI={arch}",
+                  f"-DCMAKE_SYSTEM_VERSION={android_api_level}"
+                ]
+
+            if __name__ == "__main__":
+              parser = argparse.ArgumentParser()
+              parser.add_argument("--platform", type=str, required=True)
+              parser.add_argument("--arch", type=str, required=True)
+              parser.add_argument("--library_build_type", type=str, default="static")
+              parser.add_argument("--android_ndk_dir", type=str)
+              parser.add_argument("--cmake_dir", type=str)
+              parser.add_argument("--llvm_dir", type=str)
+              args = parser.parse_args()
+
+              logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+              platform = args.platform
+              arch = args.arch
+              library_build_type = args.library_build_type
+
+              PlatformBuilder.cmake_dir = args.cmake_dir
+              PlatformBuilder.llvm_dir = args.llvm_dir
+
+              project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+              logging.info("project dir: {}".format(project_dir))
+              if not os.path.exists(f"{project_dir}/CMakeLists.txt"):
+                logging.error("Please run this script in Dobby project root directory")
+                sys.exit(1)
+
+              if platform not in platforms:
+                logging.error("invalid platform {}".format(platform))
+                sys.exit(-1)
+
+              if arch != "all" and arch not in platforms[platform]:
+                logging.error("invalid arch {} for platform {}".format(arch, platform))
+                sys.exit(-1)
+
+              if platform == "android" and args.android_ndk_dir is None:
+                logging.error("ndk dir is required for android platform")
+                sys.exit(-1)
+
+              archs = platforms[platform] if arch == "all" else [arch]
+              logging.info("build platform: {}, archs: {}".format(platform, archs))
+
+              for arch_ in archs:
+                if platform == "android":
+                  builder = AndroidPlatformBuilder(args.android_ndk_dir, project_dir, library_build_type, arch_)
+                  logging.info(
+                    f"build platform: {platform}, arch: {arch_}, cmake_build_dir: {builder.cmake_build_dir}, output_dir: {builder.output_dir}"
+                  )
+                  builder.build()
 
       - name: Fetch config.json
         run: |
