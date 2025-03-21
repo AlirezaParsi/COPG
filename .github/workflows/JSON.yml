@@ -74,15 +74,10 @@ jobs:
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
-      - name: Install build tools and CMake
+      - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential zip git
-          mkdir -p $HOME/opt/cmake-3.25.2
-          wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
-          chmod +x cmake.sh
-          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license
-          echo "$HOME/opt/cmake-3.25.2/bin" >> $GITHUB_PATH
+          sudo apt-get install -y build-essential zip git xz-utils
 
       - name: Fetch Zygisk Headers and JSON Library
         run: |
@@ -90,45 +85,35 @@ jobs:
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
 
-      - name: Build Dobby from Source
+      - name: Fetch Frida Gadget 16.7.0
         run: |
-          git clone https://github.com/jmpews/Dobby.git dobby
-          cd dobby
-          sed -i 's/import pipes/import shlex/' scripts/platform_builder.py
-          # Patch closure_bridge_arm64.asm for Android compatibility
-          sed -i 's/adrp x17, common_closure_bridge_handler@PAGE/ldr x17, =common_closure_bridge_handler/' source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
-          sed -i 's/add x17, x17, common_closure_bridge_handler@PAGEOFF//' source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
-          chmod +x scripts/platform_builder.py
-          python3 scripts/platform_builder.py \
-            --platform=android \
-            --arch=arm64-v8a \
-            --cmake_dir=$HOME/opt/cmake-3.25.2 \
-            --android_ndk_dir=$NDK_PATH
-          python3 scripts/platform_builder.py \
-            --platform=android \
-            --arch=armeabi-v7a \
-            --cmake_dir=$HOME/opt/cmake-3.25.2 \
-            --android_ndk_dir=$NDK_PATH
-          mkdir -p ../dobby
-          cp build/android/arm64-v8a/libdobby.a ../dobby/libdobby-arm64.a
-          cp build/android/armeabi-v7a/libdobby.a ../dobby/libdobby-armv7-a.a
-          cp include/dobby.h ../dobby/dobby.h
-          cd ..
-
-      - name: Fetch config.json
-        run: wget https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
+          mkdir -p frida
+          wget https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm64.so.xz -O frida-gadget-arm64.so.xz
+          wget https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm.so.xz -O frida-gadget-arm.so.xz
+          xz -d frida-gadget-arm64.so.xz
+          xz -d frida-gadget-arm.so.xz
+          mv frida-gadget-arm64.so frida/libfrida-gadget-arm64.so
+          mv frida-gadget-arm.so frida/libfrida-gadget-armv7-a.so
 
       - name: Build Project (arm64-v8a)
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: build/arm64-v8a
-          args: -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-34 -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-arm64.a
+        run: |
+          mkdir -p build/arm64-v8a
+          $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++ \
+            -shared -fPIC -std=c++17 \
+            -I${{ github.workspace }}/zygisk \
+            -I${{ github.workspace }}/include/nlohmann \
+            spoof_module.cpp -o build/arm64-v8a/libspoof.so \
+            -llog
 
       - name: Build Project (armeabi-v7a)
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: build/armeabi-v7a
-          args: -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-34 -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-armv7-a.a
+        run: |
+          mkdir -p build/armeabi-v7a
+          $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi34-clang++ \
+            -shared -fPIC -std=c++17 \
+            -I${{ github.workspace }}/zygisk \
+            -I${{ github.workspace }}/include/nlohmann \
+            spoof_module.cpp -o build/armeabi-v7a/libspoof.so \
+            -llog
 
       - name: Check build outputs
         run: |
@@ -137,17 +122,81 @@ jobs:
 
       - name: Prepare module structure
         run: |
-          mkdir -p module/zygisk module/META-INF/com/google/android
+          mkdir -p module/zygisk module/META-INF/com/google/android module/frida
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
-          chmod 755 module/zygisk/*.so
+          cp frida/libfrida-gadget-arm64.so module/frida/libcopg-arm64.so  # Renamed for stealth
+          cp frida/libfrida-gadget-armv7-a.so module/frida/libcopg-armv7-a.so  # Renamed for stealth
+          chmod 755 module/zygisk/*.so module/frida/*.so
+          # Frida config to load script
+          echo '{"interaction":{"type":"script","path":"/data/adb/modules/COPG/spoof.js"}}' > module/frida/config.json
+          # Spoofing script
+          cat > module/spoof.js << 'EOF'
+          var debug = false;
+          function log(msg) { if (debug) console.log("[COPG] " + msg); }
+          log("Frida 16.7.0 loaded");
+
+          function loadConfig() {
+              try {
+                  return JSON.parse(readFile("/data/adb/modules/COPG/config.json"));
+              } catch (e) {
+                  log("Failed to load config.json: " + e);
+                  return {};
+              }
+          }
+
+          var config = loadConfig();
+          var packageMap = {};
+          for (var key in config) {
+              if (key.endsWith("_DEVICE")) continue;
+              var packages = config[key];
+              var deviceKey = key + "_DEVICE";
+              if (config[deviceKey]) {
+                  var device = config[deviceKey];
+                  packages.forEach(function(pkg) {
+                      packageMap[pkg] = {
+                          brand: device.BRAND,
+                          device: device.DEVICE,
+                          manufacturer: device.MANUFACTURER,
+                          model: device.MODEL,
+                          ro_product_model: device["ro.product.model"] || ""
+                      };
+                  });
+              }
+          }
+          log("Loaded " + Object.keys(packageMap).length + " package mappings");
+
+          Java.perform(function() {
+              var System = Java.use("java.lang.System");
+              var Build = Java.use("android.os.Build");
+              var currentPackage = Java.use("android.app.ActivityThread").currentProcessName();
+
+              System.getProperty.implementation = function(key) {
+                  var pkg = currentPackage.value;
+                  if (packageMap[pkg] && key === "ro.product.model" && packageMap[pkg].ro_product_model) {
+                      log("Spoofing ro.product.model to " + packageMap[pkg].ro_product_model);
+                      return packageMap[pkg].ro_product_model;
+                  }
+                  return this.getProperty(key);
+              };
+
+              if (packageMap[currentPackage.value]) {
+                  var info = packageMap[currentPackage.value];
+                  Build.MODEL.value = info.model;
+                  Build.BRAND.value = info.brand;
+                  Build.DEVICE.value = info.device;
+                  Build.MANUFACTURER.value = info.manufacturer;
+                  log("Spoofed Build fields for " + currentPackage.value);
+              }
+          });
+          EOF
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
           version=2.3
           versionCode=230
           author=AlirezaParsi
-          description=Spoof your device for games. Run 'sh $MODPATH/action.sh' to update config.json from GitHub.
+          description=Spoof your device for games with Frida 16.7.0. Run 'sh $MODPATH/action.sh' to update config.json.
           support=https://t.me/theaosp
           updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/update.json
           minMagisk=20.4
@@ -164,18 +213,18 @@ jobs:
             abort "! This module requires Android 8.0 or higher"
           fi
           check_zygisk() {
-            ZYGISK_MODULE="/data/adb/modules/ZygiskNext"
+            ZYGISK_MODULE="/data/adb/modules/zygisksu"  # Updated folder name
             MAGISK_DIR="/data/adb/magisk"
             ZYGISK_MSG="Zygisk is not enabled. Please either:
             - Enable Zygisk in Magisk settings and reboot
-            - Install ZygiskNext module for KernelSU and reboot"
+            - Install zygisksu module for KernelSU and reboot"
             if [ -d "/data/adb/ksu" ]; then
               if ! [ -d "$ZYGISK_MODULE" ]; then
                 ui_print "*********************************************************"
                 ui_print "! $ZYGISK_MSG"
                 abort "*********************************************************"
               else
-                ui_print "- ZygiskNext detected for KernelSU"
+                ui_print "- zygisksu detected for KernelSU"
               fi
             elif [ -d "$MAGISK_DIR" ]; then
               ZYGISK_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='zygisk';" 2>/dev/null)
@@ -189,13 +238,13 @@ jobs:
             else
               ui_print "*********************************************************"
               ui_print "! No supported root solution detected!"
-              ui_print "! This module requires Magisk with Zygisk or KernelSU with ZygiskNext"
+              ui_print "! This module requires Magisk with Zygisk or KernelSU with zygisksu"
               abort "*********************************************************"
             fi
           }
           check_zygisk
           chmod +x "$MODPATH/action.sh"
-          ui_print "- SpoofModule setup complete"
+          ui_print "- SpoofModule setup complete with Frida 16.7.0"
           ui_print "- Run 'sh $MODPATH/action.sh' to download config.json"
           EOF
           chmod 755 module/customize.sh
