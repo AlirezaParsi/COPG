@@ -33,11 +33,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Set up JDK 8
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '8'
+          java-version: '17'
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -54,11 +54,6 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$ANDROID_HOME/tools/bin" >> $GITHUB_PATH
 
-      - name: Accept Android SDK licenses
-        run: |
-          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses
-          $ANDROID_HOME/tools/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
-
       - name: Install build tools
         run: |
           sudo apt-get update
@@ -67,11 +62,10 @@ jobs:
       - name: Fetch Zygisk Headers and JSON Library
         run: |
           mkdir -p zygisk include/nlohmann
-          wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
-          wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
-          # Verify files exist
-          ls -l zygisk/zygisk.hh || { echo "Error: zygisk.hh not downloaded!"; exit 1; }
-          ls -l include/nlohmann/json.hpp || { echo "Error: json.hpp not downloaded!"; exit 1; }
+          wget -v https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh || { echo "Error: Failed to fetch zygisk.hh"; exit 1; }
+          wget -v https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp || { echo "Error: Failed to fetch json.hpp"; exit 1; }
+          ls -l zygisk/zygisk.hh || { echo "Error: zygisk.hh missing after download!"; exit 1; }
+          ls -l include/nlohmann/json.hpp || { echo "Error: json.hpp missing after download!"; exit 1; }
 
       - name: Fetch Frida Gadget 16.7.0
         run: |
