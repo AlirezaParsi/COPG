@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <sys/system_properties.h>
 #include <dlfcn.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 using json = nlohmann::json;
 
@@ -14,32 +16,52 @@ struct DeviceInfo {
     std::string device;
     std::string manufacturer;
     std::string model;
-    std::string fingerprint; // Re-added to match your config
+    std::string fingerprint; // Renamed from 'ondata_fingerprint' for clarity
+    std::string build_id;
+    std::string display;
+    std::string product;
+    std::string version_release;
+    std::string serial;
+    std::string cpuinfo;        // New: Spoofed /proc/cpuinfo content
+    std::string serial_content; // New: Spoofed serial file content
 };
 
-// Function pointer for original getprop
+// Function pointers for original functions
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
-static DeviceInfo current_info; // Store current spoofed info for native hooking
+typedef ssize_t (*orig_read_t)(int, void*, size_t);
+static orig_read_t orig_read = nullptr;
+static DeviceInfo current_info;
+static int fake_fd = -1; // Dummy file descriptor for spoofed files
 
 class SpoofModule : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
         this->api = api;
         this->env = env;
+
         buildClass = env->FindClass("android/os/Build");
         if (buildClass) {
             modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
             brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
             deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
             manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
-            fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;"); // Added
+            fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
+            buildIdField = env->GetStaticFieldID(buildClass, "ID", "Ljava/lang/String;");
+            displayField = env->GetStaticFieldID(buildClass, "DISPLAY", "Ljava/lang/String;");
+            productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
+            versionClass = env->FindClass("android/os/Build$VERSION");
+            if (versionClass) {
+                versionReleaseField = env->GetStaticFieldID(versionClass, "RELEASE", "Ljava/lang/String;");
+                sdkIntField = env->GetStaticFieldID(versionClass, "SDK_INT", "I");
+            }
+            serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
         }
 
-        // Hook native getprop function
         void* handle = dlopen("libc.so", RTLD_LAZY);
         if (handle) {
             orig_prop_get = (orig_prop_get_t)dlsym(handle, "__system_property_get");
+            orig_read = (orig_read_t)dlsym(handle, "read");
             dlclose(handle);
         }
 
@@ -61,11 +83,10 @@ public:
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         } else {
             current_info = it->second;
-            spoofDevice(current_info.brand.c_str(), current_info.device.c_str(), 
-                       current_info.manufacturer.c_str(), current_info.model.c_str(), 
-                       current_info.fingerprint.c_str());
+            spoofDevice(current_info);
             spoofSystemProperties(current_info);
             hookNativeGetprop();
+            hookNativeRead();
         }
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
@@ -77,11 +98,10 @@ public:
         auto it = package_map.find(package_name);
         if (it != package_map.end()) {
             current_info = it->second;
-            spoofDevice(current_info.brand.c_str(), current_info.device.c_str(), 
-                       current_info.manufacturer.c_str(), current_info.model.c_str(), 
-                       current_info.fingerprint.c_str());
+            spoofDevice(current_info);
             spoofSystemProperties(current_info);
             hookNativeGetprop();
+            hookNativeRead();
         }
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
@@ -90,9 +110,11 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
-    jclass buildClass = nullptr;
+    jclass buildClass = nullptr, versionClass = nullptr;
     jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, 
-             manufacturerField = nullptr, fingerprintField = nullptr; // Added fingerprintField
+             manufacturerField = nullptr, fingerprintField = nullptr, 
+             buildIdField = nullptr, displayField = nullptr, productField = nullptr, 
+             versionReleaseField = nullptr, sdkIntField = nullptr, serialField = nullptr;
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -105,26 +127,49 @@ private:
                 std::string device_key = key + "_DEVICE";
                 if (!config.contains(device_key)) continue;
                 auto device = config[device_key];
-                DeviceInfo info {
-                    device["BRAND"].get<std::string>(),
-                    device["DEVICE"].get<std::string>(),
-                    device["MANUFACTURER"].get<std::string>(),
-                    device["MODEL"].get<std::string>(),
-                    device.value("FINGERPRINT", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys") // Added with fallback
-                };
+
+                DeviceInfo info;
+                info.brand = device["BRAND"].get<std::string>();
+                info.device = device["DEVICE"].get<std::string>();
+                info.manufacturer = device["MANUFACTURER"].get<std::string>();
+                info.model = device["MODEL"].get<std::string>();
+                info.fingerprint = device.contains("FINGERPRINT") ? 
+                    device["FINGERPRINT"].get<std::string>() : "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys";
+                info.build_id = device.contains("BUILD_ID") ? 
+                    device["BUILD_ID"].get<std::string>() : "";
+                info.display = device.contains("DISPLAY") ? 
+                    device["DISPLAY"].get<std::string>() : "";
+                info.product = device.contains("PRODUCT") ? 
+                    device["PRODUCT"].get<std::string>() : info.device;
+                info.version_release = device.contains("VERSION_RELEASE") ? 
+                    device["VERSION_RELEASE"].get<std::string>() : "";
+                info.serial = device.contains("SERIAL") ? 
+                    device["SERIAL"].get<std::string>() : "";
+                info.cpuinfo = device.contains("CPUINFO") ? 
+                    device["CPUINFO"].get<std::string>() : "";
+                info.serial_content = device.contains("SERIAL_CONTENT") ? 
+                    device["SERIAL_CONTENT"].get<std::string>() : "";
+
                 for (const auto& pkg : packages) package_map[pkg] = info;
             }
         } catch (const json::exception&) {}
         file.close();
     }
 
-    void spoofDevice(const char* brand, const char* device, const char* manufacturer, 
-                    const char* model, const char* fingerprint) {
-        if (modelField) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(model));
-        if (brandField) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(brand));
-        if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(device));
-        if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(manufacturer));
-        if (fingerprintField) env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(fingerprint)); // Added
+    void spoofDevice(const DeviceInfo& info) {
+        if (modelField) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(info.model.c_str()));
+        if (brandField) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(info.brand.c_str()));
+        if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(info.device.c_str()));
+        if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(info.manufacturer.c_str()));
+        if (fingerprintField) env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(info.fingerprint.c_str()));
+        if (buildIdField && !info.build_id.empty()) env->SetStaticObjectField(buildClass, buildIdField, env->NewStringUTF(info.build_id.c_str()));
+        if (displayField && !info.display.empty()) env->SetStaticObjectField(buildClass, displayField, env->NewStringUTF(info.display.c_str()));
+        if (productField && !info.product.empty()) env->SetStaticObjectField(buildClass, productField, env->NewStringUTF(info.product.c_str()));
+        if (versionReleaseField && !info.version_release.empty()) 
+            env->SetStaticObjectField(versionClass, versionReleaseField, env->NewStringUTF(info.version_release.c_str()));
+        if (sdkIntField && !info.version_release.empty()) 
+            env->SetStaticIntField(versionClass, sdkIntField, info.version_release == "13" ? 33 : 34);
+        if (serialField && !info.serial.empty()) env->SetStaticObjectField(buildClass, serialField, env->NewStringUTF(info.serial.c_str()));
     }
 
     void spoofSystemProperties(const DeviceInfo& info) {
@@ -132,7 +177,7 @@ private:
         if (!info.device.empty()) __system_property_set("ro.product.device", info.device.c_str());
         if (!info.manufacturer.empty()) __system_property_set("ro.product.manufacturer", info.manufacturer.c_str());
         if (!info.model.empty()) __system_property_set("ro.product.model", info.model.c_str());
-        if (!info.fingerprint.empty()) __system_property_set("ro.build.fingerprint", info.fingerprint.c_str()); // Added
+        if (!info.fingerprint.empty()) __system_property_set("ro.build.fingerprint", info.fingerprint.c_str());
     }
 
     static int hooked_prop_get(const char* name, char* value, const char* default_value) {
@@ -149,7 +194,7 @@ private:
         } else if (std::string(name) == "ro.product.model" && !current_info.model.empty()) {
             strncpy(value, current_info.model.c_str(), PROP_VALUE_MAX);
             return current_info.model.length();
-        } else if (std::string(name) == "ro.build.fingerprint" && !current_info.fingerprint.empty()) { // Added
+        } else if (std::string(name) == "ro.build.fingerprint" && !current_info.fingerprint.empty()) {
             strncpy(value, current_info.fingerprint.c_str(), PROP_VALUE_MAX);
             return current_info.fingerprint.length();
         }
@@ -157,16 +202,63 @@ private:
     }
 
     void hookNativeGetprop() {
-        if (orig_prop_get) {
-            void* handle = dlopen("libc.so", RTLD_LAZY);
-            if (handle) {
-                void* sym = dlsym(handle, "__system_property_get");
-                if (sym) {
-                    // Simplified hooking; may need memory protection adjustments
+        if (!orig_prop_get) return;
+        void* handle = dlopen("libc.so", RTLD_LAZY);
+        if (handle) {
+            void* sym = dlsym(handle, "__system_property_get");
+            if (sym) {
+                size_t page_size = sysconf(_SC_PAGE_SIZE);
+                void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
+                if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
                     *(void**)&orig_prop_get = (void*)hooked_prop_get;
+                    mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
                 }
-                dlclose(handle);
             }
+            dlclose(handle);
+        }
+    }
+
+    static ssize_t hooked_read(int fd, void* buf, size_t count) {
+        if (!orig_read) return -1;
+
+        // Check if this is a read from /proc/cpuinfo or serial file based on fd
+        char path[256];
+        ssize_t result = -1;
+        snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
+        char real_path[256];
+        ssize_t len = readlink(path, real_path, sizeof(real_path) - 1);
+        if (len != -1) {
+            real_path[len] = '\0';
+            std::string file_path(real_path);
+
+            if (file_path == "/proc/cpuinfo" && !current_info.cpuinfo.empty()) {
+                size_t bytes_to_copy = std::min(count, current_info.cpuinfo.length());
+                memcpy(buf, current_info.cpuinfo.c_str(), bytes_to_copy);
+                return bytes_to_copy;
+            } else if (file_path == "/sys/devices/soc0/serial_number" && !current_info.serial_content.empty()) {
+                size_t bytes_to_copy = std::min(count, current_info.serial_content.length());
+                memcpy(buf, current_info.serial_content.c_str(), bytes_to_copy);
+                return bytes_to_copy;
+            }
+        }
+
+        return orig_read(fd, buf, count);
+    }
+
+    void hookNativeRead() {
+        if (!orig_read) return;
+        void* handle = dlopen("libc.so", RTLD_LAZY);
+        if (handle) {
+            void* sym = dlsym(handle, "read");
+            if (sym) {
+                size_t page_size = sysconf(_SC_PAGE_SIZE);
+                void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
+                if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+                    *(void**)&orig_read = (void*)hooked_read;
+                    mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+                }
+            }
+            dlclose(handle);
         }
     }
 };
