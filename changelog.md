@@ -1,5 +1,9 @@
 Support Group:
 https://t.me/TheAOSP
+# v2.3
+- added action button for downloading updated config if needed
+- added Zygisk check for installing module
+
 # v2.2
 - Cache JNI Calls for faster app game launch.
 - removed logd for even faster launch.
