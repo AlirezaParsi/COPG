@@ -49,22 +49,11 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           mkdir -p $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          ls -la cmdline-tools.zip || echo "Download failed!"
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
           if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
             mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
             mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
-          else
-            echo "Unexpected directory structure after unzip:"
-            ls -la $ANDROID_HOME/cmdline-tools
-            exit 1
-          fi
-          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
-          if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-            echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-            exit 1
           fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
@@ -72,7 +61,7 @@ jobs:
 
       - name: Accept Android SDK licenses
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
       - name: Install build tools
         run: |
@@ -125,78 +114,18 @@ jobs:
           mkdir -p module/zygisk module/META-INF/com/google/android module/frida
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
-          cp frida/libfrida-gadget-arm64.so module/frida/libcopg-arm64.so  # Renamed for stealth
-          cp frida/libfrida-gadget-armv7-a.so module/frida/libcopg-armv7-a.so  # Renamed for stealth
-          chmod 755 module/zygisk/*.so module/frida/*.so
-          # Frida config to load script
+          cp frida/libfrida-gadget-arm64.so module/frida/libcopg-arm64.so
+          cp frida/libfrida-gadget-armv7-a.so module/frida/libcopg-armv7-a.so
+          cp spoof.js module/spoof.js  # Use repo version
+          chmod 755 module/zygisk/*.so module/frida/*.so module/spoof.js
           echo '{"interaction":{"type":"script","path":"/data/adb/modules/COPG/spoof.js"}}' > module/frida/config.json
-          # Spoofing script
-          cat > module/spoof.js << 'EOF'
-          var debug = false;
-          function log(msg) { if (debug) console.log("[COPG] " + msg); }
-          log("Frida 16.7.0 loaded");
-
-          function loadConfig() {
-              try {
-                  return JSON.parse(readFile("/data/adb/modules/COPG/config.json"));
-              } catch (e) {
-                  log("Failed to load config.json: " + e);
-                  return {};
-              }
-          }
-
-          var config = loadConfig();
-          var packageMap = {};
-          for (var key in config) {
-              if (key.endsWith("_DEVICE")) continue;
-              var packages = config[key];
-              var deviceKey = key + "_DEVICE";
-              if (config[deviceKey]) {
-                  var device = config[deviceKey];
-                  packages.forEach(function(pkg) {
-                      packageMap[pkg] = {
-                          brand: device.BRAND,
-                          device: device.DEVICE,
-                          manufacturer: device.MANUFACTURER,
-                          model: device.MODEL,
-                          ro_product_model: device["ro.product.model"] || ""
-                      };
-                  });
-              }
-          }
-          log("Loaded " + Object.keys(packageMap).length + " package mappings");
-
-          Java.perform(function() {
-              var System = Java.use("java.lang.System");
-              var Build = Java.use("android.os.Build");
-              var currentPackage = Java.use("android.app.ActivityThread").currentProcessName();
-
-              System.getProperty.implementation = function(key) {
-                  var pkg = currentPackage.value;
-                  if (packageMap[pkg] && key === "ro.product.model" && packageMap[pkg].ro_product_model) {
-                      log("Spoofing ro.product.model to " + packageMap[pkg].ro_product_model);
-                      return packageMap[pkg].ro_product_model;
-                  }
-                  return this.getProperty(key);
-              };
-
-              if (packageMap[currentPackage.value]) {
-                  var info = packageMap[currentPackage.value];
-                  Build.MODEL.value = info.model;
-                  Build.BRAND.value = info.brand;
-                  Build.DEVICE.value = info.device;
-                  Build.MANUFACTURER.value = info.manufacturer;
-                  log("Spoofed Build fields for " + currentPackage.value);
-              }
-          });
-          EOF
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
           version=2.3
           versionCode=230
           author=AlirezaParsi
-          description=Spoof your device for games with Frida 16.7.0. Run 'sh $MODPATH/action.sh' to update config.json.
+          description=Spoof your device for games with Frida 16.7.0. Click Action button to update your config if needed.
           support=https://t.me/theaosp
           updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/update.json
           minMagisk=20.4
@@ -213,7 +142,7 @@ jobs:
             abort "! This module requires Android 8.0 or higher"
           fi
           check_zygisk() {
-            ZYGISK_MODULE="/data/adb/modules/zygisksu"  # Updated folder name
+            ZYGISK_MODULE="/data/adb/modules/zygisksu"
             MAGISK_DIR="/data/adb/magisk"
             ZYGISK_MSG="Zygisk is not enabled. Please either:
             - Enable Zygisk in Magisk settings and reboot
@@ -244,8 +173,8 @@ jobs:
           }
           check_zygisk
           chmod +x "$MODPATH/action.sh"
-          ui_print "- SpoofModule setup complete with Frida 16.7.0"
-          ui_print "- Run 'sh $MODPATH/action.sh' to download config.json"
+          ui_print "- COPG setup complete with Frida 16.7.0"
+          ui_print "- Click Action button to update your config if needed"
           EOF
           chmod 755 module/customize.sh
           cat > module/action.sh << 'EOF'
@@ -254,7 +183,7 @@ jobs:
           CONFIG_URL="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json"
           CONFIG_PATH="$MODDIR/config.json"
           log() {
-            echo "🌟 [SpoofModule] $1"
+            echo "🌟 [COPG] $1"
           }
           if command -v curl >/dev/null 2>&1; then
             DOWNLOADER="curl -s -o"
@@ -270,11 +199,12 @@ jobs:
             log "✅ Config downloaded successfully!"
             log "📍 Saved to: $CONFIG_PATH"
             chmod 644 "$CONFIG_PATH"
+            log "🔄 Reboot your device to apply changes"
           else
             log "❌ Failed to download config.json. Check your internet or URL."
             exit 1
           fi
-          log "✨ SpoofModule config update complete!"
+          log "✨ COPG config update complete!"
           EOF
           chmod 755 module/action.sh
           cat > module/uninstall.sh << 'EOF'
@@ -300,7 +230,6 @@ jobs:
           EOF
           chmod 755 module/META-INF/com/google/android/update-binary
           echo "#MAGISK" > module/META-INF/com/google/android/updater-script
-          cp config.json module/config.json
 
       - name: Package module into ZIP
         run: |
