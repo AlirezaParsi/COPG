@@ -1,4 +1,4 @@
-var debug = true; // Keep on for now
+var debug = true;
 function log(msg) { if (debug) console.log("[COPG] " + msg); }
 log("Frida 16.7.0 loaded");
 
@@ -25,7 +25,7 @@ for (var key in config) {
                 device: device.DEVICE,
                 manufacturer: device.MANUFACTURER,
                 model: device.MODEL,
-                ro_product_model: device["ro.product.model"] || device.MODEL // Fallback to MODEL
+                ro_product_model: device["ro.product.model"] || device.MODEL
             };
         });
     }
