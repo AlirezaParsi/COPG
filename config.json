@@ -25,7 +25,14 @@
         "MANUFACTURER": "ZTE",
         "MODEL": "NX769J",
         "ro.product.model": "NX769J",
-        "FINGERPRINT": "ZTE/NX769J/NX769J:14/UP1A.231005.007/20240301:user/release-keys"
+        "FINGERPRINT": "ZTE/NX769J/NX769J:14/UP1A.231005.007/20240301:user/release-keys",
+        "BUILD_ID": "UP1A.231005.007",
+        "DISPLAY": "UP1A.231005.007.A1",
+        "PRODUCT": "NX769J",
+        "VERSION_RELEASE": "14",
+        "SERIAL": "ZTE12345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (REDMAGIC 9)\nHardware\t: Qualcomm Snapdragon 8 Gen 3\nSerial\t: ZTE12345678",
+        "SERIAL_CONTENT": "ZTE12345678"
     },
     "PACKAGES_BS4": [
         "com.proximabeta.mf.uamo"
@@ -36,7 +43,14 @@
         "MANUFACTURER": "Xiaomi",
         "MODEL": "2SM-X706B",
         "ro.product.model": "PRS-H0",
-        "FINGERPRINT": "BlackShark/PRS-H0/Black Shark 4:13/TQ3A.230805.001/20230315:user/release-keys"
+        "FINGERPRINT": "BlackShark/PRS-H0/Black Shark 4:13/TQ3A.230805.001/20230315:user/release-keys",
+        "BUILD_ID": "TQ3A.230805.001",
+        "DISPLAY": "TQ3A.230805.001.A1",
+        "PRODUCT": "PRS-H0",
+        "VERSION_RELEASE": "13",
+        "SERIAL": "BS412345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Black Shark 4)\nHardware\t: Qualcomm Snapdragon 870\nSerial\t: BS412345678",
+        "SERIAL_CONTENT": "BS412345678"
     },
     "PACKAGES_MI11TP": [
         "com.ea.gp.apexlegendsmobilefps",
@@ -50,7 +64,14 @@
         "MANUFACTURER": "Xiaomi",
         "MODEL": "2107113SI",
         "ro.product.model": "2107113SI",
-        "FINGERPRINT": "Xiaomi/2107113SI/Mi 11T PRO:13/RKQ1.211001.001/20230410:user/release-keys"
+        "FINGERPRINT": "Xiaomi/2107113SI/Mi 11T PRO:13/RKQ1.211001.001/20230410:user/release-keys",
+        "BUILD_ID": "RKQ1.211001.001",
+        "DISPLAY": "RKQ1.211001.001.A1",
+        "PRODUCT": "2107113SI",
+        "VERSION_RELEASE": "13",
+        "SERIAL": "XMI11T12345",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Mi 11T Pro)\nHardware\t: Qualcomm Snapdragon 888\nSerial\t: XMI11T12345",
+        "SERIAL_CONTENT": "XMI11T12345"
     },
     "PACKAGES_MI13P": [
         "com.levelinfinite.sgameGlobal",
@@ -68,7 +89,14 @@
         "MANUFACTURER": "Xiaomi",
         "MODEL": "2210132G",
         "ro.product.model": "2210132G",
-        "FINGERPRINT": "Xiaomi/2210132G/Mi 13 Pro:14/UP1A.231005.007/20240220:user/release-keys"
+        "FINGERPRINT": "Xiaomi/2210132G/Mi 13 Pro:14/UP1A.231005.007/20240220:user/release-keys",
+        "BUILD_ID": "UP1A.231005.007",
+        "DISPLAY": "UP1A.231005.007.A1",
+        "PRODUCT": "2210132G",
+        "VERSION_RELEASE": "14",
+        "SERIAL": "XMI13P67890",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Mi 13 Pro)\nHardware\t: Qualcomm Snapdragon 8 Gen 2\nSerial\t: XMI13P67890",
+        "SERIAL_CONTENT": "XMI13P67890"
     },
     "PACKAGES_OP8P": [
         "com.netease.lztgglobal",
@@ -82,7 +110,14 @@
         "MANUFACTURER": "OnePlus",
         "MODEL": "IN2020",
         "ro.product.model": "IN2020",
-        "FINGERPRINT": "OnePlus/IN2020/OnePlus 8 PRO:13/RKQ1.211119.001/20230501:user/release-keys"
+        "FINGERPRINT": "OnePlus/IN2020/OnePlus 8 PRO:13/RKQ1.211119.001/20230501:user/release-keys",
+        "BUILD_ID": "RKQ1.211119.001",
+        "DISPLAY": "RKQ1.211119.001.A1",
+        "PRODUCT": "IN2020",
+        "VERSION_RELEASE": "13",
+        "SERIAL": "OP8P1234567",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (OnePlus 8 Pro)\nHardware\t: Qualcomm Snapdragon 865\nSerial\t: OP8P1234567",
+        "SERIAL_CONTENT": "OP8P1234567"
     },
     "PACKAGES_OP9P": [
         "com.epicgames.fortnite",
@@ -95,7 +130,14 @@
         "MANUFACTURER": "OnePlus",
         "MODEL": "LE2101",
         "ro.product.model": "LE2101",
-        "FINGERPRINT": "OnePlus/LE2101/OnePlus 9 PRO:14/UP1A.231005.007/20240115:user/release-keys"
+        "FINGERPRINT": "OnePlus/LE2101/OnePlus 9 PRO:14/UP1A.231005.007/20240115:user/release-keys",
+        "BUILD_ID": "UP1A.231005.007",
+        "DISPLAY": "UP1A.231005.007.A1",
+        "PRODUCT": "LE2101",
+        "VERSION_RELEASE": "14",
+        "SERIAL": "OP9P9876543",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (OnePlus 9 Pro)\nHardware\t: Qualcomm Snapdragon 888\nSerial\t: OP9P9876543",
+        "SERIAL_CONTENT": "OP9P9876543"
     },
     "PACKAGES_F5": [
         "com.mobile.legends"
@@ -106,7 +148,14 @@
         "MANUFACTURER": "Xiaomi",
         "MODEL": "23049PCD8G",
         "ro.product.model": "23049PCD8G",
-        "FINGERPRINT": "POCO/23049PCD8G/POCO F5:13/TQ3A.230805.001/20230620:user/release-keys"
+        "FINGERPRINT": "POCO/23049PCD8G/POCO F5:13/TQ3A.230805.001/20230620:user/release-keys",
+        "BUILD_ID": "TQ3A.230805.001",
+        "DISPLAY": "TQ3A.230805.001.A1",
+        "PRODUCT": "23049PCD8G",
+        "VERSION_RELEASE": "13",
+        "SERIAL": "POCOF512345",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (POCO F5)\nHardware\t: Qualcomm Snapdragon 7+ Gen 2\nSerial\t: POCOF512345",
+        "SERIAL_CONTENT": "POCOF512345"
     },
     "PACKAGES_ROG": [
         "com.dts.freefireth",
@@ -118,7 +167,14 @@
         "MANUFACTURER": "Asus",
         "MODEL": "ASUS_Z01QD",
         "ro.product.model": "ASUS_Z01QD",
-        "FINGERPRINT": "Asus/ASUS_Z01QD/ROG Phone:12/SKQ1.210821.001/20220810:user/release-keys"
+        "FINGERPRINT": "Asus/ASUS_Z01QD/ROG Phone:12/SKQ1.210821.001/20220810:user/release-keys",
+        "BUILD_ID": "SKQ1.210821.001",
+        "DISPLAY": "SKQ1.210821.001.A1",
+        "PRODUCT": "ASUS_Z01QD",
+        "VERSION_RELEASE": "12",
+        "SERIAL": "ROG12345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (ROG Phone)\nHardware\t: Qualcomm Snapdragon 845\nSerial\t: ROG12345678",
+        "SERIAL_CONTENT": "ROG12345678"
     },
     "PACKAGES_ROG6": [
         "com.ea.gp.fifamobile",
@@ -133,7 +189,14 @@
         "MANUFACTURER": "Asus",
         "MODEL": "ASUS_AI2201",
         "ro.product.model": "ASUS_AI2201",
-        "FINGERPRINT": "Asus/ASUS_AI2201/ROG Phone 6:14/UP1A.231005.007/20240315:user/release-keys"
+        "FINGERPRINT": "Asus/ASUS_AI2201/ROG Phone 6:14/UP1A.231005.007/20240315:user/release-keys",
+        "BUILD_ID": "UP1A.231005.007",
+        "DISPLAY": "UP1A.231005.007.A1",
+        "PRODUCT": "ASUS_AI2201",
+        "VERSION_RELEASE": "14",
+        "SERIAL": "ROG67890123",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (ROG Phone 6)\nHardware\t: Qualcomm Snapdragon 8+ Gen 1\nSerial\t: ROG67890123",
+        "SERIAL_CONTENT": "ROG67890123"
     },
     "PACKAGES_LENOVO_TABLET": [
         "com.activision.callofduty.shooter",
@@ -147,7 +210,14 @@
         "MANUFACTURER": "Lenovo",
         "MODEL": "Lenovo TB-9707F",
         "ro.product.model": "Lenovo TB-9707F",
-        "FINGERPRINT": "Lenovo/TB-9707F/Lenovo TB-9707F:13/TQ3A.230805.001/20230901:user/release-keys"
+        "FINGERPRINT": "Lenovo/TB-9707F/Lenovo TB-9707F:13/TQ3A.230805.001/20230901:user/release-keys",
+        "BUILD_ID": "TQ3A.230805.001",
+        "DISPLAY": "TQ3A.230805.001.A1",
+        "PRODUCT": "TB-9707F",
+        "VERSION_RELEASE": "13",
+        "SERIAL": "LEN12345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Lenovo TB-9707F)\nHardware\t: Qualcomm Snapdragon 8 Gen 1\nSerial\t: LEN12345678",
+        "SERIAL_CONTENT": "LEN12345678"
     },
     "PACKAGES_S24ULTRA": [
         "com.ea.gp.fifamobile"
@@ -158,6 +228,13 @@
         "MANUFACTURER": "samsung",
         "MODEL": "SM-S928B",
         "ro.product.model": "SM-S928B",
-        "FINGERPRINT": "samsung/SM-S928B/SM-S928B:14/UP1A.231005.007/20240225:user/release-keys"
+        "FINGERPRINT": "samsung/SM-S928B/SM-S928B:14/UP1A.231005.007/20240225:user/release-keys",
+        "BUILD_ID": "UP1A.231005.007",
+        "DISPLAY": "UP1A.231005.007.A1",
+        "PRODUCT": "SM-S928B",
+        "VERSION_RELEASE": "14",
+        "SERIAL": "SAM12345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Galaxy S24 Ultra)\nHardware\t: Qualcomm Snapdragon 8 Gen 3\nSerial\t: SAM12345678",
+        "SERIAL_CONTENT": "SAM12345678"
     }
 }
