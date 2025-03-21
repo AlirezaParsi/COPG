@@ -92,7 +92,7 @@ jobs:
 
       - name: Build Dobby from Source
         run: |
-          git clone https://github.com/jmpews/Dobby.git dobby
+          git clone --branch dev https://github.com/jmpews/Dobby.git dobby
           cd dobby
           sed -i 's/import pipes/import shlex/' scripts/platform_builder.py
           chmod +x scripts/platform_builder.py
