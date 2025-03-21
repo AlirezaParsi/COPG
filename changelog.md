@@ -1,5 +1,8 @@
 Support Group:
 https://t.me/TheAOSP
+# v2.6
+- better anti-cheat handling
+- **Note**: getting banned at your own risk
 # v2.5
 - added better spoof for Call of duty anti-cheat
 - **Note**: getting banned at your own risk
