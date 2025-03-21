@@ -47,27 +47,16 @@ jobs:
       - name: Set up Android SDK and NDK
         run: |
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          mkdir -p $HOME/android-sdk/cmdline-tools
+          mkdir -p $ANDROID_HOME/cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          unzip -q cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
-          # Handle varying unzip directory structures
-          if [ -d "$HOME/android-sdk/cmdline-tools/cmdline-tools" ]; then
-            mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          elif [ -d "$HOME/android-sdk/cmdline-tools/tools" ]; then
-            mv $HOME/android-sdk/cmdline-tools/tools $HOME/android-sdk/cmdline-tools/latest
-          else
-            echo "Unexpected directory structure:"
-            ls -la $HOME/android-sdk/cmdline-tools
-            exit 1
-          fi
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          # Verify sdkmanager is available
-          command -v sdkmanager || { echo "sdkmanager not found after PATH update"; exit 1; }
-          sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$HOME/android-sdk
-          echo "NDK_PATH=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+          unzip -q cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest || mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest || { echo "Unexpected dir structure:"; ls -la $ANDROID_HOME/cmdline-tools; exit 1; }
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
+          echo "NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses --sdk_root=$HOME/android-sdk || echo "License acceptance failed!"
+        run: yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME || echo "License acceptance failed!"
 
       - name: Install build tools and CMake
         run: |
