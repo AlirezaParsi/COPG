@@ -69,8 +69,7 @@ jobs:
         run: |
           echo "ANDROID_HOME is: $ANDROID_HOME"
           ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "bin directory missing!"
-          # Workaround for Java 17 JAXB issue
-          JAVA_OPTS="--add-modules java.xml.bind" yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
       - name: Install build tools
         run: |
@@ -82,7 +81,6 @@ jobs:
           mkdir -p zygisk include/nlohmann
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
-          ls -la zygisk include/nlohmann || echo "Failed to fetch headers!"
 
       - name: Fetch config.json
         run: |
@@ -90,14 +88,14 @@ jobs:
           ls -la config.json || echo "Failed to download config.json!"
 
       - name: Build Project (arm64-v8a)
-        run: |
-          mkdir -p build/arm64-v8a
-          $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++ \
-            -shared -fPIC -std=c++17 \
-            -I${{ github.workspace }}/zygisk \
-            -I${{ github.workspace }}/include/nlohmann \
-            ${{ github.workspace }}/spoof_module.cpp -o build/arm64-v8a/libspoof.so \
-            -llog
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          build-dir: build/arm64-v8a
+          args: |
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
+            -DANDROID_ABI=arm64-v8a
+            -DANDROID_PLATFORM=android-34
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
 
       - name: Check arm64-v8a output
         run: |
@@ -108,14 +106,14 @@ jobs:
           fi
 
       - name: Build Project (armeabi-v7a)
-        run: |
-          mkdir -p build/armeabi-v7a
-          $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi34-clang++ \
-            -shared -fPIC -std=c++17 \
-            -I${{ github.workspace }}/zygisk \
-            -I${{ github.workspace }}/include/nlohmann \
-            ${{ github.workspace }}/spoof_module.cpp -o build/armeabi-v7a/libspoof.so \
-            -llog
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          build-dir: build/armeabi-v7a
+          args: |
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
+            -DANDROID_ABI=armeabi-v7a
+            -DANDROID_PLATFORM=android-34
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
 
       - name: Check armeabi-v7a output
         run: |
@@ -127,101 +125,25 @@ jobs:
 
       - name: Prepare module structure
         run: |
-          mkdir -p module/zygisk module/META-INF/com/google/android
+          mkdir -p module/zygisk
+          mkdir -p module/META-INF/com/google/android
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
-          chmod 755 module/zygisk/arm64-v8a.so module/zygisk/armeabi-v7a.so
-          cp config.json module/config.json
+          chmod 755 module/zygisk/arm64-v8a.so
+          chmod 755 module/zygisk/armeabi-v7a.so
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2.3
-          versionCode=230
+          version=2.2
+          versionCode=220
           author=AlirezaParsi
-          description=Spoof your device for games. Click Action button to update your config if needed.
+          description=Spoof your device for games
           support=https://t.me/theaosp
           updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/update.json
           minMagisk=20.4
           EOF
-          cat > module/customize.sh << 'EOF'
-          #!/system/bin/sh
-          if ! $BOOTMODE; then
-            ui_print "*********************************************************"
-            ui_print "! Install from recovery is NOT supported"
-            ui_print "! Please install from Magisk, KernelSU, or APatch app"
-            abort "*********************************************************"
-          fi
-          if [ "$API" -lt 26 ]; then
-            abort "! This module requires Android 8.0 or higher"
-          fi
-          check_zygisk() {
-            ZYGISK_MODULE="/data/adb/modules/zygisksu"
-            MAGISK_DIR="/data/adb/magisk"
-            ZYGISK_MSG="Zygisk is not enabled. Please either:
-            - Enable Zygisk in Magisk settings and reboot
-            - Install zygisksu module for KernelSU and reboot"
-            if [ -d "/data/adb/ksu" ]; then
-              if ! [ -d "$ZYGISK_MODULE" ]; then
-                ui_print "*********************************************************"
-                ui_print "! $ZYGISK_MSG"
-                abort "*********************************************************"
-              else
-                ui_print "- zygisksu detected for KernelSU"
-              fi
-            elif [ -d "$MAGISK_DIR" ]; then
-              ZYGISK_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='zygisk';" 2>/dev/null)
-              if [ "$ZYGISK_STATUS" = "value=0" ] || [ -z "$ZYGISK_STATUS" ]; then
-                ui_print "*********************************************************"
-                ui_print "! $ZYGISK_MSG"
-                abort "*********************************************************"
-              else
-                ui_print "- Zygisk enabled in Magisk"
-              fi
-            else
-              ui_print "*********************************************************"
-              ui_print "! No supported root solution detected!"
-              ui_print "! This module requires Magisk with Zygisk or KernelSU with zygisksu"
-              abort "*********************************************************"
-            fi
-          }
-          check_zygisk
-          chmod +x "$MODPATH/action.sh"
-          ui_print "- COPG setup complete"
-          ui_print "- Click Action button to update your config if needed"
-          EOF
-          chmod 755 module/customize.sh
-          cat > module/action.sh << 'EOF'
-          #!/system/bin/sh
-          MODDIR="/data/adb/modules/COPG"
-          CONFIG_URL="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json"
-          CONFIG_PATH="$MODDIR/config.json"
-          log() {
-            echo "🌟 [COPG] $1"
-          }
-          if command -v curl >/dev/null 2>&1; then
-            DOWNLOADER="curl -s -o"
-          elif command -v wget >/dev/null 2>&1; then
-            DOWNLOADER="wget -q -O"
-          else
-            log "❌ Error: curl or wget not found. Please install one to download config."
-            exit 1
-          fi
-          log "⬇️ Downloading config.json from GitHub..."
-          $DOWNLOADER "$CONFIG_PATH" "$CONFIG_URL"
-          if [ $? -eq 0 ]; then
-            log "✅ Config downloaded successfully!"
-            log "📍 Saved to: $CONFIG_PATH"
-            chmod 644 "$CONFIG_PATH"
-            log "🔄 Reboot your device to apply changes"
-          else
-            log "❌ Failed to download config.json. Check your internet or URL."
-            exit 1
-          fi
-          log "✨ COPG config update complete!"
-          EOF
-          chmod 755 module/action.sh
           cat > module/uninstall.sh << 'EOF'
-          rm -rf /data/adb/modules/COPG
+          rm -rf /data/adb/modules/SpoofDeviceModule
           EOF
           chmod 755 module/uninstall.sh
           cat > module/META-INF/com/google/android/update-binary << 'EOF'
@@ -245,6 +167,7 @@ jobs:
           cat > module/META-INF/com/google/android/updater-script << 'EOF'
           #MAGISK
           EOF
+          cp config.json module/config.json
 
       - name: Package module into ZIP
         run: |
