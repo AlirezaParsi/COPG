@@ -1,8 +1,9 @@
+#include <sys/types.h> // Add this for dev_t and ino_t
 #include <zygisk.hh>
 #include <android/log.h>
 #include <dlfcn.h>
 #include <string>
-#include <sys/system_properties.h> // For ABI check
+#include <sys/system_properties.h>
 
 #define LOG_TAG "SpoofModule"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -21,14 +22,13 @@ public:
         }
 
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
-        if (strcmp(package_name, "com.activision.callofduty.shooter") != 0) { // COD Mobile package
+        if (strcmp(package_name, "com.activision.callofduty.shooter") != 0) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         } else {
-            // Pick Gadget based on ABI
             char abi[PROP_VALUE_MAX];
             __system_property_get("ro.product.cpu.abi", abi);
             const char* gadget_path = strstr(abi, "arm64") ?
-                "/data/adb/modules/COPG/frida/libcopg-arm64.so" : // Renamed for stealth
+                "/data/adb/modules/COPG/frida/libcopg-arm64.so" :
                 "/data/adb/modules/COPG/frida/libcopg-armv7-a.so";
             
             void* handle = dlopen(gadget_path, RTLD_NOW);
