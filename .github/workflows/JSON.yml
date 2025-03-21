@@ -33,40 +33,49 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Set up JDK 8
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '8'
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+          java-version: '17'
 
       - name: Set up Android SDK and NDK
         run: |
-          # NDK r27b
-          wget -q https://dl.google.com/android/repository/android-ndk-r27b-linux.zip -O ndk.zip
-          unzip -q ndk.zip -d $HOME
-          echo "NDK_PATH=$HOME/android-ndk-r27b" >> $GITHUB_ENV
-          # SDK commandlinetools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          unzip -q cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
-          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          ls -la cmdline-tools.zip || echo "Download failed!"
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
+          if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          else
+            echo "Unexpected directory structure after unzip:"
+            ls -la $ANDROID_HOME/cmdline-tools
+            exit 1
+          fi
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
+          if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            exit 1
+          fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
+          echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
-      - name: Accept Android SDK licenses and install tools
+      - name: Accept Android SDK licenses
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          echo "ANDROID_HOME is: $ANDROID_HOME"
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "bin directory missing!"
+          # Workaround for Java 17 JAXB issue
+          JAVA_OPTS="--add-modules java.xml.bind" yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential zip git xz-utils
+          sudo apt-get install -y build-essential cmake zip
 
       - name: Fetch Zygisk Headers and JSON Library
         run: |
@@ -74,26 +83,28 @@ jobs:
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
 
-      - name: Fetch Frida Gadget 16.7.0
+      - name: Fetch config.json
         run: |
-          mkdir -p frida
-          wget https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm64.so.xz -O frida-gadget-arm64.so.xz
-          wget https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm.so.xz -O frida-gadget-arm.so.xz
-          xz -d frida-gadget-arm64.so.xz
-          xz -d frida-gadget-arm.so.xz
-          mv frida-gadget-arm64.so frida/libfrida-gadget-arm64.so
-          mv frida-gadget-arm.so frida/libfrida-gadget-armv7-a.so
+          wget https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
+          ls -la config.json || echo "Failed to download config.json!"
 
       - name: Build Project (arm64-v8a)
         run: |
           mkdir -p build/arm64-v8a
-          ls -l $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/ || echo "NDK bin dir not found!"
           $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++ \
             -shared -fPIC -std=c++17 \
             -I${{ github.workspace }}/zygisk \
             -I${{ github.workspace }}/include/nlohmann \
             spoof_module.cpp -o build/arm64-v8a/libspoof.so \
             -llog
+
+      - name: Check arm64-v8a output
+        run: |
+          if [ ! -f "build/arm64-v8a/libspoof.so" ]; then
+            echo "Error: arm64-v8a library not built!"
+            ls -la build/arm64-v8a
+            exit 1
+          fi
 
       - name: Build Project (armeabi-v7a)
         run: |
@@ -105,28 +116,28 @@ jobs:
             spoof_module.cpp -o build/armeabi-v7a/libspoof.so \
             -llog
 
-      - name: Check build outputs
+      - name: Check armeabi-v7a output
         run: |
-          [ -f build/arm64-v8a/libspoof.so ] || { echo "Error: arm64-v8a library not built!"; ls -la build/arm64-v8a; exit 1; }
-          [ -f build/armeabi-v7a/libspoof.so ] || { echo "Error: armeabi-v7a library not built!"; ls -la build/armeabi-v7a; exit 1; }
+          if [ ! -f "build/armeabi-v7a/libspoof.so" ]; then
+            echo "Error: armeabi-v7a library not built!"
+            ls -la build/armeabi-v7a
+            exit 1
+          fi
 
       - name: Prepare module structure
         run: |
-          mkdir -p module/zygisk module/META-INF/com/google/android module/frida
+          mkdir -p module/zygisk module/META-INF/com/google/android
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
-          cp frida/libfrida-gadget-arm64.so module/frida/libcopg-arm64.so
-          cp frida/libfrida-gadget-armv7-a.so module/frida/libcopg-armv7-a.so
-          cp spoof.js module/spoof.js
-          chmod 755 module/zygisk/*.so module/frida/*.so module/spoof.js
-          echo '{"interaction":{"type":"script","path":"/data/adb/modules/COPG/spoof.js"}}' > module/frida/config.json
+          chmod 755 module/zygisk/arm64-v8a.so module/zygisk/armeabi-v7a.so
+          cp config.json module/config.json
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
           version=2.3
           versionCode=230
           author=AlirezaParsi
-          description=Spoof your device for games with Frida 16.7.0. Click Action button to update your config if needed.
+          description=Spoof your device for games. Click Action button to update your config if needed.
           support=https://t.me/theaosp
           updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/update.json
           minMagisk=20.4
@@ -174,7 +185,7 @@ jobs:
           }
           check_zygisk
           chmod +x "$MODPATH/action.sh"
-          ui_print "- COPG setup complete with Frida 16.7.0"
+          ui_print "- COPG setup complete"
           ui_print "- Click Action button to update your config if needed"
           EOF
           chmod 755 module/customize.sh
@@ -230,7 +241,9 @@ jobs:
           exit 0
           EOF
           chmod 755 module/META-INF/com/google/android/update-binary
-          echo "#MAGISK" > module/META-INF/com/google/android/updater-script
+          cat > module/META-INF/com/google/android/updater-script << 'EOF'
+          #MAGISK
+          EOF
 
       - name: Package module into ZIP
         run: |
@@ -252,7 +265,11 @@ jobs:
         run: |
           VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
           TAG="v$VERSION"
-          gh release create "$TAG" --title "Release $TAG" --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" --draft || gh release edit "$TAG" --draft
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
+            --draft \
+            || gh release edit "$TAG" --draft
           gh release upload "$TAG" ${{ env.ZIP_NAME }} --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
