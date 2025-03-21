@@ -92,9 +92,12 @@ jobs:
 
       - name: Build Dobby from Source
         run: |
-          git clone --branch dev https://github.com/jmpews/Dobby.git dobby
+          git clone https://github.com/jmpews/Dobby.git dobby
           cd dobby
           sed -i 's/import pipes/import shlex/' scripts/platform_builder.py
+          # Patch closure_bridge_arm64.asm for Android compatibility
+          sed -i 's/adrp x17, common_closure_bridge_handler@PAGE/ldr x17, =common_closure_bridge_handler/' source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
+          sed -i 's/add x17, x17, common_closure_bridge_handler@PAGEOFF//' source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
           chmod +x scripts/platform_builder.py
           python3 scripts/platform_builder.py \
             --platform=android \
