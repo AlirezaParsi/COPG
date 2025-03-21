@@ -49,7 +49,9 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           mkdir -p $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          ls -la cmdline-tools.zip || echo "Download failed!"
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
           if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
             mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
@@ -59,9 +61,14 @@ jobs:
             ls -la $ANDROID_HOME/cmdline-tools
             exit 1
           fi
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
+          if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            exit 1
+          fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0"
-          echo "NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
+          echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
         run: |
@@ -89,7 +96,6 @@ jobs:
           cd dobby
           sed -i 's/import pipes/import shlex/' scripts/platform_builder.py
           chmod +x scripts/platform_builder.py
-          # Build only arm64-v8a and armeabi-v7a to avoid x86 issues
           python3 scripts/platform_builder.py \
             --platform=android \
             --arch=arm64-v8a \
