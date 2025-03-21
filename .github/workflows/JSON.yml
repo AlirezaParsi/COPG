@@ -39,20 +39,26 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Set up Android SDK and NDK
         run: |
-          wget -q https://dl.google.com/android/repository/android-ndk-r27-linux.zip -O ndk.zip
-          unzip -q ndk.zip -d $HOME
-          echo "NDK_PATH=$HOME/android-ndk-r27" >> $GITHUB_ENV
-          wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O sdk.zip
-          unzip -q sdk.zip -d $HOME/android-sdk
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/tools/bin" >> $GITHUB_PATH
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget -v https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip || { echo "Download failed!"; exit 1; }
+          ls -la cmdline-tools.zip || { echo "cmdline-tools.zip missing!"; exit 1; }
+          unzip -q cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          ls -la $ANDROID_HOME/cmdline-tools || { echo "Unzip failed!"; exit 1; }
+          if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          else
+            echo "Unexpected directory structure:"
+            ls -la $ANDROID_HOME/cmdline-tools
+            exit 1
+          fi
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || { echo "latest/bin not found!"; exit 1; }
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Install build tools
         run: |
@@ -64,14 +70,14 @@ jobs:
           mkdir -p zygisk include/nlohmann
           wget -v https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh || { echo "Error: Failed to fetch zygisk.hh"; exit 1; }
           wget -v https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp || { echo "Error: Failed to fetch json.hpp"; exit 1; }
-          ls -l zygisk/zygisk.hh || { echo "Error: zygisk.hh missing after download!"; exit 1; }
-          ls -l include/nlohmann/json.hpp || { echo "Error: json.hpp missing after download!"; exit 1; }
+          ls -l zygisk/zygisk.hh || { echo "Error: zygisk.hh missing!"; exit 1; }
+          ls -l include/nlohmann/json.hpp || { echo "Error: json.hpp missing!"; exit 1; }
 
       - name: Fetch Frida Gadget 16.7.0
         run: |
           mkdir -p frida
-          wget https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm64.so.xz -O frida-gadget-arm64.so.xz
-          wget https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm.so.xz -O frida-gadget-arm.so.xz
+          wget -v https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm64.so.xz -O frida-gadget-arm64.so.xz || { echo "Error: Failed to fetch arm64 gadget"; exit 1; }
+          wget -v https://github.com/frida/frida/releases/download/16.7.0/frida-gadget-16.7.0-android-arm.so.xz -O frida-gadget-arm.so.xz || { echo "Error: Failed to fetch arm gadget"; exit 1; }
           xz -d frida-gadget-arm64.so.xz
           xz -d frida-gadget-arm.so.xz
           mv frida-gadget-arm64.so frida/libfrida-gadget-arm64.so
