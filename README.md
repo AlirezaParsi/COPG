@@ -78,4 +78,4 @@ COPG is a Zygisk module that spoofs device properties for specific Android games
         "SERIAL": "ZTE12345678",
         "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (REDMAGIC 9)\nHardware\t: Qualcomm Snapdragon 8 Gen 3\nSerial\t: ZTE12345678",
         "SERIAL_CONTENT": "ZTE12345678"
-    },
+    }
