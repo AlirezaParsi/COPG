@@ -44,9 +44,7 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           mkdir -p $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          ls -la cmdline-tools.zip || echo "Download failed!"
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-          ls -la $ANDROID_HOME/cmdline-tools || echo "Unzip failed!"
           if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
             mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
@@ -56,19 +54,12 @@ jobs:
             ls -la $ANDROID_HOME/cmdline-tools
             exit 1
           fi
-          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "latest/bin directory not found!"
-          if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-            echo "sdkmanager not found at $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-            exit 1
-          fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
           echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
         run: |
-          echo "ANDROID_HOME is: $ANDROID_HOME"
-          ls -la $ANDROID_HOME/cmdline-tools/latest/bin || echo "bin directory missing!"
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
       - name: Install build tools
@@ -76,16 +67,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake zip
 
-      - name: Fetch Zygisk Headers and JSON Library
+      - name: Fetch Zygisk Headers, JSON Library, and Dobby
         run: |
-          mkdir -p zygisk include/nlohmann
+          mkdir -p zygisk include/nlohmann dobby
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
+          # Fetch Dobby (prebuilt static library for arm64 and armeabi-v7a)
+          wget https://github.com/jmpews/Dobby/releases/download/v1.0-rc3/libdobby-arm64.a -O dobby/libdobby-arm64.a
+          wget https://github.com/jmpews/Dobby/releases/download/v1.0-rc3/libdobby-armv7-a.a -O dobby/libdobby-armv7-a.a
+          wget https://raw.githubusercontent.com/jmpews/Dobby/master/dobby.h -O dobby/dobby.h
 
       - name: Fetch config.json
         run: |
           wget https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
-          ls -la config.json || echo "Failed to download config.json!"
 
       - name: Build Project (arm64-v8a)
         uses: threeal/cmake-action@v2.1.0
@@ -96,6 +90,7 @@ jobs:
             -DANDROID_ABI=arm64-v8a
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+            -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-arm64.a
 
       - name: Check arm64-v8a output
         run: |
@@ -114,6 +109,7 @@ jobs:
             -DANDROID_ABI=armeabi-v7a
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
+            -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-armv7-a.a
 
       - name: Check armeabi-v7a output
         run: |
