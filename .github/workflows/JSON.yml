@@ -69,6 +69,9 @@ jobs:
           mkdir -p zygisk include/nlohmann
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
+          # Verify files exist
+          ls -l zygisk/zygisk.hh || { echo "Error: zygisk.hh not downloaded!"; exit 1; }
+          ls -l include/nlohmann/json.hpp || { echo "Error: json.hpp not downloaded!"; exit 1; }
 
       - name: Fetch Frida Gadget 16.7.0
         run: |
