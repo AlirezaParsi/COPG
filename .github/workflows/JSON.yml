@@ -60,7 +60,6 @@ jobs:
             exit 1
           fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          # Use NDK r25b as per Dobby's Builder
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0"
           echo "NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
@@ -72,10 +71,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential zip git
-          # Install CMake 3.25.2 as per Dobby's Builder
+          # Create target directory explicitly
+          mkdir -p $HOME/opt/cmake-3.25.2
           wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
           chmod +x cmake.sh
-          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license
+          echo "Extracting CMake to $HOME/opt/cmake-3.25.2..."
+          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license || {
+            echo "CMake extraction failed! Directory contents:"
+            ls -la $HOME/opt/cmake-3.25.2
+            exit 1
+          }
+          echo "CMake installation completed. Verifying:"
+          $HOME/opt/cmake-3.25.2/bin/cmake --version
           echo "$HOME/opt/cmake-3.25.2/bin" >> $GITHUB_PATH
 
       - name: Fetch Zygisk Headers and JSON Library
@@ -88,16 +95,13 @@ jobs:
         run: |
           git clone https://github.com/jmpews/Dobby.git dobby
           cd dobby
-          # Fetch platform_builder.py and related scripts
           cp scripts/platform_builder.py .
           cp -r builtin-plugin tools source external include scripts/
-          # Build for Android (arm64-v8a and armeabi-v7a)
           python3 platform_builder.py \
             --platform=android \
             --arch=all \
             --cmake_dir=$HOME/opt/cmake-3.25.2 \
             --android_ndk_dir=$NDK_PATH
-          # Copy built libraries
           mkdir -p ../dobby
           cp build/android/arm64-v8a/libdobby.a ../dobby/libdobby-arm64.a
           cp build/android/armeabi-v7a/libdobby.a ../dobby/libdobby-armv7-a.a
@@ -157,8 +161,8 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2.5
-          versionCode=250
+          version=2.3
+          versionCode=230
           author=AlirezaParsi
           description=Spoof your device for games. Run 'sh $MODPATH/action.sh' to update config.json from GitHub.
           support=https://t.me/theaosp
@@ -218,7 +222,7 @@ jobs:
           CONFIG_URL="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json"
           CONFIG_PATH="$MODDIR/config.json"
           log() {
-            echo "🌟 [COPG] $1"
+            echo "🌟 [SpoofModule] $1"
           }
           if command -v curl >/dev/null 2>&1; then
             DOWNLOADER="curl -s -o"
@@ -258,3 +262,53 @@ jobs:
           ZIPFILE=$3
           [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
           . /data/adb/magisk/util_functions.sh
+          [ $MAGISK_VER_CODE -lt 20400 ] && require_new_magisk
+          install_module
+          exit 0
+          EOF
+          chmod 755 module/META-INF/com/google/android/update-binary
+          cat > module/META-INF/com/google/android/updater-script << 'EOF'
+          #MAGISK
+          EOF
+          cp config.json module/config.json
+
+      - name: Package module into ZIP
+        run: |
+          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
+          ZIP_NAME="COPG-v$VERSION.zip"
+          cd module
+          zip -r "../$ZIP_NAME" .
+          cd ..
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload Module ZIP as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: COPG
+          path: ${{ env.ZIP_NAME }}
+
+      - name: Upload ZIP to GitHub Release
+        if: github.event.inputs.upload_to_release == 'true'
+        run: |
+          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
+          TAG="v$VERSION"
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
+            --draft \
+            || gh release edit "$TAG" --draft
+          gh release upload "$TAG" ${{ env.ZIP_NAME }} --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to Telegram
+        if: github.event.inputs.upload_to_telegram == 'true'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          document: ${{ env.ZIP_NAME }}
+          message: |
+            New COPG Spoof Module Build
+            Version: ${{ env.VERSION }}
+            Built on: ${{ github.run_id }} @ ${{ github.sha }}
