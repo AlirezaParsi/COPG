@@ -27,31 +27,13 @@ struct DeviceInfo {
     std::string serial_content;
 };
 
-// Static function pointers for hooks
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
 static orig_read_t orig_read = nullptr;
-typedef void (*orig_set_static_object_field_t)(JNIEnv*, jclass, jfieldID, jobject);
-static orig_set_static_object_field_t orig_set_static_object_field = nullptr;
-typedef jobject (*orig_get_static_object_field_t)(JNIEnv*, jclass, jfieldID);
-static orig_get_static_object_field_t orig_get_static_object_field = nullptr;
-
-// Static global variables
+typedef void (*orig_set_field_t)(JNIEnv*, jobject, jobject, jvalue);
+static orig_set_field_t orig_set_field = nullptr; // For reflection hook
 static DeviceInfo current_info;
-static jclass buildClass = nullptr;
-static jclass versionClass = nullptr;
-static jfieldID modelField = nullptr;
-static jfieldID brandField = nullptr;
-static jfieldID deviceField = nullptr;
-static jfieldID manufacturerField = nullptr;
-static jfieldID fingerprintField = nullptr;
-static jfieldID buildIdField = nullptr;
-static jfieldID displayField = nullptr;
-static jfieldID productField = nullptr;
-static jfieldID versionReleaseField = nullptr;
-static jfieldID sdkIntField = nullptr;
-static jfieldID serialField = nullptr;
 
 class SpoofModule : public zygisk::ModuleBase {
 public:
@@ -59,39 +41,38 @@ public:
         this->api = api;
         this->env = env;
 
-        // Initialize static fields once
-        if (!buildClass) {
-            buildClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build"));
-            if (buildClass) {
-                modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
-                brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
-                deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
-                manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
-                fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
-                buildIdField = env->GetStaticFieldID(buildClass, "ID", "Ljava/lang/String;");
-                displayField = env->GetStaticFieldID(buildClass, "DISPLAY", "Ljava/lang/String;");
-                productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
-                serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
-            }
-        }
-        if (!versionClass) {
-            versionClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build$VERSION"));
+        // Initialize Build class
+        buildClass = env->FindClass("android/os/Build");
+        if (buildClass) {
+            modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
+            brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
+            deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
+            manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
+            fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
+            buildIdField = env->GetStaticFieldID(buildClass, "ID", "Ljava/lang/String;");
+            displayField = env->GetStaticFieldID(buildClass, "DISPLAY", "Ljava/lang/String;");
+            productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
+            versionClass = env->FindClass("android/os/Build$VERSION");
             if (versionClass) {
                 versionReleaseField = env->GetStaticFieldID(versionClass, "RELEASE", "Ljava/lang/String;");
                 sdkIntField = env->GetStaticFieldID(versionClass, "SDK_INT", "I");
             }
+            serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
         }
 
-        void* handle = dlopen("libandroid_runtime.so", RTLD_LAZY);
+        // Hook native functions
+        void* handle = dlopen("libc.so", RTLD_LAZY);
         if (handle) {
-            orig_set_static_object_field = (orig_set_static_object_field_t)dlsym(handle, "Java_java_lang_reflect_Field_set");
-            if (!orig_set_static_object_field) orig_set_static_object_field = env->functions->SetStaticObjectField;
-            orig_get_static_object_field = (orig_get_static_object_field_t)dlsym(handle, "Java_java_lang_reflect_Field_get");
-            if (!orig_get_static_object_field) orig_get_static_object_field = env->functions->GetStaticObjectField;
             orig_prop_get = (orig_prop_get_t)dlsym(handle, "__system_property_get");
             orig_read = (orig_read_t)dlsym(handle, "read");
             dlclose(handle);
         }
+
+        // Hook JNI reflection (Field.set)
+        hookReflection();
+
+        // Hook JNI GetStaticObjectField (via JNI function table, simplified)
+        hookJNINativeCalls();
 
         loadConfig();
     }
@@ -115,8 +96,6 @@ public:
             spoofSystemProperties(current_info);
             hookNativeGetprop();
             hookNativeRead();
-            hookSetStaticObjectField();
-            hookGetStaticObjectField();
         }
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
@@ -132,8 +111,6 @@ public:
             spoofSystemProperties(current_info);
             hookNativeGetprop();
             hookNativeRead();
-            hookSetStaticObjectField();
-            hookGetStaticObjectField();
         }
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
@@ -142,6 +119,11 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
+    jclass buildClass = nullptr, versionClass = nullptr;
+    jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, 
+             manufacturerField = nullptr, fingerprintField = nullptr, 
+             buildIdField = nullptr, displayField = nullptr, productField = nullptr, 
+             versionReleaseField = nullptr, sdkIntField = nullptr, serialField = nullptr;
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -202,101 +184,91 @@ private:
         if (!info.fingerprint.empty()) __system_property_set("ro.build.fingerprint", info.fingerprint.c_str());
     }
 
-    static void hooked_set_static_object_field(JNIEnv* env, jclass clazz, jfieldID field, jobject value) {
-        if (!orig_set_static_object_field) return;
+    // Reflection Hook
+    static void hooked_set_field(JNIEnv* env, jobject field_obj, jobject obj, jvalue value) {
+        jclass fieldClass = env->FindClass("java/lang/reflect/Field");
+        jmethodID getDeclaringClass = env->GetMethodID(fieldClass, "getDeclaringClass", "()Ljava/lang/Class;");
+        jclass declaringClass = (jclass)env->CallObjectMethod(field_obj, getDeclaringClass);
 
-        // Check if the class being modified is Build or Build.VERSION
-        if (env->IsSameObject(clazz, buildClass) || env->IsSameObject(clazz, versionClass)) {
-            // Override attempts to set Build fields with spoofed values
-            if (field == modelField && !current_info.model.empty()) {
-                env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(current_info.model.c_str()));
-            } else if (field == brandField && !current_info.brand.empty()) {
-                env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(current_info.brand.c_str()));
-            } else if (field == deviceField && !current_info.device.empty()) {
-                env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(current_info.device.c_str()));
-            } else if (field == manufacturerField && !current_info.manufacturer.empty()) {
-                env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(current_info.manufacturer.c_str()));
-            } else if (field == fingerprintField && !current_info.fingerprint.empty()) {
-                env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(current_info.fingerprint.c_str()));
-            } else if (field == buildIdField && !current_info.build_id.empty()) {
-                env->SetStaticObjectField(buildClass, buildIdField, env->NewStringUTF(current_info.build_id.c_str()));
-            } else if (field == displayField && !current_info.display.empty()) {
-                env->SetStaticObjectField(buildClass, displayField, env->NewStringUTF(current_info.display.c_str()));
-            } else if (field == productField && !current_info.product.empty()) {
-                env->SetStaticObjectField(buildClass, productField, env->NewStringUTF(current_info.product.c_str()));
-            } else if (field == versionReleaseField && !current_info.version_release.empty()) {
-                env->SetStaticObjectField(versionClass, versionReleaseField, env->NewStringUTF(current_info.version_release.c_str()));
-            } else if (field == serialField && !current_info.serial.empty()) {
-                env->SetStaticObjectField(buildClass, serialField, env->NewStringUTF(current_info.serial.c_str()));
-            } else {
-                orig_set_static_object_field(env, clazz, field, value); // Allow non-spoofed fields
-            }
-        } else {
-            orig_set_static_object_field(env, clazz, field, value); // Non-Build class
+        // Check if the field belongs to android.os.Build or its VERSION subclass
+        if (env->IsSameObject(declaringClass, buildClass) || env->IsSameObject(declaringClass, versionClass)) {
+            // Block the set operation by returning early (or set to spoofed value)
+            jmethodID getName = env->GetMethodID(fieldClass, "getName", "()Ljava/lang/String;");
+            jstring fieldName = (jstring)env->CallObjectMethod(field_obj, getName);
+            const char* name = env->GetStringUTFChars(fieldName, nullptr);
+
+            // Re-apply spoofed value instead of allowing reset
+            if (strcmp(name, "MODEL") == 0) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(current_info.model.c_str()));
+            else if (strcmp(name, "BRAND") == 0) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(current_info.brand.c_str()));
+            else if (strcmp(name, "DEVICE") == 0) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(current_info.device.c_str()));
+            else if (strcmp(name, "MANUFACTURER") == 0) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(current_info.manufacturer.c_str()));
+            else if (strcmp(name, "FINGERPRINT") == 0) env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(current_info.fingerprint.c_str()));
+            else if (strcmp(name, "ID") == 0 && !current_info.build_id.empty()) env->SetStaticObjectField(buildClass, buildIdField, env->NewStringUTF(current_info.build_id.c_str()));
+            else if (strcmp(name, "DISPLAY") == 0 && !current_info.display.empty()) env->SetStaticObjectField(buildClass, displayField, env->NewStringUTF(current_info.display.c_str()));
+            else if (strcmp(name, "PRODUCT") == 0 && !current_info.product.empty()) env->SetStaticObjectField(buildClass, productField, env->NewStringUTF(current_info.product.c_str()));
+            else if (strcmp(name, "RELEASE") == 0 && !current_info.version_release.empty()) env->SetStaticObjectField(versionClass, versionReleaseField, env->NewStringUTF(current_info.version_release.c_str()));
+            else if (strcmp(name, "SERIAL") == 0 && !current_info.serial.empty()) env->SetStaticObjectField(buildClass, serialField, env->NewStringUTF(current_info.serial.c_str()));
+
+            env->ReleaseStringUTFChars(fieldName, name);
+            return; // Block the original set
         }
+
+        if (orig_set_field) orig_set_field(env, field_obj, obj, value); // Allow non-Build sets
     }
 
-    void hookSetStaticObjectField() {
-        if (!orig_set_static_object_field) return;
-        void* handle = dlopen("libandroid_runtime.so", RTLD_LAZY);
-        if (handle) {
-            void* sym = dlsym(handle, "Java_java_lang_reflect_Field_set");
-            if (!sym) sym = (void*)env->functions->SetStaticObjectField;
-            if (sym) {
-                size_t page_size = sysconf(_SC_PAGE_SIZE);
-                void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
-                if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
-                    env->functions->SetStaticObjectField = hooked_set_static_object_field;
-                    mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+    void hookReflection() {
+        jclass fieldClass = env->FindClass("java/lang/reflect/Field");
+        if (!fieldClass) return;
+
+        JNINativeMethod methods[] = {
+            {"set", "(Ljava/lang/Object;Ljava/lang/Object;)V", (void*)hooked_set_field}
+        };
+        if (env->RegisterNatives(fieldClass, methods, 1) < 0) {
+            // Fallback: manual hooking if RegisterNatives fails
+            void* handle = dlopen(nullptr, RTLD_LAZY);
+            if (handle) {
+                orig_set_field = (orig_set_field_t)dlsym(handle, "Java_java_lang_reflect_Field_set");
+                if (orig_set_field) {
+                    size_t page_size = sysconf(_SC_PAGE_SIZE);
+                    void* page_start = (void*)((uintptr_t)orig_set_field & ~(page_size - 1));
+                    if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+                        *(void**)&orig_set_field = (void*)hooked_set_field;
+                        mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+                    }
                 }
+                dlclose(handle);
             }
-            dlclose(handle);
         }
     }
 
-    static jobject hooked_get_static_object_field(JNIEnv* env, jclass clazz, jfieldID field) {
-        if (!orig_get_static_object_field) return nullptr;
-        if (env->IsSameObject(clazz, buildClass) || env->IsSameObject(clazz, versionClass)) {
-            if (field == modelField && !current_info.model.empty()) {
-                return env->NewStringUTF(current_info.model.c_str());
-            } else if (field == brandField && !current_info.brand.empty()) {
-                return env->NewStringUTF(current_info.brand.c_str());
-            } else if (field == deviceField && !current_info.device.empty()) {
-                return env->NewStringUTF(current_info.device.c_str());
-            } else if (field == manufacturerField && !current_info.manufacturer.empty()) {
-                return env->NewStringUTF(current_info.manufacturer.c_str());
-            } else if (field == fingerprintField && !current_info.fingerprint.empty()) {
-                return env->NewStringUTF(current_info.fingerprint.c_str());
-            } else if (field == buildIdField && !current_info.build_id.empty()) {
-                return env->NewStringUTF(current_info.build_id.c_str());
-            } else if (field == displayField && !current_info.display.empty()) {
-                return env->NewStringUTF(current_info.display.c_str());
-            } else if (field == productField && !current_info.product.empty()) {
-                return env->NewStringUTF(current_info.product.c_str());
-            } else if (field == versionReleaseField && !current_info.version_release.empty()) {
+    // JNI/Native Hook (Simplified GetStaticObjectField override)
+    static jobject hooked_get_static_object_field(JNIEnv* env, jclass clazz, jfieldID fieldID) {
+        if (env->IsSameObject(clazz, buildClass)) {
+            if (fieldID == modelField) return env->NewStringUTF(current_info.model.c_str());
+            if (fieldID == brandField) return env->NewStringUTF(current_info.brand.c_str());
+            if (fieldID == deviceField) return env->NewStringUTF(current_info.device.c_str());
+            if (fieldID == manufacturerField) return env->NewStringUTF(current_info.manufacturer.c_str());
+            if (fieldID == fingerprintField) return env->NewStringUTF(current_info.fingerprint.c_str());
+            if (fieldID == buildIdField && !current_info.build_id.empty()) return env->NewStringUTF(current_info.build_id.c_str());
+            if (fieldID == displayField && !current_info.display.empty()) return env->NewStringUTF(current_info.display.c_str());
+            if (fieldID == productField && !current_info.product.empty()) return env->NewStringUTF(current_info.product.c_str());
+            if (fieldID == serialField && !current_info.serial.empty()) return env->NewStringUTF(current_info.serial.c_str());
+        } else if (env->IsSameObject(clazz, versionClass)) {
+            if (fieldID == versionReleaseField && !current_info.version_release.empty()) 
                 return env->NewStringUTF(current_info.version_release.c_str());
-            } else if (field == serialField && !current_info.serial.empty()) {
-                return env->NewStringUTF(current_info.serial.c_str());
-            }
         }
-        return orig_get_static_object_field(env, clazz, field);
+        return env->GetStaticObjectField(clazz, fieldID); // Call original if not spoofed
     }
 
-    void hookGetStaticObjectField() {
-        if (!orig_get_static_object_field) return;
-        void* handle = dlopen("libandroid_runtime.so", RTLD_LAZY);
-        if (handle) {
-            void* sym = dlsym(handle, "Java_java_lang_reflect_Field_get");
-            if (!sym) sym = (void*)env->functions->GetStaticObjectField;
-            if (sym) {
-                size_t page_size = sysconf(_SC_PAGE_SIZE);
-                void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
-                if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
-                    env->functions->GetStaticObjectField = hooked_get_static_object_field;
-                    mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
-                }
-            }
-            dlclose(handle);
+    void hookJNINativeCalls() {
+        // Override GetStaticObjectField in the JNIEnv function table
+        JNIEnv* localEnv = env;
+        void* orig_func = (void*)localEnv->functions->GetStaticObjectField;
+        size_t page_size = sysconf(_SC_PAGE_SIZE);
+        void* page_start = (void*)((uintptr_t)orig_func & ~(page_size - 1));
+        if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+            localEnv->functions->GetStaticObjectField = hooked_get_static_object_field;
+            mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
         }
     }
 
