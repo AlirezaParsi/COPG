@@ -134,16 +134,92 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2.2
-          versionCode=220
+          version=2.5
+          versionCode=250
           author=AlirezaParsi
-          description=Spoof your device for games
+          description=Spoof your device for games. Run 'sh $MODPATH/action.sh' to update config.json from GitHub.
           support=https://t.me/theaosp
           updateJson=https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/update.json
           minMagisk=20.4
           EOF
+          cat > module/customize.sh << 'EOF'
+          #!/system/bin/sh
+          if ! $BOOTMODE; then
+            ui_print "*********************************************************"
+            ui_print "! Install from recovery is NOT supported"
+            ui_print "! Please install from Magisk, KernelSU, or APatch app"
+            abort "*********************************************************"
+          fi
+          if [ "$API" -lt 26 ]; then
+            abort "! This module requires Android 8.0 or higher"
+          fi
+          check_zygisk() {
+            ZYGISK_MODULE="/data/adb/modules/ZygiskNext"
+            MAGISK_DIR="/data/adb/magisk"
+            ZYGISK_MSG="Zygisk is not enabled. Please either:
+            - Enable Zygisk in Magisk settings and reboot
+            - Install ZygiskNext module for KernelSU and reboot"
+            if [ -d "/data/adb/ksu" ]; then
+              if ! [ -d "$ZYGISK_MODULE" ]; then
+                ui_print "*********************************************************"
+                ui_print "! $ZYGISK_MSG"
+                abort "*********************************************************"
+              else
+                ui_print "- ZygiskNext detected for KernelSU"
+              fi
+            elif [ -d "$MAGISK_DIR" ]; then
+              ZYGISK_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='zygisk';" 2>/dev/null)
+              if [ "$ZYGISK_STATUS" = "value=0" ] || [ -z "$ZYGISK_STATUS" ]; then
+                ui_print "*********************************************************"
+                ui_print "! $ZYGISK_MSG"
+                abort "*********************************************************"
+              else
+                ui_print "- Zygisk enabled in Magisk"
+              fi
+            else
+              ui_print "*********************************************************"
+              ui_print "! No supported root solution detected!"
+              ui_print "! This module requires Magisk with Zygisk or KernelSU with ZygiskNext"
+              abort "*********************************************************"
+            fi
+          }
+          check_zygisk
+          chmod +x "$MODPATH/action.sh"
+          ui_print "- SpoofModule setup complete"
+          ui_print "- Run 'sh $MODPATH/action.sh' to download config.json"
+          EOF
+          chmod 755 module/customize.sh
+          cat > module/action.sh << 'EOF'
+          #!/system/bin/sh
+          MODDIR="/data/adb/modules/COPG"
+          CONFIG_URL="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json"
+          CONFIG_PATH="$MODDIR/config.json"
+          log() {
+            echo "🌟 [COPG] $1"
+          }
+          if command -v curl >/dev/null 2>&1; then
+            DOWNLOADER="curl -s -o"
+          elif command -v wget >/dev/null 2>&1; then
+            DOWNLOADER="wget -q -O"
+          else
+            log "❌ Error: curl or wget not found. Please install one to download config."
+            exit 1
+          fi
+          log "⬇️ Downloading config.json from GitHub..."
+          $DOWNLOADER "$CONFIG_PATH" "$CONFIG_URL"
+          if [ $? -eq 0 ]; then
+            log "✅ Config downloaded successfully!"
+            log "📍 Saved to: $CONFIG_PATH"
+            chmod 644 "$CONFIG_PATH"
+          else
+            log "❌ Failed to download config.json. Check your internet or URL."
+            exit 1
+          fi
+          log "✨ SpoofModule config update complete!"
+          EOF
+          chmod 755 module/action.sh
           cat > module/uninstall.sh << 'EOF'
-          rm -rf /data/adb/modules/SpoofDeviceModule
+          rm -rf /data/adb/modules/COPG
           EOF
           chmod 755 module/uninstall.sh
           cat > module/META-INF/com/google/android/update-binary << 'EOF'
