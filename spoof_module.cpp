@@ -14,6 +14,7 @@ struct DeviceInfo {
     std::string device;
     std::string manufacturer;
     std::string model;
+    std::string fingerprint; // Re-added to match your config
 };
 
 // Function pointer for original getprop
@@ -32,6 +33,7 @@ public:
             brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
             deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
             manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
+            fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;"); // Added
         }
 
         // Hook native getprop function
@@ -58,10 +60,10 @@ public:
         if (it == package_map.end()) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         } else {
-            // Apply spoofing early for initial process consistency
             current_info = it->second;
             spoofDevice(current_info.brand.c_str(), current_info.device.c_str(), 
-                       current_info.manufacturer.c_str(), current_info.model.c_str());
+                       current_info.manufacturer.c_str(), current_info.model.c_str(), 
+                       current_info.fingerprint.c_str());
             spoofSystemProperties(current_info);
             hookNativeGetprop();
         }
@@ -74,10 +76,10 @@ public:
         if (!package_name) return;
         auto it = package_map.find(package_name);
         if (it != package_map.end()) {
-            // Re-apply spoofing for child processes or late initialization
             current_info = it->second;
             spoofDevice(current_info.brand.c_str(), current_info.device.c_str(), 
-                       current_info.manufacturer.c_str(), current_info.model.c_str());
+                       current_info.manufacturer.c_str(), current_info.model.c_str(), 
+                       current_info.fingerprint.c_str());
             spoofSystemProperties(current_info);
             hookNativeGetprop();
         }
@@ -89,7 +91,8 @@ private:
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
     jclass buildClass = nullptr;
-    jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, manufacturerField = nullptr;
+    jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, 
+             manufacturerField = nullptr, fingerprintField = nullptr; // Added fingerprintField
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -106,7 +109,8 @@ private:
                     device["BRAND"].get<std::string>(),
                     device["DEVICE"].get<std::string>(),
                     device["MANUFACTURER"].get<std::string>(),
-                    device["MODEL"].get<std::string>()
+                    device["MODEL"].get<std::string>(),
+                    device.value("FINGERPRINT", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys") // Added with fallback
                 };
                 for (const auto& pkg : packages) package_map[pkg] = info;
             }
@@ -114,11 +118,13 @@ private:
         file.close();
     }
 
-    void spoofDevice(const char* brand, const char* device, const char* manufacturer, const char* model) {
+    void spoofDevice(const char* brand, const char* device, const char* manufacturer, 
+                    const char* model, const char* fingerprint) {
         if (modelField) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(model));
         if (brandField) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(brand));
         if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(device));
         if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(manufacturer));
+        if (fingerprintField) env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(fingerprint)); // Added
     }
 
     void spoofSystemProperties(const DeviceInfo& info) {
@@ -126,6 +132,7 @@ private:
         if (!info.device.empty()) __system_property_set("ro.product.device", info.device.c_str());
         if (!info.manufacturer.empty()) __system_property_set("ro.product.manufacturer", info.manufacturer.c_str());
         if (!info.model.empty()) __system_property_set("ro.product.model", info.model.c_str());
+        if (!info.fingerprint.empty()) __system_property_set("ro.build.fingerprint", info.fingerprint.c_str()); // Added
     }
 
     static int hooked_prop_get(const char* name, char* value, const char* default_value) {
@@ -142,6 +149,9 @@ private:
         } else if (std::string(name) == "ro.product.model" && !current_info.model.empty()) {
             strncpy(value, current_info.model.c_str(), PROP_VALUE_MAX);
             return current_info.model.length();
+        } else if (std::string(name) == "ro.build.fingerprint" && !current_info.fingerprint.empty()) { // Added
+            strncpy(value, current_info.fingerprint.c_str(), PROP_VALUE_MAX);
+            return current_info.fingerprint.length();
         }
         return orig_prop_get(name, value, default_value);
     }
