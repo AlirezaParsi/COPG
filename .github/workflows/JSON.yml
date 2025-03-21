@@ -48,46 +48,58 @@ jobs:
         run: |
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           mkdir -p $ANDROID_HOME/cmdline-tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          unzip -q cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest || mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest || { echo "Unexpected dir structure:"; ls -la $ANDROID_HOME/cmdline-tools; exit 1; }
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
+            mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
+          else
+            echo "Unexpected directory structure after unzip:"
+            ls -la $ANDROID_HOME/cmdline-tools
+            exit 1
+          fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
+          sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0"
           echo "NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME || echo "License acceptance failed!"
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
       - name: Install build tools and CMake
         run: |
-          sudo apt-get update -qq
+          sudo apt-get update
           sudo apt-get install -y build-essential zip git
           mkdir -p $HOME/opt/cmake-3.25.2
-          wget -q https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
+          wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
           chmod +x cmake.sh
-          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license || { echo "CMake extraction failed:"; ls -la $HOME/opt/cmake-3.25.2; exit 1; }
-          $HOME/opt/cmake-3.25.2/bin/cmake --version
+          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license
           echo "$HOME/opt/cmake-3.25.2/bin" >> $GITHUB_PATH
 
       - name: Fetch Zygisk Headers and JSON Library
         run: |
           mkdir -p zygisk include/nlohmann
-          wget -q https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
-          wget -q https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
+          wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
+          wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
 
       - name: Build Dobby from Source
         run: |
-          git clone -q --branch dev https://github.com/jmpews/Dobby.git dobby
+          git clone https://github.com/jmpews/Dobby.git dobby
           cd dobby
           sed -i 's/import pipes/import shlex/' scripts/platform_builder.py
           chmod +x scripts/platform_builder.py
-          for arch in arm64-v8a armeabi-v7a; do
-            python3 scripts/platform_builder.py \
-              --platform=android \
-              --arch=$arch \
-              --cmake_dir=$HOME/opt/cmake-3.25.2 \
-              --android_ndk_dir=$NDK_PATH
-          done
+          # Build only arm64-v8a and armeabi-v7a to avoid x86 issues
+          python3 scripts/platform_builder.py \
+            --platform=android \
+            --arch=arm64-v8a \
+            --cmake_dir=$HOME/opt/cmake-3.25.2 \
+            --android_ndk_dir=$NDK_PATH
+          python3 scripts/platform_builder.py \
+            --platform=android \
+            --arch=armeabi-v7a \
+            --cmake_dir=$HOME/opt/cmake-3.25.2 \
+            --android_ndk_dir=$NDK_PATH
           mkdir -p ../dobby
           cp build/android/arm64-v8a/libdobby.a ../dobby/libdobby-arm64.a
           cp build/android/armeabi-v7a/libdobby.a ../dobby/libdobby-armv7-a.a
@@ -95,7 +107,7 @@ jobs:
           cd ..
 
       - name: Fetch config.json
-        run: wget -q https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
+        run: wget https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
 
       - name: Build Project (arm64-v8a)
         uses: threeal/cmake-action@v2.1.0
