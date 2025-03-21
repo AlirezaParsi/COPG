@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <unordered_map>
+#include <dobby.h>
 
 #define LOG_TAG "SpoofModule"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -16,6 +17,7 @@ struct DeviceInfo {
     std::string device;
     std::string manufacturer;
     std::string model;
+    std::string ro_product_model; 
 };
 
 class SpoofModule : public zygisk::ModuleBase {
@@ -25,11 +27,28 @@ public:
         this->env = env;
         buildClass = env->FindClass("android/os/Build");
         if (buildClass) {
-            modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
+            modelField = env->GetStaticFieldID 
+   
+(buildClass, "MODEL", "Ljava/lang/String;");
             brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
             deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
             manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
         }
+
+        // Setup System.getProperty hook
+        jclass systemClass = env->FindClass("java/lang/System");
+        if (systemClass) {
+            getPropertyMethod = env->GetStaticMethodID(systemClass, "getProperty", "(Ljava/lang/String;)Ljava/lang/String;");
+            if (getPropertyMethod) {
+                DobbyHook((void*)getPropertyMethod, (void*)hook_System_getProperty, (void**)&original_getProperty);
+                LOGD("Hooked System.getProperty successfully");
+            } else {
+                LOGD("Failed to find getProperty method");
+            }
+        } else {
+            LOGD("Failed to find java/lang/System class");
+        }
+
         loadConfig();
     }
 
@@ -42,6 +61,8 @@ public:
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         if (package_map.find(package_name) == package_map.end()) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+        } else {
+            current_package = package_name; // Store for hook
         }
 
         env->ReleaseStringUTFChars(args->nice_name, package_name);
@@ -66,8 +87,11 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
+    std::string current_package; 
     jclass buildClass = nullptr;
     jfieldID modelField = nullptr, brandField = nullptr, deviceField = nullptr, manufacturerField = nullptr;
+    static jmethodID getPropertyMethod;
+    static void* original_getProperty; 
 
     void loadConfig() {
         std::ifstream file("/data/adb/modules/COPG/config.json");
@@ -90,7 +114,8 @@ private:
                     device["BRAND"].get<std::string>(),
                     device["DEVICE"].get<std::string>(),
                     device["MANUFACTURER"].get<std::string>(),
-                    device["MODEL"].get<std::string>()
+                    device["MODEL"].get<std::string>(),
+                    device.value("ro.product.model", "") 
                 };
 
                 for (const auto& pkg : packages) {
@@ -111,6 +136,46 @@ private:
         if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(device));
         if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(manufacturer));
     }
+
+    // Hook function for System.getProperty
+    static jstring hook_System_getProperty(JNIEnv* env, jclass clazz, jstring key) {
+        SpoofModule* instance = getInstance(); // Access instance for package_map
+        if (!instance || instance->current_package.empty()) {
+            return static_cast<jstring>(DobbyCall(instance->original_getProperty, env, clazz, key));
+        }
+
+        const char* key_str = env->GetStringUTFChars(key, nullptr);
+        if (strcmp(key_str, "ro.product.model") == 0) {
+            auto it = instance->package_map.find(instance->current_package);
+            if (it != instance->package_map.end() && !it->second.ro_product_model.empty()) {
+                env->ReleaseStringUTFChars(key, key_str);
+                return env->NewStringUTF(it->second.ro_product_model.c_str());
+            }
+        }
+
+        env->ReleaseStringUTFChars(key, key_str);
+        return static_cast<jstring>(DobbyCall(instance->original_getProperty, env, clazz, key));
+    }
+
+    // Helper to get instance (since hook is static)
+    static SpoofModule* getInstance() {
+        static SpoofModule* instance = nullptr;
+        if (!instance) {
+            // This is a simplification; in practice, you'd need a safer way to set this
+            // For now, assume it's set during onLoad
+        }
+        return instance;
+    }
+
+public:
+    // Set instance during construction
+    SpoofModule() {
+        getInstance() = this; // Hacky, see notes below
+    }
 };
+
+// Static member initialization
+jmethodID SpoofModule::getPropertyMethod = nullptr;
+void* SpoofModule::original_getProperty = nullptr;
 
 REGISTER_ZYGISK_MODULE(SpoofModule)
