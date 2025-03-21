@@ -48,252 +48,79 @@ jobs:
         run: |
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           mkdir -p $ANDROID_HOME/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-          if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
-            mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          elif [ -d "$ANDROID_HOME/cmdline-tools/tools" ]; then
-            mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest
-          else
-            echo "Unexpected directory structure after unzip:"
-            ls -la $ANDROID_HOME/cmdline-tools
-            exit 1
-          fi
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest || mv $ANDROID_HOME/cmdline-tools/tools $ANDROID_HOME/cmdline-tools/latest || { echo "Unexpected dir structure:"; ls -la $ANDROID_HOME/cmdline-tools; exit 1; }
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
           echo "NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
+        run: yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME || echo "License acceptance failed!"
 
       - name: Install build tools and CMake
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install -y build-essential zip git
           mkdir -p $HOME/opt/cmake-3.25.2
-          wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
+          wget -q https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
           chmod +x cmake.sh
-          echo "Extracting CMake to $HOME/opt/cmake-3.25.2..."
-          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license || {
-            echo "CMake extraction failed! Directory contents:"
-            ls -la $HOME/opt/cmake-3.25.2
-            exit 1
-          }
-          echo "CMake installation completed. Verifying:"
+          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license || { echo "CMake extraction failed:"; ls -la $HOME/opt/cmake-3.25.2; exit 1; }
           $HOME/opt/cmake-3.25.2/bin/cmake --version
           echo "$HOME/opt/cmake-3.25.2/bin" >> $GITHUB_PATH
 
       - name: Fetch Zygisk Headers and JSON Library
         run: |
           mkdir -p zygisk include/nlohmann
-          wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
-          wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
+          wget -q https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
+          wget -q https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
 
       - name: Build Dobby from Source
         run: |
-          git clone https://github.com/jmpews/Dobby.git dobby
+          git clone -q https://github.com/jmpews/Dobby.git dobby
           cd dobby
-          # Overwrite platform_builder.py with fixed version
-          echo "$PLATFORM_BUILDER_PY" > scripts/platform_builder.py
+          sed -i 's/import pipes/import shlex/' scripts/platform_builder.py
           chmod +x scripts/platform_builder.py
-          ls -la  # Debug: Show repo contents
-          python3 scripts/platform_builder.py \
-            --platform=android \
-            --arch=all \
-            --cmake_dir=$HOME/opt/cmake-3.25.2 \
-            --android_ndk_dir=$NDK_PATH
+          # Build only needed arches: arm64-v8a and armeabi-v7a
+          for arch in arm64-v8a armeabi-v7a; do
+            python3 scripts/platform_builder.py \
+              --platform=android \
+              --arch=$arch \
+              --cmake_dir=$HOME/opt/cmake-3.25.2 \
+              --android_ndk_dir=$NDK_PATH
+          done
           mkdir -p ../dobby
           cp build/android/arm64-v8a/libdobby.a ../dobby/libdobby-arm64.a
           cp build/android/armeabi-v7a/libdobby.a ../dobby/libdobby-armv7-a.a
           cp include/dobby.h ../dobby/dobby.h
           cd ..
-        env:
-          PLATFORM_BUILDER_PY: |
-            import os
-            import shlex
-            import re
-            import shutil
-            import subprocess
-            import sys
-            import logging
-
-            import argparse
-
-            platforms = {
-              "macos": ["x86_64", "arm64", "arm64e"],
-              "iphoneos": ["arm64", "arm64e"],
-              "linux": ["x86", "x86_64", "arm", "arm64"],
-              "android": ["x86", "x86_64", "armeabi-v7a", "arm64-v8a"]
-            }
-
-            class PlatformBuilder(object):
-              cmake_args = list()
-              cmake_build_type = "Release"
-              cmake_build_verbose = False
-              cmake_build_dir = ""
-
-              library_build_type = "static"
-
-              project_dir = ""
-              output_dir = ""
-
-              shared_output_name = ""
-              static_output_name = ""
-
-              platform = ""
-              arch = ""
-
-              def __init__(self, project_dir, library_build_type, platform, arch):
-                self.project_dir = project_dir
-                self.library_build_type = library_build_type
-                self.platform = platform
-                self.arch = arch
-
-                self.cmake_build_dir = f"{self.project_dir}/build/cmake-build-{platform}-{arch}"
-                self.output_dir = f"{self.project_dir}/build/{platform}/{arch}"
-
-                self.cmake = "cmake" if PlatformBuilder.cmake_dir is None else f"{PlatformBuilder.cmake_dir}/bin/cmake"
-                self.clang = "clang" if PlatformBuilder.llvm_dir is None else f"{PlatformBuilder.llvm_dir}/bin/clang"
-                self.clangxx = "clang++" if PlatformBuilder.llvm_dir is None else f"{PlatformBuilder.llvm_dir}/bin/clang++"
-
-                self.setup_common_args()
-
-              def cmake_generate_build_system(self):
-                cmake_cmd_options = ["-S {}".format(self.project_dir), "-B {}".format(self.cmake_build_dir)]
-                cmd = [self.cmake] + cmake_cmd_options + self.cmake_args
-                cmd_line = " ".join(shlex.quote(arg) for arg in cmd)
-                print(cmd_line)
-                os.system(cmd_line)
-
-              def setup_common_args(self):
-                self.cmake_args += [f"-DCMAKE_C_COMPILER={self.clang}", f"-DCMAKE_CXX_COMPILER={self.clangxx}"]
-                self.cmake_args += ["-DCMAKE_BUILD_TYPE={}".format(self.cmake_build_type)]
-
-              def build(self):
-                subprocess.run(["mkdir", "-p", self.output_dir], check=True)
-                self.cmake_generate_build_system()
-
-                build_cmd = "cmake --build . --clean-first --target dobby --target dobby_static -- -j8"
-                subprocess.run(build_cmd, cwd=self.cmake_build_dir, shell=True, check=True)
-
-                os.makedirs(self.output_dir, exist_ok=True)
-                if os.path.exists(f"{self.cmake_build_dir}/{self.shared_output_name}"):
-                  os.system(f"cp {self.cmake_build_dir}/{self.shared_output_name} {self.output_dir}")
-                if os.path.exists(f"{self.cmake_build_dir}/{self.static_output_name}"):
-                  os.system(f"cp {self.cmake_build_dir}/{self.static_output_name} {self.output_dir}")
-
-            class AndroidPlatformBuilder(PlatformBuilder):
-              def __init__(self, android_ndk_dir, project_dir, library_build_type, arch):
-                super().__init__(project_dir, library_build_type, "android", arch)
-                self.shared_output_name = "libdobby.so"
-                self.static_output_name = "libdobby.a"
-                android_api_level = 21 if arch in ["arm64-v8a", "x86_64"] else 19
-                self.cmake_args += [
-                  "-DCMAKE_SYSTEM_NAME=Android",
-                  f"-DCMAKE_ANDROID_NDK={android_ndk_dir}",
-                  f"-DCMAKE_ANDROID_ARCH_ABI={arch}",
-                  f"-DCMAKE_SYSTEM_VERSION={android_api_level}"
-                ]
-
-            if __name__ == "__main__":
-              parser = argparse.ArgumentParser()
-              parser.add_argument("--platform", type=str, required=True)
-              parser.add_argument("--arch", type=str, required=True)
-              parser.add_argument("--library_build_type", type=str, default="static")
-              parser.add_argument("--android_ndk_dir", type=str)
-              parser.add_argument("--cmake_dir", type=str)
-              parser.add_argument("--llvm_dir", type=str)
-              args = parser.parse_args()
-
-              logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-              platform = args.platform
-              arch = args.arch
-              library_build_type = args.library_build_type
-
-              PlatformBuilder.cmake_dir = args.cmake_dir
-              PlatformBuilder.llvm_dir = args.llvm_dir
-
-              project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-              logging.info("project dir: {}".format(project_dir))
-              if not os.path.exists(f"{project_dir}/CMakeLists.txt"):
-                logging.error("Please run this script in Dobby project root directory")
-                sys.exit(1)
-
-              if platform not in platforms:
-                logging.error("invalid platform {}".format(platform))
-                sys.exit(-1)
-
-              if arch != "all" and arch not in platforms[platform]:
-                logging.error("invalid arch {} for platform {}".format(arch, platform))
-                sys.exit(-1)
-
-              if platform == "android" and args.android_ndk_dir is None:
-                logging.error("ndk dir is required for android platform")
-                sys.exit(-1)
-
-              archs = platforms[platform] if arch == "all" else [arch]
-              logging.info("build platform: {}, archs: {}".format(platform, archs))
-
-              for arch_ in archs:
-                if platform == "android":
-                  builder = AndroidPlatformBuilder(args.android_ndk_dir, project_dir, library_build_type, arch_)
-                  logging.info(
-                    f"build platform: {platform}, arch: {arch_}, cmake_build_dir: {builder.cmake_build_dir}, output_dir: {builder.output_dir}"
-                  )
-                  builder.build()
 
       - name: Fetch config.json
-        run: |
-          wget https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
+        run: wget -q https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/config.json -O config.json
 
       - name: Build Project (arm64-v8a)
         uses: threeal/cmake-action@v2.1.0
         with:
           build-dir: build/arm64-v8a
-          args: |
-            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
-            -DANDROID_ABI=arm64-v8a
-            -DANDROID_PLATFORM=android-34
-            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
-            -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-arm64.a
-
-      - name: Check arm64-v8a output
-        run: |
-          if [ ! -f "build/arm64-v8a/libspoof.so" ]; then
-            echo "Error: arm64-v8a library not built!"
-            ls -la build/arm64-v8a
-            exit 1
-          fi
+          args: -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-34 -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-arm64.a
 
       - name: Build Project (armeabi-v7a)
         uses: threeal/cmake-action@v2.1.0
         with:
           build-dir: build/armeabi-v7a
-          args: |
-            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake
-            -DANDROID_ABI=armeabi-v7a
-            -DANDROID_PLATFORM=android-34
-            -DCMAKE_MAKE_PROGRAM=/usr/bin/make
-            -DDOBBY_LIBRARY=${{ github.workspace }}/dobby/libdobby-armv7-a.a
+          args: -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-34 -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DDOBBY_LIBRARY=${{ github.workflow }}/dobby/libdobby-armv7-a.a
 
-      - name: Check armeabi-v7a output
+      - name: Check build outputs
         run: |
-          if [ ! -f "build/armeabi-v7a/libspoof.so" ]; then
-            echo "Error: armeabi-v7a library not built!"
-            ls -la build/armeabi-v7a
-            exit 1
-          fi
+          [ -f build/arm64-v8a/libspoof.so ] || { echo "Error: arm64-v8a library not built!"; ls -la build/arm64-v8a; exit 1; }
+          [ -f build/armeabi-v7a/libspoof.so ] || { echo "Error: armeabi-v7a library not built!"; ls -la build/armeabi-v7a; exit 1; }
 
       - name: Prepare module structure
         run: |
-          mkdir -p module/zygisk
-          mkdir -p module/META-INF/com/google/android
+          mkdir -p module/zygisk module/META-INF/com/google/android
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
-          chmod 755 module/zygisk/arm64-v8a.so
-          chmod 755 module/zygisk/armeabi-v7a.so
+          chmod 755 module/zygisk/*.so
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
@@ -403,9 +230,7 @@ jobs:
           exit 0
           EOF
           chmod 755 module/META-INF/com/google/android/update-binary
-          cat > module/META-INF/com/google/android/updater-script << 'EOF'
-          #MAGISK
-          EOF
+          echo "#MAGISK" > module/META-INF/com/google/android/updater-script
           cp config.json module/config.json
 
       - name: Package module into ZIP
@@ -428,11 +253,7 @@ jobs:
         run: |
           VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
           TAG="v$VERSION"
-          gh release create "$TAG" \
-            --title "Release $TAG" \
-            --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
-            --draft \
-            || gh release edit "$TAG" --draft
+          gh release create "$TAG" --title "Release $TAG" --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" --draft || gh release edit "$TAG" --draft
           gh release upload "$TAG" ${{ env.ZIP_NAME }} --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
