@@ -42,43 +42,21 @@ COPG is a Zygisk module that spoofs device properties for specific Android games
 
 ### Customizing `config.json`
 - Format (example from full config):
-  ```json
-  {
-    "PACKAGES_REDMAGIC9": [
-        "com.mobilelegends.mi",
-        "com.supercell.brawlstars"
+  ```json    "PACKAGES_BS4": [
+        "com.proximabeta.mf.uamo"
     ],
-    "PACKAGES_REDMAGIC9_DEVICE": {
-        "BRAND": "ZTE",
-        "DEVICE": "NX769J",
-        "MANUFACTURER": "ZTE",
-        "MODEL": "NX769J"
-    },
-    "PACKAGES_F5": [
-        "com.mobile.legends"
-    ],
-    "PACKAGES_F5_DEVICE": {
-        "BRAND": "POCO",
-        "DEVICE": "POCO F5",
+    "PACKAGES_BS4_DEVICE": {
+        "BRAND": "Black Shark",
+        "DEVICE": "Black Shark 4",
         "MANUFACTURER": "Xiaomi",
-        "MODEL": "23049PCD8G"
-    },
-    "PACKAGES_LENOVO_TABLET": [
-        "com.activision.callofduty.shooter"
-    ],
-    "PACKAGES_LENOVO_TABLET_DEVICE": {
-        "BRAND": "Lenovo",
-        "DEVICE": "TB-9707F",
-        "MANUFACTURER": "Lenovo",
-        "MODEL": "Lenovo TB-9707F"
-    },
-    "PACKAGES_MI13P": [
-        "com.tencent.ig"
-    ],
-    "PACKAGES_MI13P_DEVICE": {
-        "BRAND": "Xiaomi",
-        "DEVICE": "Mi 13 Pro",
-        "MANUFACTURER": "Xiaomi",
-        "MODEL": "2210132G"
+        "MODEL": "2SM-X706B",
+        "ro.product.model": "PRS-H0",
+        "FINGERPRINT": "BlackShark/PRS-H0/Black Shark 4:13/TQ3A.230805.001/20230315:user/release-keys",
+        "BUILD_ID": "TQ3A.230805.001",
+        "DISPLAY": "TQ3A.230805.001.A1",
+        "PRODUCT": "PRS-H0",
+        "VERSION_RELEASE": "13",
+        "SERIAL": "BS412345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Black Shark 4)\nHardware\t: Qualcomm Snapdragon 870\nSerial\t: BS412345678",
+        "SERIAL_CONTENT": "BS412345678"
     }
-  }
