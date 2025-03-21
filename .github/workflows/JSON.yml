@@ -71,7 +71,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential zip git
-          # Create target directory explicitly
           mkdir -p $HOME/opt/cmake-3.25.2
           wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
           chmod +x cmake.sh
@@ -95,9 +94,9 @@ jobs:
         run: |
           git clone https://github.com/jmpews/Dobby.git dobby
           cd dobby
-          cp scripts/platform_builder.py .
-          cp -r builtin-plugin tools source external include scripts/
-          python3 platform_builder.py \
+          # Only copy platform_builder.py, run from repo root
+          ls -la  # Debug: Show repo contents
+          python3 scripts/platform_builder.py \
             --platform=android \
             --arch=all \
             --cmake_dir=$HOME/opt/cmake-3.25.2 \
