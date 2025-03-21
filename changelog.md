@@ -3,7 +3,7 @@ https://t.me/TheAOSP
 # v2.3
 - added action button for downloading updated config if needed
 - added Zygisk check for installing module
-**Note**: getting banned at your own risk 
+- **Note**: getting banned at your own risk 
 
 # v2.2
 - Cache JNI Calls for faster app game launch.
