@@ -82,6 +82,7 @@ jobs:
           mkdir -p zygisk include/nlohmann
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
+          ls -la zygisk include/nlohmann || echo "Failed to fetch headers!"
 
       - name: Fetch config.json
         run: |
@@ -95,7 +96,7 @@ jobs:
             -shared -fPIC -std=c++17 \
             -I${{ github.workspace }}/zygisk \
             -I${{ github.workspace }}/include/nlohmann \
-            spoof_module.cpp -o build/arm64-v8a/libspoof.so \
+            ${{ github.workspace }}/spoof_module.cpp -o build/arm64-v8a/libspoof.so \
             -llog
 
       - name: Check arm64-v8a output
@@ -113,7 +114,7 @@ jobs:
             -shared -fPIC -std=c++17 \
             -I${{ github.workspace }}/zygisk \
             -I${{ github.workspace }}/include/nlohmann \
-            spoof_module.cpp -o build/armeabi-v7a/libspoof.so \
+            ${{ github.workspace }}/spoof_module.cpp -o build/armeabi-v7a/libspoof.so \
             -llog
 
       - name: Check armeabi-v7a output
