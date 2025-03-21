@@ -134,8 +134,8 @@ jobs:
           cat > module/module.prop << 'EOF'
           id=COPG
           name=✨ COPG spoof ✨
-          version=2.5
-          versionCode=250
+          version=2.6
+          versionCode=260
           author=AlirezaParsi
           description=Spoof your device for games. Click Action button to update your config if needed.
           support=https://t.me/theaosp
@@ -165,7 +165,7 @@ jobs:
                 ui_print "! $ZYGISK_MSG"
                 abort "*********************************************************"
               else
-                ui_print "- zygisksu detected for KernelSU"
+                ui_print "- Zygisk Next detected for KernelSU"
               fi
             elif [ -d "$MAGISK_DIR" ]; then
               ZYGISK_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='zygisk';" 2>/dev/null)
