@@ -39,6 +39,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
       - name: Set up Android SDK and NDK
         run: |
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
@@ -55,17 +60,23 @@ jobs:
             exit 1
           fi
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0"
-          echo "NDK_PATH=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+          # Use NDK r25b as per Dobby's Builder
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653" "platforms;android-34" "build-tools;34.0.0"
+          echo "NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
       - name: Accept Android SDK licenses
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed!"
 
-      - name: Install build tools
+      - name: Install build tools and CMake
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake zip git
+          sudo apt-get install -y build-essential zip git
+          # Install CMake 3.25.2 as per Dobby's Builder
+          wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh
+          chmod +x cmake.sh
+          ./cmake.sh --prefix=$HOME/opt/cmake-3.25.2 --skip-license
+          echo "$HOME/opt/cmake-3.25.2/bin" >> $GITHUB_PATH
 
       - name: Fetch Zygisk Headers and JSON Library
         run: |
@@ -77,26 +88,21 @@ jobs:
         run: |
           git clone https://github.com/jmpews/Dobby.git dobby
           cd dobby
-          # Build for arm64-v8a
-          mkdir build_arm64 && cd build_arm64
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
-                   -DANDROID_ABI=arm64-v8a \
-                   -DANDROID_PLATFORM=android-34 \
-                   -DCMAKE_BUILD_TYPE=Release
-          make -j$(nproc)
-          cp libdobby.a ../../dobby/libdobby-arm64.a
+          # Fetch platform_builder.py and related scripts
+          cp scripts/platform_builder.py .
+          cp -r builtin-plugin tools source external include scripts/
+          # Build for Android (arm64-v8a and armeabi-v7a)
+          python3 platform_builder.py \
+            --platform=android \
+            --arch=all \
+            --cmake_dir=$HOME/opt/cmake-3.25.2 \
+            --android_ndk_dir=$NDK_PATH
+          # Copy built libraries
+          mkdir -p ../dobby
+          cp build/android/arm64-v8a/libdobby.a ../dobby/libdobby-arm64.a
+          cp build/android/armeabi-v7a/libdobby.a ../dobby/libdobby-armv7-a.a
+          cp include/dobby.h ../dobby/dobby.h
           cd ..
-          # Build for armeabi-v7a
-          mkdir build_armv7 && cd build_armv7
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
-                   -DANDROID_ABI=armeabi-v7a \
-                   -DANDROID_PLATFORM=android-34 \
-                   -DCMAKE_BUILD_TYPE=Release
-          make -j$(nproc)
-          cp libdobby.a ../../dobby/libdobby-armv7-a.a
-          cd ../..
-          # Copy header
-          cp dobby/include/dobby.h dobby/dobby.h
 
       - name: Fetch config.json
         run: |
@@ -252,53 +258,3 @@ jobs:
           ZIPFILE=$3
           [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
           . /data/adb/magisk/util_functions.sh
-          [ $MAGISK_VER_CODE -lt 20400 ] && require_new_magisk
-          install_module
-          exit 0
-          EOF
-          chmod 755 module/META-INF/com/google/android/update-binary
-          cat > module/META-INF/com/google/android/updater-script << 'EOF'
-          #MAGISK
-          EOF
-          cp config.json module/config.json
-
-      - name: Package module into ZIP
-        run: |
-          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
-          ZIP_NAME="COPG-v$VERSION.zip"
-          cd module
-          zip -r "../$ZIP_NAME" .
-          cd ..
-          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
-
-      - name: Upload Module ZIP as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: COPG
-          path: ${{ env.ZIP_NAME }}
-
-      - name: Upload ZIP to GitHub Release
-        if: github.event.inputs.upload_to_release == 'true'
-        run: |
-          VERSION=$(grep "version=" module/module.prop | cut -d'=' -f2)
-          TAG="v$VERSION"
-          gh release create "$TAG" \
-            --title "Release $TAG" \
-            --notes "Built on $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
-            --draft \
-            || gh release edit "$TAG" --draft
-          gh release upload "$TAG" ${{ env.ZIP_NAME }} --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload ZIP to Telegram
-        if: github.event.inputs.upload_to_telegram == 'true'
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          document: ${{ env.ZIP_NAME }}
-          message: |
-            New COPG Spoof Module Build
-            Version: ${{ env.VERSION }}
-            Built on: ${{ github.run_id }} @ ${{ github.sha }}
