@@ -24,7 +24,8 @@
         "DEVICE": "NX769J",
         "MANUFACTURER": "ZTE",
         "MODEL": "NX769J",
-        "ro.product.model": "NX769J" 
+        "ro.product.model": "NX769J",
+        "FINGERPRINT": "ZTE/NX769J/NX769J:14/UP1A.231005.007/20240301:user/release-keys"
     },
     "PACKAGES_BS4": [
         "com.proximabeta.mf.uamo"
@@ -34,7 +35,8 @@
         "DEVICE": "Black Shark 4",
         "MANUFACTURER": "Xiaomi",
         "MODEL": "2SM-X706B",
-        "ro.product.model": "PRS-H0" 
+        "ro.product.model": "PRS-H0",
+        "FINGERPRINT": "BlackShark/PRS-H0/Black Shark 4:13/TQ3A.230805.001/20230315:user/release-keys"
     },
     "PACKAGES_MI11TP": [
         "com.ea.gp.apexlegendsmobilefps",
@@ -47,7 +49,8 @@
         "DEVICE": "Mi 11T PRO",
         "MANUFACTURER": "Xiaomi",
         "MODEL": "2107113SI",
-        "ro.product.model": "2107113SI" 
+        "ro.product.model": "2107113SI",
+        "FINGERPRINT": "Xiaomi/2107113SI/Mi 11T PRO:13/RKQ1.211001.001/20230410:user/release-keys"
     },
     "PACKAGES_MI13P": [
         "com.levelinfinite.sgameGlobal",
@@ -64,7 +67,8 @@
         "DEVICE": "Mi 13 Pro",
         "MANUFACTURER": "Xiaomi",
         "MODEL": "2210132G",
-        "ro.product.model": "2210132G" 
+        "ro.product.model": "2210132G",
+        "FINGERPRINT": "Xiaomi/2210132G/Mi 13 Pro:14/UP1A.231005.007/20240220:user/release-keys"
     },
     "PACKAGES_OP8P": [
         "com.netease.lztgglobal",
@@ -77,7 +81,8 @@
         "DEVICE": "OnePlus 8 PRO",
         "MANUFACTURER": "OnePlus",
         "MODEL": "IN2020",
-        "ro.product.model": "IN2020" 
+        "ro.product.model": "IN2020",
+        "FINGERPRINT": "OnePlus/IN2020/OnePlus 8 PRO:13/RKQ1.211119.001/20230501:user/release-keys"
     },
     "PACKAGES_OP9P": [
         "com.epicgames.fortnite",
@@ -89,7 +94,8 @@
         "DEVICE": "OnePlus 9 PRO",
         "MANUFACTURER": "OnePlus",
         "MODEL": "LE2101",
-        "ro.product.model": "LE2101" 
+        "ro.product.model": "LE2101",
+        "FINGERPRINT": "OnePlus/LE2101/OnePlus 9 PRO:14/UP1A.231005.007/20240115:user/release-keys"
     },
     "PACKAGES_F5": [
         "com.mobile.legends"
@@ -99,7 +105,8 @@
         "DEVICE": "POCO F5",
         "MANUFACTURER": "Xiaomi",
         "MODEL": "23049PCD8G",
-        "ro.product.model": "23049PCD8G" 
+        "ro.product.model": "23049PCD8G",
+        "FINGERPRINT": "POCO/23049PCD8G/POCO F5:13/TQ3A.230805.001/20230620:user/release-keys"
     },
     "PACKAGES_ROG": [
         "com.dts.freefireth",
@@ -110,7 +117,8 @@
         "DEVICE": "ROG Phone",
         "MANUFACTURER": "Asus",
         "MODEL": "ASUS_Z01QD",
-        "ro.product.model": "ASUS_Z01QD" 
+        "ro.product.model": "ASUS_Z01QD",
+        "FINGERPRINT": "Asus/ASUS_Z01QD/ROG Phone:12/SKQ1.210821.001/20220810:user/release-keys"
     },
     "PACKAGES_ROG6": [
         "com.ea.gp.fifamobile",
@@ -124,7 +132,8 @@
         "DEVICE": "ROG Phone 6",
         "MANUFACTURER": "Asus",
         "MODEL": "ASUS_AI2201",
-        "ro.product.model": "ASUS_AI2201" 
+        "ro.product.model": "ASUS_AI2201",
+        "FINGERPRINT": "Asus/ASUS_AI2201/ROG Phone 6:14/UP1A.231005.007/20240315:user/release-keys"
     },
     "PACKAGES_LENOVO_TABLET": [
         "com.activision.callofduty.shooter",
@@ -137,7 +146,8 @@
         "DEVICE": "TB-9707F",
         "MANUFACTURER": "Lenovo",
         "MODEL": "Lenovo TB-9707F",
-        "ro.product.model": "Lenovo TB-9707F"
+        "ro.product.model": "Lenovo TB-9707F",
+        "FINGERPRINT": "Lenovo/TB-9707F/Lenovo TB-9707F:13/TQ3A.230805.001/20230901:user/release-keys"
     },
     "PACKAGES_S24ULTRA": [
         "com.ea.gp.fifamobile"
@@ -147,6 +157,7 @@
         "DEVICE": "SM-S928B",
         "MANUFACTURER": "samsung",
         "MODEL": "SM-S928B",
-        "ro.product.model": "SM-S928B" 
+        "ro.product.model": "SM-S928B",
+        "FINGERPRINT": "samsung/SM-S928B/SM-S928B:14/UP1A.231005.007/20240225:user/release-keys"
     }
 }
