@@ -33,11 +33,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: Set up JDK
+      - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '8'
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -95,8 +95,8 @@ jobs:
           mkdir -p build/armeabi-v7a
           $NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi34-clang++ \
             -shared -fPIC -std=c++17 \
-            -I${{ github.workflow }}/zygisk \
-            -I${{ github.workflow }}/include/nlohmann \
+            -I${{ github.workspace }}/zygisk \
+            -I${{ github.workspace }}/include/nlohmann \
             spoof_module.cpp -o build/armeabi-v7a/libspoof.so \
             -llog
 
