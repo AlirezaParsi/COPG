@@ -42,21 +42,39 @@ COPG is a Zygisk module that spoofs device properties for specific Android games
 
 ### Customizing `config.json`
 - Format (example from full config):
-  ```json    "PACKAGES_BS4": [
-        "com.proximabeta.mf.uamo"
+  ```json{
+    "PACKAGES_REDMAGIC9": [
+        "com.mobilelegends.mi",
+        "com.supercell.brawlstars",
+        "com.blizzard.diablo.immortal",
+        "com.netease.newspike",
+        "com.activision.callofduty.warzone",
+        "com.pubg.newstate",
+        "com.gamedevltd.destinywarfare",
+        "com.pikpok.dr2.play",
+        "com.CarXTech.highWay",
+        "com.nekki.shadowfight3",
+        "com.nekki.shadowfightarena",
+        "com.gameloft.android.ANMP.GloftA8HM",
+        "com.nekki.shadowfight",
+        "com.ea.game.nfs14_row",
+        "com.ea.games.r3_row",
+        "com.supercell.squad",
+        "com.blitzteam.battleprime",
+        "com.tencent.tmgp.gnyx"
     ],
-    "PACKAGES_BS4_DEVICE": {
-        "BRAND": "Black Shark",
-        "DEVICE": "Black Shark 4",
-        "MANUFACTURER": "Xiaomi",
-        "MODEL": "2SM-X706B",
-        "ro.product.model": "PRS-H0",
-        "FINGERPRINT": "BlackShark/PRS-H0/Black Shark 4:13/TQ3A.230805.001/20230315:user/release-keys",
-        "BUILD_ID": "TQ3A.230805.001",
-        "DISPLAY": "TQ3A.230805.001.A1",
-        "PRODUCT": "PRS-H0",
-        "VERSION_RELEASE": "13",
-        "SERIAL": "BS412345678",
-        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (Black Shark 4)\nHardware\t: Qualcomm Snapdragon 870\nSerial\t: BS412345678",
-        "SERIAL_CONTENT": "BS412345678"
-    }
+    "PACKAGES_REDMAGIC9_DEVICE": {
+        "BRAND": "ZTE",
+        "DEVICE": "NX769J",
+        "MANUFACTURER": "ZTE",
+        "MODEL": "NX769J",
+        "ro.product.model": "NX769J",
+        "FINGERPRINT": "ZTE/NX769J/NX769J:14/UP1A.231005.007/20240301:user/release-keys",
+        "BUILD_ID": "UP1A.231005.007",
+        "DISPLAY": "UP1A.231005.007.A1",
+        "PRODUCT": "NX769J",
+        "VERSION_RELEASE": "14",
+        "SERIAL": "ZTE12345678",
+        "CPUINFO": "processor\t: 0\nmodel name\t: ARMv8-A (REDMAGIC 9)\nHardware\t: Qualcomm Snapdragon 8 Gen 3\nSerial\t: ZTE12345678",
+        "SERIAL_CONTENT": "ZTE12345678"
+    },
