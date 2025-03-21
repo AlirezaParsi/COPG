@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <thread>
 
 using json = nlohmann::json;
 
@@ -16,23 +17,23 @@ struct DeviceInfo {
     std::string device;
     std::string manufacturer;
     std::string model;
-    std::string fingerprint; // Renamed from 'ondata_fingerprint' for clarity
+    std::string fingerprint;
     std::string build_id;
     std::string display;
     std::string product;
     std::string version_release;
     std::string serial;
-    std::string cpuinfo;        // New: Spoofed /proc/cpuinfo content
-    std::string serial_content; // New: Spoofed serial file content
+    std::string cpuinfo;
+    std::string serial_content;
 };
 
-// Function pointers for original functions
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
 static orig_read_t orig_read = nullptr;
+typedef void (*orig_set_field_t)(JNIEnv*, jobject, jobject, jvalue);
+static orig_set_field_t orig_set_field = nullptr; // For reflection hook
 static DeviceInfo current_info;
-static int fake_fd = -1; // Dummy file descriptor for spoofed files
 
 class SpoofModule : public zygisk::ModuleBase {
 public:
@@ -40,6 +41,7 @@ public:
         this->api = api;
         this->env = env;
 
+        // Initialize Build class
         buildClass = env->FindClass("android/os/Build");
         if (buildClass) {
             modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
@@ -58,12 +60,19 @@ public:
             serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
         }
 
+        // Hook native functions
         void* handle = dlopen("libc.so", RTLD_LAZY);
         if (handle) {
             orig_prop_get = (orig_prop_get_t)dlsym(handle, "__system_property_get");
             orig_read = (orig_read_t)dlsym(handle, "read");
             dlclose(handle);
         }
+
+        // Hook JNI reflection (Field.set)
+        hookReflection();
+
+        // Hook JNI GetStaticObjectField (via JNI function table, simplified)
+        hookJNINativeCalls();
 
         loadConfig();
     }
@@ -135,18 +144,13 @@ private:
                 info.model = device["MODEL"].get<std::string>();
                 info.fingerprint = device.contains("FINGERPRINT") ? 
                     device["FINGERPRINT"].get<std::string>() : "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys";
-                info.build_id = device.contains("BUILD_ID") ? 
-                    device["BUILD_ID"].get<std::string>() : "";
-                info.display = device.contains("DISPLAY") ? 
-                    device["DISPLAY"].get<std::string>() : "";
-                info.product = device.contains("PRODUCT") ? 
-                    device["PRODUCT"].get<std::string>() : info.device;
+                info.build_id = device.contains("BUILD_ID") ? device["BUILD_ID"].get<std::string>() : "";
+                info.display = device.contains("DISPLAY") ? device["DISPLAY"].get<std::string>() : "";
+                info.product = device.contains("PRODUCT") ? device["PRODUCT"].get<std::string>() : info.device;
                 info.version_release = device.contains("VERSION_RELEASE") ? 
                     device["VERSION_RELEASE"].get<std::string>() : "";
-                info.serial = device.contains("SERIAL") ? 
-                    device["SERIAL"].get<std::string>() : "";
-                info.cpuinfo = device.contains("CPUINFO") ? 
-                    device["CPUINFO"].get<std::string>() : "";
+                info.serial = device.contains("SERIAL") ? device["SERIAL"].get<std::string>() : "";
+                info.cpuinfo = device.contains("CPUINFO") ? device["CPUINFO"].get<std::string>() : "";
                 info.serial_content = device.contains("SERIAL_CONTENT") ? 
                     device["SERIAL_CONTENT"].get<std::string>() : "";
 
@@ -178,6 +182,94 @@ private:
         if (!info.manufacturer.empty()) __system_property_set("ro.product.manufacturer", info.manufacturer.c_str());
         if (!info.model.empty()) __system_property_set("ro.product.model", info.model.c_str());
         if (!info.fingerprint.empty()) __system_property_set("ro.build.fingerprint", info.fingerprint.c_str());
+    }
+
+    // Reflection Hook
+    static void hooked_set_field(JNIEnv* env, jobject field_obj, jobject obj, jvalue value) {
+        jclass fieldClass = env->FindClass("java/lang/reflect/Field");
+        jmethodID getDeclaringClass = env->GetMethodID(fieldClass, "getDeclaringClass", "()Ljava/lang/Class;");
+        jclass declaringClass = (jclass)env->CallObjectMethod(field_obj, getDeclaringClass);
+
+        // Check if the field belongs to android.os.Build or its VERSION subclass
+        if (env->IsSameObject(declaringClass, buildClass) || env->IsSameObject(declaringClass, versionClass)) {
+            // Block the set operation by returning early (or set to spoofed value)
+            jmethodID getName = env->GetMethodID(fieldClass, "getName", "()Ljava/lang/String;");
+            jstring fieldName = (jstring)env->CallObjectMethod(field_obj, getName);
+            const char* name = env->GetStringUTFChars(fieldName, nullptr);
+
+            // Re-apply spoofed value instead of allowing reset
+            if (strcmp(name, "MODEL") == 0) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(current_info.model.c_str()));
+            else if (strcmp(name, "BRAND") == 0) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(current_info.brand.c_str()));
+            else if (strcmp(name, "DEVICE") == 0) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(current_info.device.c_str()));
+            else if (strcmp(name, "MANUFACTURER") == 0) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(current_info.manufacturer.c_str()));
+            else if (strcmp(name, "FINGERPRINT") == 0) env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(current_info.fingerprint.c_str()));
+            else if (strcmp(name, "ID") == 0 && !current_info.build_id.empty()) env->SetStaticObjectField(buildClass, buildIdField, env->NewStringUTF(current_info.build_id.c_str()));
+            else if (strcmp(name, "DISPLAY") == 0 && !current_info.display.empty()) env->SetStaticObjectField(buildClass, displayField, env->NewStringUTF(current_info.display.c_str()));
+            else if (strcmp(name, "PRODUCT") == 0 && !current_info.product.empty()) env->SetStaticObjectField(buildClass, productField, env->NewStringUTF(current_info.product.c_str()));
+            else if (strcmp(name, "RELEASE") == 0 && !current_info.version_release.empty()) env->SetStaticObjectField(versionClass, versionReleaseField, env->NewStringUTF(current_info.version_release.c_str()));
+            else if (strcmp(name, "SERIAL") == 0 && !current_info.serial.empty()) env->SetStaticObjectField(buildClass, serialField, env->NewStringUTF(current_info.serial.c_str()));
+
+            env->ReleaseStringUTFChars(fieldName, name);
+            return; // Block the original set
+        }
+
+        if (orig_set_field) orig_set_field(env, field_obj, obj, value); // Allow non-Build sets
+    }
+
+    void hookReflection() {
+        jclass fieldClass = env->FindClass("java/lang/reflect/Field");
+        if (!fieldClass) return;
+
+        JNINativeMethod methods[] = {
+            {"set", "(Ljava/lang/Object;Ljava/lang/Object;)V", (void*)hooked_set_field}
+        };
+        if (env->RegisterNatives(fieldClass, methods, 1) < 0) {
+            // Fallback: manual hooking if RegisterNatives fails
+            void* handle = dlopen(nullptr, RTLD_LAZY);
+            if (handle) {
+                orig_set_field = (orig_set_field_t)dlsym(handle, "Java_java_lang_reflect_Field_set");
+                if (orig_set_field) {
+                    size_t page_size = sysconf(_SC_PAGE_SIZE);
+                    void* page_start = (void*)((uintptr_t)orig_set_field & ~(page_size - 1));
+                    if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+                        *(void**)&orig_set_field = (void*)hooked_set_field;
+                        mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+                    }
+                }
+                dlclose(handle);
+            }
+        }
+    }
+
+    // JNI/Native Hook (Simplified GetStaticObjectField override)
+    static jobject hooked_get_static_object_field(JNIEnv* env, jclass clazz, jfieldID fieldID) {
+        if (env->IsSameObject(clazz, buildClass)) {
+            if (fieldID == modelField) return env->NewStringUTF(current_info.model.c_str());
+            if (fieldID == brandField) return env->NewStringUTF(current_info.brand.c_str());
+            if (fieldID == deviceField) return env->NewStringUTF(current_info.device.c_str());
+            if (fieldID == manufacturerField) return env->NewStringUTF(current_info.manufacturer.c_str());
+            if (fieldID == fingerprintField) return env->NewStringUTF(current_info.fingerprint.c_str());
+            if (fieldID == buildIdField && !current_info.build_id.empty()) return env->NewStringUTF(current_info.build_id.c_str());
+            if (fieldID == displayField && !current_info.display.empty()) return env->NewStringUTF(current_info.display.c_str());
+            if (fieldID == productField && !current_info.product.empty()) return env->NewStringUTF(current_info.product.c_str());
+            if (fieldID == serialField && !current_info.serial.empty()) return env->NewStringUTF(current_info.serial.c_str());
+        } else if (env->IsSameObject(clazz, versionClass)) {
+            if (fieldID == versionReleaseField && !current_info.version_release.empty()) 
+                return env->NewStringUTF(current_info.version_release.c_str());
+        }
+        return env->GetStaticObjectField(clazz, fieldID); // Call original if not spoofed
+    }
+
+    void hookJNINativeCalls() {
+        // Override GetStaticObjectField in the JNIEnv function table
+        JNIEnv* localEnv = env;
+        void* orig_func = (void*)localEnv->functions->GetStaticObjectField;
+        size_t page_size = sysconf(_SC_PAGE_SIZE);
+        void* page_start = (void*)((uintptr_t)orig_func & ~(page_size - 1));
+        if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+            localEnv->functions->GetStaticObjectField = hooked_get_static_object_field;
+            mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+        }
     }
 
     static int hooked_prop_get(const char* name, char* value, const char* default_value) {
@@ -220,17 +312,13 @@ private:
 
     static ssize_t hooked_read(int fd, void* buf, size_t count) {
         if (!orig_read) return -1;
-
-        // Check if this is a read from /proc/cpuinfo or serial file based on fd
         char path[256];
-        ssize_t result = -1;
         snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
         char real_path[256];
         ssize_t len = readlink(path, real_path, sizeof(real_path) - 1);
         if (len != -1) {
             real_path[len] = '\0';
             std::string file_path(real_path);
-
             if (file_path == "/proc/cpuinfo" && !current_info.cpuinfo.empty()) {
                 size_t bytes_to_copy = std::min(count, current_info.cpuinfo.length());
                 memcpy(buf, current_info.cpuinfo.c_str(), bytes_to_copy);
@@ -241,7 +329,6 @@ private:
                 return bytes_to_copy;
             }
         }
-
         return orig_read(fd, buf, count);
     }
 
