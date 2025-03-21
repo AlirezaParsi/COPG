@@ -27,6 +27,7 @@ struct DeviceInfo {
     std::string serial_content;
 };
 
+// Static function pointers for hooks
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
@@ -35,9 +36,9 @@ typedef void (*orig_set_static_object_field_t)(JNIEnv*, jclass, jfieldID, jobjec
 static orig_set_static_object_field_t orig_set_static_object_field = nullptr;
 typedef jobject (*orig_get_static_object_field_t)(JNIEnv*, jclass, jfieldID);
 static orig_get_static_object_field_t orig_get_static_object_field = nullptr;
-static DeviceInfo current_info;
 
-// Static class members (moved outside instance scope)
+// Static global variables
+static DeviceInfo current_info;
 static jclass buildClass = nullptr;
 static jclass versionClass = nullptr;
 static jfieldID modelField = nullptr;
@@ -58,7 +59,7 @@ public:
         this->api = api;
         this->env = env;
 
-        // Initialize static fields once (global across all processes)
+        // Initialize static fields once
         if (!buildClass) {
             buildClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build"));
             if (buildClass) {
@@ -203,7 +204,10 @@ private:
 
     static void hooked_set_static_object_field(JNIEnv* env, jclass clazz, jfieldID field, jobject value) {
         if (!orig_set_static_object_field) return;
+
+        // Check if the class being modified is Build or Build.VERSION
         if (env->IsSameObject(clazz, buildClass) || env->IsSameObject(clazz, versionClass)) {
+            // Override attempts to set Build fields with spoofed values
             if (field == modelField && !current_info.model.empty()) {
                 env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(current_info.model.c_str()));
             } else if (field == brandField && !current_info.brand.empty()) {
@@ -225,10 +229,10 @@ private:
             } else if (field == serialField && !current_info.serial.empty()) {
                 env->SetStaticObjectField(buildClass, serialField, env->NewStringUTF(current_info.serial.c_str()));
             } else {
-                orig_set_static_object_field(env, clazz, field, value);
+                orig_set_static_object_field(env, clazz, field, value); // Allow non-spoofed fields
             }
         } else {
-            orig_set_static_object_field(env, clazz, field, value);
+            orig_set_static_object_field(env, clazz, field, value); // Non-Build class
         }
     }
 
