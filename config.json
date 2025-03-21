@@ -23,7 +23,8 @@
         "BRAND": "ZTE",
         "DEVICE": "NX769J",
         "MANUFACTURER": "ZTE",
-        "MODEL": "NX769J"
+        "MODEL": "NX769J",
+        "ro.product.model": "NX769J" // RedMagic 9’s real model
     },
     "PACKAGES_BS4": [
         "com.proximabeta.mf.uamo"
@@ -32,7 +33,8 @@
         "BRAND": "Black Shark",
         "DEVICE": "Black Shark 4",
         "MANUFACTURER": "Xiaomi",
-        "MODEL": "2SM-X706B"
+        "MODEL": "2SM-X706B",
+        "ro.product.model": "PRS-H0" // Black Shark 4’s actual codename
     },
     "PACKAGES_MI11TP": [
         "com.ea.gp.apexlegendsmobilefps",
@@ -44,7 +46,8 @@
         "BRAND": "Xiaomi",
         "DEVICE": "Mi 11T PRO",
         "MANUFACTURER": "Xiaomi",
-        "MODEL": "2107113SI"
+        "MODEL": "2107113SI",
+        "ro.product.model": "2107113SI" // Mi 11T Pro’s model
     },
     "PACKAGES_MI13P": [
         "com.levelinfinite.sgameGlobal",
@@ -60,7 +63,8 @@
         "BRAND": "Xiaomi",
         "DEVICE": "Mi 13 Pro",
         "MANUFACTURER": "Xiaomi",
-        "MODEL": "2210132G"
+        "MODEL": "2210132G",
+        "ro.product.model": "2210132G" // Mi 13 Pro’s model
     },
     "PACKAGES_OP8P": [
         "com.netease.lztgglobal",
@@ -72,7 +76,8 @@
         "BRAND": "OnePlus",
         "DEVICE": "OnePlus 8 PRO",
         "MANUFACTURER": "OnePlus",
-        "MODEL": "IN2020"
+        "MODEL": "IN2020",
+        "ro.product.model": "IN2020" // OnePlus 8 Pro’s model
     },
     "PACKAGES_OP9P": [
         "com.epicgames.fortnite",
@@ -83,7 +88,8 @@
         "BRAND": "OnePlus",
         "DEVICE": "OnePlus 9 PRO",
         "MANUFACTURER": "OnePlus",
-        "MODEL": "LE2101"
+        "MODEL": "LE2101",
+        "ro.product.model": "LE2101" // OnePlus 9 Pro’s model
     },
     "PACKAGES_F5": [
         "com.mobile.legends"
@@ -92,7 +98,8 @@
         "BRAND": "POCO",
         "DEVICE": "POCO F5",
         "MANUFACTURER": "Xiaomi",
-        "MODEL": "23049PCD8G"
+        "MODEL": "23049PCD8G",
+        "ro.product.model": "23049PCD8G" // POCO F5’s model
     },
     "PACKAGES_ROG": [
         "com.dts.freefireth",
@@ -102,7 +109,8 @@
         "BRAND": "Asus",
         "DEVICE": "ROG Phone",
         "MANUFACTURER": "Asus",
-        "MODEL": "ASUS_Z01QD"
+        "MODEL": "ASUS_Z01QD",
+        "ro.product.model": "ASUS_Z01QD" // OG ROG Phone’s model
     },
     "PACKAGES_ROG6": [
         "com.ea.gp.fifamobile",
@@ -115,7 +123,8 @@
         "BRAND": "Asus",
         "DEVICE": "ROG Phone 6",
         "MANUFACTURER": "Asus",
-        "MODEL": "ASUS_AI2201"
+        "MODEL": "ASUS_AI2201",
+        "ro.product.model": "ASUS_AI2201" // ROG Phone 6’s model
     },
     "PACKAGES_LENOVO_TABLET": [
         "com.activision.callofduty.shooter",
@@ -127,7 +136,8 @@
         "BRAND": "Lenovo",
         "DEVICE": "TB-9707F",
         "MANUFACTURER": "Lenovo",
-        "MODEL": "Lenovo TB-9707F"
+        "MODEL": "Lenovo TB-9707F",
+        "ro.product.model": "Lenovo TB-9707F" // Lenovo tablet’s model
     },
     "PACKAGES_S24ULTRA": [
         "com.ea.gp.fifamobile"
@@ -136,6 +146,7 @@
         "BRAND": "samsung",
         "DEVICE": "SM-S928B",
         "MANUFACTURER": "samsung",
-        "MODEL": "SM-S928B"
+        "MODEL": "SM-S928B",
+        "ro.product.model": "SM-S928B" // S24 Ultra’s model
     }
 }
