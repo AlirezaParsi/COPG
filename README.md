@@ -42,7 +42,8 @@ COPG is a Zygisk module that spoofs device properties for specific Android games
 
 ### Customizing `config.json`
 - Format (example from full config):
-  ```json{
+  ```json
+  {
     "PACKAGES_REDMAGIC9": [
         "com.mobilelegends.mi",
         "com.supercell.brawlstars",
