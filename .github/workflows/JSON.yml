@@ -65,17 +65,38 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake zip
+          sudo apt-get install -y build-essential cmake zip git
 
-      - name: Fetch Zygisk Headers, JSON Library, and Dobby
+      - name: Fetch Zygisk Headers and JSON Library
         run: |
-          mkdir -p zygisk include/nlohmann dobby
+          mkdir -p zygisk include/nlohmann
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hh
           wget https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -O include/nlohmann/json.hpp
-          # Fetch Dobby (prebuilt static library for arm64 and armeabi-v7a)
-          wget https://github.com/jmpews/Dobby/releases/download/v1.0-rc3/libdobby-arm64.a -O dobby/libdobby-arm64.a
-          wget https://github.com/jmpews/Dobby/releases/download/v1.0-rc3/libdobby-armv7-a.a -O dobby/libdobby-armv7-a.a
-          wget https://raw.githubusercontent.com/jmpews/Dobby/master/dobby.h -O dobby/dobby.h
+
+      - name: Build Dobby from Source
+        run: |
+          git clone https://github.com/jmpews/Dobby.git dobby
+          cd dobby
+          # Build for arm64-v8a
+          mkdir build_arm64 && cd build_arm64
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
+                   -DANDROID_ABI=arm64-v8a \
+                   -DANDROID_PLATFORM=android-34 \
+                   -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          cp libdobby.a ../../dobby/libdobby-arm64.a
+          cd ..
+          # Build for armeabi-v7a
+          mkdir build_armv7 && cd build_armv7
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
+                   -DANDROID_ABI=armeabi-v7a \
+                   -DANDROID_PLATFORM=android-34 \
+                   -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          cp libdobby.a ../../dobby/libdobby-armv7-a.a
+          cd ../..
+          # Copy header
+          cp dobby/include/dobby.h dobby/dobby.h
 
       - name: Fetch config.json
         run: |
