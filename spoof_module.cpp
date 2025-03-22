@@ -6,7 +6,9 @@
 #include <unordered_map>
 #include <sys/system_properties.h>
 #include <dlfcn.h>
-#include "JniHelper.hpp" // Adjust to actual header
+#include <sys/mman.h>
+#include <unistd.h>
+#include "JniHelper.hpp" // From Android-JNI-Helper
 
 using json = nlohmann::json;
 
@@ -25,17 +27,17 @@ struct DeviceInfo {
     std::string serial_content;
 };
 
-// Function pointers (all preserved)
+// Function pointers
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
 static orig_read_t orig_read = nullptr;
 typedef void (*orig_set_static_object_field_t)(JNIEnv*, jclass, jfieldID, jobject);
 static orig_set_static_object_field_t orig_set_static_object_field = nullptr;
-typedef int (*orig_stat_t)(const char*, struct stat*); // Added for extra stealth
+typedef int (*orig_stat_t)(const char*, struct stat*);
 static orig_stat_t orig_stat = nullptr;
 
-// Global variables (all preserved)
+// Global variables
 static DeviceInfo current_info;
 static jclass buildClass = nullptr;
 static jclass versionClass = nullptr;
@@ -57,30 +59,35 @@ public:
         this->api = api;
         this->env = env;
 
-        // Full JNI initialization (unchanged)
-        if (!buildClass) {
-            buildClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build"));
-            if (buildClass) {
-                modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
-                brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
-                deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
-                manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
-                fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
-                buildIdField = env->GetStaticFieldID(buildClass, "ID", "Ljava/lang/String;");
-                displayField = env->GetStaticFieldID(buildClass, "DISPLAY", "Ljava/lang/String;");
-                productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
-                serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
+        // Use JniHelper for JNI calls
+        try {
+            if (!buildClass) {
+                buildClass = (jclass)env->NewGlobalRef(jni::FindClass(env, "android/os/Build"));
+                if (buildClass) {
+                    modelField = jni::GetStaticFieldID(env, buildClass, "MODEL", "Ljava/lang/String;");
+                    brandField = jni::GetStaticFieldID(env, buildClass, "BRAND", "Ljava/lang/String;");
+                    deviceField = jni::GetStaticFieldID(env, buildClass, "DEVICE", "Ljava/lang/String;");
+                    manufacturerField = jni::GetStaticFieldID(env, buildClass, "MANUFACTURER", "Ljava/lang/String;");
+                    fingerprintField = jni::GetStaticFieldID(env, buildClass, "FINGERPRINT", "Ljava/lang/String;");
+                    buildIdField = jni::GetStaticFieldID(env, buildClass, "ID", "Ljava/lang/String;");
+                    displayField = jni::GetStaticFieldID(env, buildClass, "DISPLAY", "Ljava/lang/String;");
+                    productField = jni::GetStaticFieldID(env, buildClass, "PRODUCT", "Ljava/lang/String;");
+                    serialField = jni::GetStaticFieldID(env, buildClass, "SERIAL", "Ljava/lang/String;");
+                }
             }
-        }
-        if (!versionClass) {
-            versionClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build$VERSION"));
-            if (versionClass) {
-                versionReleaseField = env->GetStaticFieldID(versionClass, "RELEASE", "Ljava/lang/String;");
-                sdkIntField = env->GetStaticFieldID(versionClass, "SDK_INT", "I");
+            if (!versionClass) {
+                versionClass = (jclass)env->NewGlobalRef(jni::FindClass(env, "android/os/Build$VERSION"));
+                if (versionClass) {
+                    versionReleaseField = jni::GetStaticFieldID(env, versionClass, "RELEASE", "Ljava/lang/String;");
+                    sdkIntField = jni::GetStaticFieldID(env, versionClass, "SDK_INT", "I");
+                }
             }
+        } catch (const jni::JNIException& e) {
+            // Handle JNI errors gracefully
+            return;
         }
 
-        // Initialize all function pointers
+        // Initialize function pointers
         void* handle = dlopen("libc.so", RTLD_LAZY);
         if (handle) {
             orig_prop_get = (orig_prop_get_t)dlsym(handle, "__system_property_get");
@@ -94,16 +101,15 @@ public:
             dlclose(handle);
         }
 
-        // Add hooks with Android-JNI-Helper (no removals)
+        // Set up manual hooks
         hookNativeGetprop();
         hookNativeRead();
         hookJniSetStaticObjectField();
-        hookStat(); // Extra stealth, not in original
+        hookStat();
         loadConfig();
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs* args) override {
-        // Unchanged
         if (!args || !args->nice_name) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
@@ -125,7 +131,6 @@ public:
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        // Unchanged
         if (!args || !args->nice_name || package_map.empty() || !buildClass) return;
         const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
         if (!package_name) return;
@@ -143,7 +148,6 @@ private:
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
 
-    // Added obfuscation (enhancement, not removal)
     std::string obfuscateString(const std::string& input) {
         std::string result = input;
         const char key = 0x5A;
@@ -152,9 +156,8 @@ private:
     }
 
     void loadConfig() {
-        // Full config loading (unchanged)
         std::string obfuscatedPath = obfuscateString("/data/adb/modules/COPG/config.json");
-        std::string realPath = obfuscateString(obfuscatedPath); // Reverse XOR
+        std::string realPath = obfuscateString(obfuscatedPath);
         std::ifstream file(realPath);
         if (!file.is_open()) return;
         try {
@@ -185,24 +188,22 @@ private:
     }
 
     void spoofDevice(const DeviceInfo& info) {
-        // Full spoofing (unchanged)
-        if (modelField) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(info.model.c_str()));
-        if (brandField) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(info.brand.c_str()));
-        if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(info.device.c_str()));
-        if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, env->NewStringUTF(info.manufacturer.c_str()));
-        if (fingerprintField) env->SetStaticObjectField(buildClass, fingerprintField, env->NewStringUTF(info.fingerprint.c_str()));
-        if (buildIdField && !info.build_id.empty()) env->SetStaticObjectField(buildClass, buildIdField, env->NewStringUTF(info.build_id.c_str()));
-        if (displayField && !info.display.empty()) env->SetStaticObjectField(buildClass, displayField, env->NewStringUTF(info.display.c_str()));
-        if (productField && !info.product.empty()) env->SetStaticObjectField(buildClass, productField, env->NewStringUTF(info.product.c_str()));
+        if (modelField) env->SetStaticObjectField(buildClass, modelField, jni::StringToJString(env, info.model));
+        if (brandField) env->SetStaticObjectField(buildClass, brandField, jni::StringToJString(env, info.brand));
+        if (deviceField) env->SetStaticObjectField(buildClass, deviceField, jni::StringToJString(env, info.device));
+        if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, jni::StringToJString(env, info.manufacturer));
+        if (fingerprintField) env->SetStaticObjectField(buildClass, fingerprintField, jni::StringToJString(env, info.fingerprint));
+        if (buildIdField && !info.build_id.empty()) env->SetStaticObjectField(buildClass, buildIdField, jni::StringToJString(env, info.build_id));
+        if (displayField && !info.display.empty()) env->SetStaticObjectField(buildClass, displayField, jni::StringToJString(env, info.display));
+        if (productField && !info.product.empty()) env->SetStaticObjectField(buildClass, productField, jni::StringToJString(env, info.product));
         if (versionReleaseField && !info.version_release.empty()) 
-            env->SetStaticObjectField(versionClass, versionReleaseField, env->NewStringUTF(info.version_release.c_str()));
+            env->SetStaticObjectField(versionClass, versionReleaseField, jni::StringToJString(env, info.version_release));
         if (sdkIntField && !info.version_release.empty()) 
             env->SetStaticIntField(versionClass, sdkIntField, info.version_release == "13" ? 33 : 34);
-        if (serialField && !info.serial.empty()) env->SetStaticObjectField(buildClass, serialField, env->NewStringUTF(info.serial.c_str()));
+        if (serialField && !info.serial.empty()) env->SetStaticObjectField(buildClass, serialField, jni::StringToJString(env, info.serial));
     }
 
     void spoofSystemProperties(const DeviceInfo& info) {
-        // Full spoofing (unchanged)
         if (!info.brand.empty()) __system_property_set("ro.product.brand", info.brand.c_str());
         if (!info.device.empty()) __system_property_set("ro.product.device", info.device.c_str());
         if (!info.manufacturer.empty()) __system_property_set("ro.product.manufacturer", info.manufacturer.c_str());
@@ -211,7 +212,6 @@ private:
     }
 
     static int hooked_prop_get(const char* name, char* value, const char* default_value) {
-        // Full spoofing (unchanged)
         if (!orig_prop_get) return -1;
         std::string prop_name(name);
         if (prop_name == "ro.product.brand" && !current_info.brand.empty()) {
@@ -235,13 +235,18 @@ private:
 
     void hookNativeGetprop() {
         if (!orig_prop_get) return;
-        AndroidJNIHelper::HookFunction("libc.so", "__system_property_get",
-                                      (void*)hooked_prop_get,
-                                      (void**)&orig_prop_get);
+        void* sym = dlsym(RTLD_DEFAULT, "__system_property_get");
+        if (!sym) return;
+        size_t page_size = sysconf(_SC_PAGE_SIZE);
+        void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
+        if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+            *(void**)&orig_prop_get = sym;
+            *(void**)sym = (void*)hooked_prop_get;
+            mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+        }
     }
 
     static ssize_t hooked_read(int fd, void* buf, size_t count) {
-        // Full spoofing (unchanged)
         if (!orig_read) return -1;
         char path[256];
         snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
@@ -265,22 +270,27 @@ private:
 
     void hookNativeRead() {
         if (!orig_read) return;
-        AndroidJNIHelper::HookFunction("libc.so", "read",
-                                      (void*)hooked_read,
-                                      (void**)&orig_read);
+        void* sym = dlsym(RTLD_DEFAULT, "read");
+        if (!sym) return;
+        size_t page_size = sysconf(_SC_PAGE_SIZE);
+        void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
+        if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+            *(void**)&orig_read = sym;
+            *(void**)sym = (void*)hooked_read;
+            mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+        }
     }
 
     static void hooked_set_static_object_field(JNIEnv* env, jclass clazz, jfieldID fieldID, jobject value) {
-        // Full spoofing protection (unchanged)
         if (clazz == buildClass) {
             if (fieldID == modelField || fieldID == brandField || fieldID == deviceField ||
                 fieldID == manufacturerField || fieldID == fingerprintField || fieldID == buildIdField ||
                 fieldID == displayField || fieldID == productField || fieldID == serialField) {
-                return; // Block reset
+                return;
             }
         } else if (clazz == versionClass) {
             if (fieldID == versionReleaseField) {
-                return; // Block reset
+                return;
             }
         }
         if (orig_set_static_object_field) {
@@ -290,13 +300,18 @@ private:
 
     void hookJniSetStaticObjectField() {
         if (!orig_set_static_object_field) return;
-        AndroidJNIHelper::HookJNIMethod(env, "JNI_SetStaticObjectField",
-                                       (void*)hooked_set_static_object_field,
-                                       (void**)&orig_set_static_object_field);
+        void* sym = dlsym(RTLD_DEFAULT, "JNI_SetStaticObjectField");
+        if (!sym) return;
+        size_t page_size = sysconf(_SC_PAGE_SIZE);
+        void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
+        if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+            *(void**)&orig_set_static_object_field = sym;
+            *(void**)sym = (void*)hooked_set_static_object_field;
+            mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+        }
     }
 
     static int hooked_stat(const char* path, struct stat* buf) {
-        // Added stealth (not in original, but enhances safety)
         if (!orig_stat) return -1;
         std::string spath(path);
         if (spath.find("COPG") != std::string::npos || 
@@ -310,9 +325,15 @@ private:
 
     void hookStat() {
         if (!orig_stat) return;
-        AndroidJNIHelper::HookFunction("libc.so", "stat",
-                                      (void*)hooked_stat,
-                                      (void**)&orig_stat);
+        void* sym = dlsym(RTLD_DEFAULT, "stat");
+        if (!sym) return;
+        size_t page_size = sysconf(_SC_PAGE_SIZE);
+        void* page_start = (void*)((uintptr_t)sym & ~(page_size - 1));
+        if (mprotect(page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
+            *(void**)&orig_stat = sym;
+            *(void**)sym = (void*)hooked_stat;
+            mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
+        }
     }
 };
 
