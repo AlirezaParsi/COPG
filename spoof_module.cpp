@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <sys/system_properties.h>
 #include <dlfcn.h>
-#include "AndroidJNIHelper.hpp" // Adjust to actual header
+#include "JniHelper.hpp" // Adjust to actual header
 
 using json = nlohmann::json;
 
