@@ -1,6 +1,6 @@
 Support Group:
 https://t.me/TheAOSP
-# v2.7
+# v2.8
 - trying to fix mid-game crashing
 - improve ban spoof system
 - **Note**: getting banned at your own risk
