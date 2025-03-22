@@ -8,7 +8,6 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <thread>
 
 using json = nlohmann::json;
 
@@ -118,18 +117,10 @@ public:
         auto it = package_map.find(package_name);
         if (it != package_map.end()) {
             current_info = it->second;
-            spoofDevice(current_info);
-            spoofSystemProperties(current_info);
-            hookNativeGetprop();
-            hookNativeRead();
-
-            // Periodic re-spoofing thread to handle mid-game resets
-            std::thread([this]() {
-                while (true) {
-                    spoofDevice(current_info);
-                    std::this_thread::sleep_for(std::chrono::seconds(5));
-                }
-            }).detach();
+            spoofDevice(current_info);           // Spoof once here
+            spoofSystemProperties(current_info); // Spoof system properties once
+            hookNativeGetprop();                 // Apply hooks once
+            hookNativeRead();                    // Apply hooks once
         }
         env->ReleaseStringUTFChars(args->nice_name, package_name);
     }
@@ -238,7 +229,6 @@ private:
     static ssize_t hooked_read(int fd, void* buf, size_t count) {
         if (!orig_read) return -1;
 
-        // Check if this is a read from /proc/cpuinfo or serial file based on fd
         char path[256];
         ssize_t result = -1;
         snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
