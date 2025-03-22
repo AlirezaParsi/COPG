@@ -8,7 +8,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include "JniHelper.hpp" // From Android-JNI-Helper
+#include "JniHelper.hpp"
 
 using json = nlohmann::json;
 
@@ -59,10 +59,10 @@ public:
         this->api = api;
         this->env = env;
 
-        // Use JniHelper for JNI calls
         try {
             if (!buildClass) {
-                buildClass = (jclass)env->NewGlobalRef(jni::FindClass(env, "android/os/Build"));
+                jni::ScopedLocalRef<jclass> localBuildClass(env, jni::FindClass(env, "android/os/Build"));
+                buildClass = (jclass)env->NewGlobalRef(localBuildClass.get());
                 if (buildClass) {
                     modelField = jni::GetStaticFieldID(env, buildClass, "MODEL", "Ljava/lang/String;");
                     brandField = jni::GetStaticFieldID(env, buildClass, "BRAND", "Ljava/lang/String;");
@@ -76,18 +76,17 @@ public:
                 }
             }
             if (!versionClass) {
-                versionClass = (jclass)env->NewGlobalRef(jni::FindClass(env, "android/os/Build$VERSION"));
+                jni::ScopedLocalRef<jclass> localVersionClass(env, jni::FindClass(env, "android/os/Build$VERSION"));
+                versionClass = (jclass)env->NewGlobalRef(localVersionClass.get());
                 if (versionClass) {
                     versionReleaseField = jni::GetStaticFieldID(env, versionClass, "RELEASE", "Ljava/lang/String;");
                     sdkIntField = jni::GetStaticFieldID(env, versionClass, "SDK_INT", "I");
                 }
             }
         } catch (const jni::JNIException& e) {
-            // Handle JNI errors gracefully
             return;
         }
 
-        // Initialize function pointers
         void* handle = dlopen("libc.so", RTLD_LAZY);
         if (handle) {
             orig_prop_get = (orig_prop_get_t)dlsym(handle, "__system_property_get");
@@ -101,7 +100,6 @@ public:
             dlclose(handle);
         }
 
-        // Set up manual hooks
         hookNativeGetprop();
         hookNativeRead();
         hookJniSetStaticObjectField();
@@ -114,7 +112,8 @@ public:
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
-        const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
+        jni::ScopedLocalRef<jstring> niceName(env, args->nice_name);
+        const char* package_name = env->GetStringUTFChars(niceName.get(), nullptr);
         if (!package_name) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
@@ -127,12 +126,13 @@ public:
             spoofDevice(current_info);
             spoofSystemProperties(current_info);
         }
-        env->ReleaseStringUTFChars(args->nice_name, package_name);
+        env->ReleaseStringUTFChars(niceName.get(), package_name);
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
         if (!args || !args->nice_name || package_map.empty() || !buildClass) return;
-        const char* package_name = env->GetStringUTFChars(args->nice_name, nullptr);
+        jni::ScopedLocalRef<jstring> niceName(env, args->nice_name);
+        const char* package_name = env->GetStringUTFChars(niceName.get(), nullptr);
         if (!package_name) return;
         auto it = package_map.find(package_name);
         if (it != package_map.end()) {
@@ -140,7 +140,7 @@ public:
             spoofDevice(current_info);
             spoofSystemProperties(current_info);
         }
-        env->ReleaseStringUTFChars(args->nice_name, package_name);
+        env->ReleaseStringUTFChars(niceName.get(), package_name);
     }
 
 private:
@@ -188,19 +188,48 @@ private:
     }
 
     void spoofDevice(const DeviceInfo& info) {
-        if (modelField) env->SetStaticObjectField(buildClass, modelField, jni::StringToJString(env, info.model));
-        if (brandField) env->SetStaticObjectField(buildClass, brandField, jni::StringToJString(env, info.brand));
-        if (deviceField) env->SetStaticObjectField(buildClass, deviceField, jni::StringToJString(env, info.device));
-        if (manufacturerField) env->SetStaticObjectField(buildClass, manufacturerField, jni::StringToJString(env, info.manufacturer));
-        if (fingerprintField) env->SetStaticObjectField(buildClass, fingerprintField, jni::StringToJString(env, info.fingerprint));
-        if (buildIdField && !info.build_id.empty()) env->SetStaticObjectField(buildClass, buildIdField, jni::StringToJString(env, info.build_id));
-        if (displayField && !info.display.empty()) env->SetStaticObjectField(buildClass, displayField, jni::StringToJString(env, info.display));
-        if (productField && !info.product.empty()) env->SetStaticObjectField(buildClass, productField, jni::StringToJString(env, info.product));
-        if (versionReleaseField && !info.version_release.empty()) 
-            env->SetStaticObjectField(versionClass, versionReleaseField, jni::StringToJString(env, info.version_release));
+        if (modelField) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.model));
+            env->SetStaticObjectField(buildClass, modelField, jstr.get());
+        }
+        if (brandField) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.brand));
+            env->SetStaticObjectField(buildClass, brandField, jstr.get());
+        }
+        if (deviceField) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.device));
+            env->SetStaticObjectField(buildClass, deviceField, jstr.get());
+        }
+        if (manufacturerField) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.manufacturer));
+            env->SetStaticObjectField(buildClass, manufacturerField, jstr.get());
+        }
+        if (fingerprintField) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.fingerprint));
+            env->SetStaticObjectField(buildClass, fingerprintField, jstr.get());
+        }
+        if (buildIdField && !info.build_id.empty()) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.build_id));
+            env->SetStaticObjectField(buildClass, buildIdField, jstr.get());
+        }
+        if (displayField && !info.display.empty()) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.display));
+            env->SetStaticObjectField(buildClass, displayField, jstr.get());
+        }
+        if (productField && !info.product.empty()) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.product));
+            env->SetStaticObjectField(buildClass, productField, jstr.get());
+        }
+        if (versionReleaseField && !info.version_release.empty()) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.version_release));
+            env->SetStaticObjectField(versionClass, versionReleaseField, jstr.get());
+        }
         if (sdkIntField && !info.version_release.empty()) 
             env->SetStaticIntField(versionClass, sdkIntField, info.version_release == "13" ? 33 : 34);
-        if (serialField && !info.serial.empty()) env->SetStaticObjectField(buildClass, serialField, jni::StringToJString(env, info.serial));
+        if (serialField && !info.serial.empty()) {
+            jni::ScopedLocalRef<jstring> jstr(env, jni::StringToJString(env, info.serial));
+            env->SetStaticObjectField(buildClass, serialField, jstr.get());
+        }
     }
 
     void spoofSystemProperties(const DeviceInfo& info) {
