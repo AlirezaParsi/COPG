@@ -1,17 +1,19 @@
 Support Group:
 https://t.me/TheAOSP
+# v2.7
+- trying to fix mid-game crashing
+- improve ban spoof system
+- **Note**: getting banned at your own risk
 # v2.6
 - better anti-cheat handling
 - **Note**: getting banned at your own risk
 # v2.5
 - added better spoof for Call of duty anti-cheat
 - **Note**: getting banned at your own risk
-
 # v2.3
 - added action button for downloading updated config if needed
 - added Zygisk check for installing module
 - **Note**: getting banned at your own risk 
-
 # v2.2
 - Cache JNI Calls for faster app game launch.
 - removed logd for even faster launch.
