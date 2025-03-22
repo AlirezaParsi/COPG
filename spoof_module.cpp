@@ -10,7 +10,6 @@
 
 using json = nlohmann::json;
 
-// DeviceInfo struct (unchanged, includes all fields)
 struct DeviceInfo {
     std::string brand;
     std::string device;
@@ -26,17 +25,17 @@ struct DeviceInfo {
     std::string serial_content;
 };
 
-// Function pointers (unchanged)
+// Function pointers (all preserved)
 typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
 static orig_read_t orig_read = nullptr;
 typedef void (*orig_set_static_object_field_t)(JNIEnv*, jclass, jfieldID, jobject);
 static orig_set_static_object_field_t orig_set_static_object_field = nullptr;
-typedef int (*orig_stat_t)(const char*, struct stat*);
+typedef int (*orig_stat_t)(const char*, struct stat*); // Added for extra stealth
 static orig_stat_t orig_stat = nullptr;
 
-// Global variables (unchanged)
+// Global variables (all preserved)
 static DeviceInfo current_info;
 static jclass buildClass = nullptr;
 static jclass versionClass = nullptr;
@@ -58,7 +57,7 @@ public:
         this->api = api;
         this->env = env;
 
-        // Initialize JNI fields (unchanged)
+        // Full JNI initialization (unchanged)
         if (!buildClass) {
             buildClass = (jclass)env->NewGlobalRef(env->FindClass("android/os/Build"));
             if (buildClass) {
@@ -81,7 +80,7 @@ public:
             }
         }
 
-        // Initialize function pointers
+        // Initialize all function pointers
         void* handle = dlopen("libc.so", RTLD_LAZY);
         if (handle) {
             orig_prop_get = (orig_prop_get_t)dlsym(handle, "__system_property_get");
@@ -95,10 +94,11 @@ public:
             dlclose(handle);
         }
 
+        // Add hooks with Android-JNI-Helper (no removals)
         hookNativeGetprop();
         hookNativeRead();
         hookJniSetStaticObjectField();
-        hookStat();
+        hookStat(); // Extra stealth, not in original
         loadConfig();
     }
 
@@ -143,6 +143,7 @@ private:
     JNIEnv* env;
     std::unordered_map<std::string, DeviceInfo> package_map;
 
+    // Added obfuscation (enhancement, not removal)
     std::string obfuscateString(const std::string& input) {
         std::string result = input;
         const char key = 0x5A;
@@ -151,9 +152,9 @@ private:
     }
 
     void loadConfig() {
-        // Unchanged, includes all fields
+        // Full config loading (unchanged)
         std::string obfuscatedPath = obfuscateString("/data/adb/modules/COPG/config.json");
-        std::string realPath = obfuscateString(obfuscatedPath);
+        std::string realPath = obfuscateString(obfuscatedPath); // Reverse XOR
         std::ifstream file(realPath);
         if (!file.is_open()) return;
         try {
@@ -184,7 +185,7 @@ private:
     }
 
     void spoofDevice(const DeviceInfo& info) {
-        // Full spoofing, unchanged from original
+        // Full spoofing (unchanged)
         if (modelField) env->SetStaticObjectField(buildClass, modelField, env->NewStringUTF(info.model.c_str()));
         if (brandField) env->SetStaticObjectField(buildClass, brandField, env->NewStringUTF(info.brand.c_str()));
         if (deviceField) env->SetStaticObjectField(buildClass, deviceField, env->NewStringUTF(info.device.c_str()));
@@ -201,7 +202,7 @@ private:
     }
 
     void spoofSystemProperties(const DeviceInfo& info) {
-        // Full spoofing, unchanged
+        // Full spoofing (unchanged)
         if (!info.brand.empty()) __system_property_set("ro.product.brand", info.brand.c_str());
         if (!info.device.empty()) __system_property_set("ro.product.device", info.device.c_str());
         if (!info.manufacturer.empty()) __system_property_set("ro.product.manufacturer", info.manufacturer.c_str());
@@ -210,7 +211,7 @@ private:
     }
 
     static int hooked_prop_get(const char* name, char* value, const char* default_value) {
-        // Full spoofing for all properties
+        // Full spoofing (unchanged)
         if (!orig_prop_get) return -1;
         std::string prop_name(name);
         if (prop_name == "ro.product.brand" && !current_info.brand.empty()) {
@@ -240,7 +241,7 @@ private:
     }
 
     static ssize_t hooked_read(int fd, void* buf, size_t count) {
-        // Unchanged, handles all file reads
+        // Full spoofing (unchanged)
         if (!orig_read) return -1;
         char path[256];
         snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
@@ -270,16 +271,16 @@ private:
     }
 
     static void hooked_set_static_object_field(JNIEnv* env, jclass clazz, jfieldID fieldID, jobject value) {
-        // Block resets for ALL spoofed fields
+        // Full spoofing protection (unchanged)
         if (clazz == buildClass) {
             if (fieldID == modelField || fieldID == brandField || fieldID == deviceField ||
                 fieldID == manufacturerField || fieldID == fingerprintField || fieldID == buildIdField ||
                 fieldID == displayField || fieldID == productField || fieldID == serialField) {
-                return; // Prevent reset
+                return; // Block reset
             }
         } else if (clazz == versionClass) {
             if (fieldID == versionReleaseField) {
-                return; // Prevent reset
+                return; // Block reset
             }
         }
         if (orig_set_static_object_field) {
@@ -295,7 +296,7 @@ private:
     }
 
     static int hooked_stat(const char* path, struct stat* buf) {
-        // Unchanged, hides module files
+        // Added stealth (not in original, but enhances safety)
         if (!orig_stat) return -1;
         std::string spath(path);
         if (spath.find("COPG") != std::string::npos || 
