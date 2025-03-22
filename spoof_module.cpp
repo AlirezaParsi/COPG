@@ -8,7 +8,6 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <android/log.h> // Added for logging
 
 using json = nlohmann::json;
 
@@ -32,8 +31,8 @@ typedef int (*orig_prop_get_t)(const char*, char*, const char*);
 static orig_prop_get_t orig_prop_get = nullptr;
 typedef ssize_t (*orig_read_t)(int, void*, size_t);
 static orig_read_t orig_read = nullptr;
-typedef void (*orig_set_static_object_field_t)(JNIEnv*, jclass, jfieldID, jobject); // New JNI hook
-static orig_set_static_object_field_t orig_set_static_object_field = nullptr;     // New JNI hook
+typedef void (*orig_set_static_object_field_t)(JNIEnv*, jclass, jfieldID, jobject);
+static orig_set_static_object_field_t orig_set_static_object_field = nullptr;
 
 // Static global variables
 static DeviceInfo current_info;
@@ -89,7 +88,7 @@ public:
 
         hookNativeGetprop();
         hookNativeRead();
-        hookJniSetStaticObjectField(); // New JNI hook initialization
+        hookJniSetStaticObjectField(); // Still call this to set up the hook
         loadConfig();
     }
 
@@ -271,20 +270,18 @@ private:
         }
     }
 
-    // New JNI hook for SetStaticObjectField
+    // JNI hook without logging
     static void hooked_set_static_object_field(JNIEnv* env, jclass clazz, jfieldID fieldID, jobject value) {
         if (clazz == buildClass) {
             // Prevent resetting of spoofed Build fields
             if (fieldID == modelField || fieldID == brandField || fieldID == deviceField ||
                 fieldID == manufacturerField || fieldID == fingerprintField || fieldID == buildIdField ||
                 fieldID == displayField || fieldID == productField || fieldID == serialField) {
-                __android_log_print(ANDROID_LOG_INFO, "SpoofModule", "Blocked attempt to reset Build field");
-                return; // Do nothing, preserving our spoofed value
+                return; // Block reset without logging
             }
         } else if (clazz == versionClass) {
             if (fieldID == versionReleaseField) {
-                __android_log_print(ANDROID_LOG_INFO, "SpoofModule", "Blocked attempt to reset VERSION field");
-                return;
+                return; // Block reset without logging
             }
         }
         if (orig_set_static_object_field) {
@@ -293,7 +290,7 @@ private:
     }
 
     void hookJniSetStaticObjectField() {
-        void* handle = dlopen("libandroid_runtime.so", RTLD_LAZY); // JNI is in libandroid_runtime.so
+        void* handle = dlopen("libandroid_runtime.so", RTLD_LAZY);
         if (handle) {
             void* sym = dlsym(handle, "JNI_SetStaticObjectField");
             if (sym) {
@@ -303,16 +300,9 @@ private:
                     orig_set_static_object_field = *(orig_set_static_object_field_t*)&sym;
                     *(void**)&sym = (void*)hooked_set_static_object_field;
                     mprotect(page_start, page_size, PROT_READ | PROT_EXEC);
-                    __android_log_print(ANDROID_LOG_INFO, "SpoofModule", "Successfully hooked JNI_SetStaticObjectField");
-                } else {
-                    __android_log_print(ANDROID_LOG_ERROR, "SpoofModule", "Failed to mprotect JNI_SetStaticObjectField");
                 }
-            } else {
-                __android_log_print(ANDROID_LOG_ERROR, "SpoofModule", "Failed to find JNI_SetStaticObjectField");
             }
             dlclose(handle);
-        } else {
-            __android_log_print(ANDROID_LOG_ERROR, "SpoofModule", "Failed to open libandroid_runtime.so");
         }
     }
 };
