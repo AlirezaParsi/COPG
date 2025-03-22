@@ -4,11 +4,18 @@ project(SpoofModule)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(spoof SHARED spoof_module.cpp)
+# Define the spoof library
+add_library(spoof SHARED
+    spoof_module.cpp
+)
 
+# Find log library
 find_library(log-lib log)
 
+# Include directories
 include_directories(${CMAKE_SOURCE_DIR}/zygisk)
 include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/AndroidJNIHelper)  
 
-target_link_libraries(spoof ${log-lib})
+# Link libraries
+target_link_libraries(spoof PRIVATE ${log-lib})
