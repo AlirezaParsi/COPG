@@ -108,12 +108,9 @@ static void companion(int fd) {
             } else {
                 LOGE("Spoof file missing: %s", spoof_file_path);
             }
-        } else if (command == "read_build_props") {
-            result = 0;
-            COMPANION_LOG("Build props read (no action required)");
-        } else if (command == "restore_build_props") {
-            result = 0;
-            COMPANION_LOG("Build props restore (no action required)");
+        } else {
+            LOGE("Unknown command: %s", command.c_str());
+            result = -1;
         }
         
         write(fd, &result, sizeof(result));
