@@ -48,17 +48,7 @@ struct DeviceInfo {
     bool should_spoof_sdk_int = false;
 };
 
-struct BuildPropValues {
-    std::string ro_product_brand;
-    std::string ro_product_manufacturer;
-    std::string ro_product_model;
-    std::string ro_product_device;
-    std::string ro_product_name;
-    std::string ro_build_fingerprint;
-};
-
 static DeviceInfo current_info;
-static BuildPropValues original_build_props;
 static std::mutex info_mutex;
 static jclass buildClass = nullptr;
 static jclass versionClass = nullptr;
@@ -92,118 +82,8 @@ struct JniString {
     const char* get() const { return chars; }
 };
 
-static std::string readBuildPropValue(const std::string& prop_name) {
-    const char* build_prop_paths[] = {
-        "/system/build.prop",
-        "/vendor/build.prop",
-        nullptr
-    };
-    
-    const char* prefixes[] = {
-        "ro.product.",
-        "ro.product.system.",
-        "ro.product.vendor.",
-        ""
-    };
-    
-    for (int i = 0; build_prop_paths[i] != nullptr; i++) {
-        FILE* file = fopen(build_prop_paths[i], "r");
-        if (!file) continue;
-        
-        char line[512];
-        
-        while (fgets(line, sizeof(line), file)) {
-            for (int j = 0; j < sizeof(prefixes)/sizeof(prefixes[0]); j++) {
-                std::string search_str;
-                if (strlen(prefixes[j]) > 0) {
-                    search_str = std::string(prefixes[j]) + prop_name + "=";
-                } else {
-                    search_str = prop_name + "=";
-                }
-                
-                if (strstr(line, search_str.c_str()) == line) {
-                    std::string value = line + search_str.length();
-                    size_t newline_pos = value.find('\n');
-                    if (newline_pos != std::string::npos) {
-                        value.erase(newline_pos);
-                    }
-                    
-                    size_t comment_pos = value.find('#');
-                    if (comment_pos != std::string::npos) {
-                        value.erase(comment_pos);
-                    }
-                    
-                    fclose(file);
-                    
-                    while (!value.empty() && value.back() == '\r') {
-                        value.pop_back();
-                    }
-                    
-                    return value;
-                }
-            }
-        }
-        
-        fclose(file);
-    }
-    
-    return "";
-}
-
-static void readOriginalBuildProps() {
-    original_build_props.ro_product_brand = readBuildPropValue("brand");
-    original_build_props.ro_product_manufacturer = readBuildPropValue("manufacturer");
-    original_build_props.ro_product_model = readBuildPropValue("model");
-    original_build_props.ro_product_device = readBuildPropValue("device");
-    original_build_props.ro_product_name = readBuildPropValue("name");
-    original_build_props.ro_build_fingerprint = readBuildPropValue("fingerprint");
-    
-    CONFIG_LOG("Original props loaded: brand=%s, model=%s", 
-               original_build_props.ro_product_brand.c_str(),
-               original_build_props.ro_product_model.c_str());
-}
-
 static void companion(int fd) {
     COMPANION_LOG("Started");
-    
-    auto findResetpropPath = []() -> std::string {
-        const char* possible_paths[] = {
-            "/data/adb/ksu/bin/resetprop",
-            "/data/adb/magisk/resetprop",
-            "/debug_ramdisk/resetprop",
-            "/data/adb/ap/bin/resetprop",
-            "/system/bin/resetprop",
-            "/vendor/bin/resetprop",
-            nullptr
-        };
-        
-        for (int i = 0; possible_paths[i] != nullptr; i++) {
-            if (access(possible_paths[i], X_OK) == 0) {
-                LOGD("Found resetprop at: %s", possible_paths[i]);
-                return std::string(possible_paths[i]);
-            }
-        }
-        
-        FILE* pipe = popen("which resetprop", "r");
-        if (pipe) {
-            char path[256];
-            if (fgets(path, sizeof(path), pipe) != nullptr) {
-                size_t len = strlen(path);
-                if (len > 0 && path[len-1] == '\n') {
-                    path[len-1] = '\0';
-                }
-                if (access(path, X_OK) == 0) {
-                    LOGD("Found resetprop via which: %s", path);
-                    pclose(pipe);
-                    return std::string(path);
-                }
-            }
-            pclose(pipe);
-        }
-        
-        LOGE("Could not find resetprop in any known location!");
-        return "";
-    };
     
     char buffer[2048];
     ssize_t bytes = read(fd, buffer, sizeof(buffer)-1);
@@ -214,14 +94,7 @@ static void companion(int fd) {
         
         int result = -1;
         
-        if (command.find("resetprop") == 0) {
-            std::string resetprop_path = findResetpropPath();
-            if (!resetprop_path.empty()) {
-                std::string full_cmd = resetprop_path + " " + command.substr(9);
-                COMPANION_LOG("Resetprop cmd: %s", command.substr(9).c_str());
-                result = system(full_cmd.c_str());
-            }
-        } else if (command == "unmount_spoof") {
+        if (command == "unmount_spoof") {
             result = system("/system/bin/umount /proc/cpuinfo 2>/dev/null");
             COMPANION_LOG("CPU unmount");
         } else if (command == "mount_spoof") {
@@ -236,52 +109,11 @@ static void companion(int fd) {
                 LOGE("Spoof file missing: %s", spoof_file_path);
             }
         } else if (command == "read_build_props") {
-            readOriginalBuildProps();
             result = 0;
+            COMPANION_LOG("Build props read (no action required)");
         } else if (command == "restore_build_props") {
-            std::string resetprop_path = findResetpropPath();
-            if (!resetprop_path.empty()) {
-                if (!original_build_props.ro_product_brand.empty()) {
-                    std::string cmd = resetprop_path + " ro.product.brand " + original_build_props.ro_product_brand;
-                    system(cmd.c_str());
-                }
-                if (!original_build_props.ro_product_manufacturer.empty()) {
-                    std::string cmd = resetprop_path + " ro.product.manufacturer " + original_build_props.ro_product_manufacturer;
-                    system(cmd.c_str());
-                }
-                if (!original_build_props.ro_product_model.empty()) {
-                    std::string cmd = resetprop_path + " ro.product.model " + original_build_props.ro_product_model;
-                    system(cmd.c_str());
-                }
-                if (!original_build_props.ro_product_device.empty()) {
-                    std::string cmd = resetprop_path + " ro.product.device " + original_build_props.ro_product_device;
-                    system(cmd.c_str());
-                }
-                if (!original_build_props.ro_product_name.empty()) {
-                    std::string cmd = resetprop_path + " ro.product.name " + original_build_props.ro_product_name;
-                    system(cmd.c_str());
-                }
-                if (!original_build_props.ro_build_fingerprint.empty()) {
-                    std::string cmd = resetprop_path + " ro.build.fingerprint " + original_build_props.ro_build_fingerprint;
-                    system(cmd.c_str());
-                }
-                
-                std::string original_android_version = readBuildPropValue("version.release");
-                std::string original_sdk = readBuildPropValue("version.sdk");
-                
-                if (!original_android_version.empty()) {
-                    std::string cmd = resetprop_path + " ro.build.version.release " + original_android_version;
-                    system(cmd.c_str());
-                }
-                
-                if (!original_sdk.empty()) {
-                    std::string cmd = resetprop_path + " ro.build.version.sdk " + original_sdk;
-                    system(cmd.c_str());
-                }
-            }
-            
             result = 0;
-            COMPANION_LOG("Build props restored");
+            COMPANION_LOG("Build props restore (no action required)");
         }
         
         write(fd, &result, sizeof(result));
@@ -372,7 +204,7 @@ public:
 
             if (is_cpu_only && !found_in_device_list && !is_blacklisted) {
                 current_needs_cpu_spoof = true;
-                PKG_LOG("%s: CPU spoof only - will restore original build props", package_name);
+                PKG_LOG("%s: CPU spoof only", package_name);
             }
 
             if (found_in_device_list && package_setting.empty() && !is_blacklisted && is_cpu_only) {
@@ -384,26 +216,13 @@ public:
             } else if (current_needs_device_spoof) {
                 PKG_LOG("%s: Device spoof only", package_name);
             } else if (current_needs_cpu_spoof) {
-                PKG_LOG("%s: CPU spoof only (will restore build props)", package_name);
+                PKG_LOG("%s: CPU spoof only", package_name);
             } else if (should_unmount_cpu) {
                 PKG_LOG("%s: CPU blocked", package_name);
             }
 
-            if (is_blacklisted) {
-                executeCompanionCommand("read_build_props");
-                executeCompanionCommand("restore_build_props");
-                PKG_LOG("%s: Original props restored (blacklist)", package_name);
-            }
-            
-            if (is_cpu_only && !found_in_device_list && !is_blacklisted) {
-                executeCompanionCommand("read_build_props");
-                executeCompanionCommand("restore_build_props");
-                PKG_LOG("%s: Original props restored (cpu_only)", package_name);
-            }
-
             if (current_needs_device_spoof) {
                 spoofDevice(current_info);
-                spoofSystemProps(current_info);
                 should_close = false;
             }
 
@@ -494,74 +313,6 @@ private:
         close(fd);
         
         return result == 0;
-    }
-
-    void spoofSystemProps(const DeviceInfo& info) {
-        SPOOF_LOG("Starting system props spoofing");
-        
-        const char* commands[] = {
-            "ro.product.brand",
-            "ro.product.manufacturer", 
-            "ro.product.model",
-            "ro.product.device",
-            "ro.product.name",
-            "ro.build.fingerprint"
-        };
-        
-        const char* values[] = {
-            info.brand.c_str(),
-            info.manufacturer.c_str(),
-            info.model.c_str(),
-            info.device.c_str(),
-            info.product.c_str(),
-            info.fingerprint.c_str()
-        };
-        
-        const int num_commands = sizeof(commands) / sizeof(commands[0]);
-        
-        for (int i = 0; i < num_commands; i++) {
-            std::string cmd = std::string("resetprop ") + commands[i] + " \"" + values[i] + "\"";
-            if (executeCompanionCommand(cmd)) {
-                LOGD("Resetprop successful: %s", cmd.c_str());
-            } else {
-                LOGW("Resetprop failed: %s", cmd.c_str());
-            }
-        }
-        
-        if (info.should_spoof_android_version) {
-            const char* release_props[] = {
-                "ro.build.version.release",
-                "ro.system.build.version.release",
-                "ro.vendor.build.version.release",
-                "ro.product.build.version.release"
-            };
-            
-            for (const auto& prop : release_props) {
-                std::string cmd = std::string("resetprop ") + prop + " \"" + info.android_version + "\"";
-                if (executeCompanionCommand(cmd)) {
-                    LOGD("Resetprop successful for Android version: %s", cmd.c_str());
-                }
-            }
-        }
-        
-        if (info.should_spoof_sdk_int) {
-            std::string sdk_str = std::to_string(info.sdk_int);
-            const char* sdk_props[] = {
-                "ro.build.version.sdk",
-                "ro.system.build.version.sdk",
-                "ro.vendor.build.version.sdk",
-                "ro.product.build.version.sdk"
-            };
-            
-            for (const auto& prop : sdk_props) {
-                std::string cmd = std::string("resetprop ") + prop + " \"" + sdk_str + "\"";
-                if (executeCompanionCommand(cmd)) {
-                    LOGD("Resetprop successful for SDK: %s", cmd.c_str());
-                }
-            }
-        }
-        
-        SPOOF_LOG("System props: model=%s, brand=%s", info.model.c_str(), info.brand.c_str());
     }
 
     void ensureBuildClass() {
@@ -663,7 +414,7 @@ private:
                     info.device = device.value("DEVICE", "generic");
                     info.manufacturer = device.value("MANUFACTURER", "generic");
                     info.model = device.value("MODEL", "generic");
-                    info.fingerprint = device.value("FINGERPRINT", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys");
+                    info.fingerprint = device.value("Fingerprint", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys");
                     info.product = device.value("PRODUCT", info.brand);
 
                     if (device.contains("ANDROID_VERSION")) {
