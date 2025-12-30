@@ -414,7 +414,7 @@ private:
                     info.device = device.value("DEVICE", "generic");
                     info.manufacturer = device.value("MANUFACTURER", "generic");
                     info.model = device.value("MODEL", "generic");
-                    info.fingerprint = device.value("Fingerprint", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys");
+                    info.fingerprint = device.value("FINGERPRINT", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys");
                     info.product = device.value("PRODUCT", info.brand);
 
                     if (device.contains("ANDROID_VERSION")) {
