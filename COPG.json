@@ -1,11 +1,7 @@
 {
   "cpu_spoof": {
     "blacklist": [
-      "com.bbl.mobilebanking",
-      "com.android.camera",
-      "com.sec.android.app.camera",
-      "com.oplus.camera",
-      "com.android.settings"
+      "com.bbl.mobilebanking"
     ],
     "cpu_only_packages": [
       "com.epicgames.fortnite",
