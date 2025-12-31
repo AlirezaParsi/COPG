@@ -4,6 +4,10 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v4.7.2
+- Fixed camera/setting some apps were crashing (removed resetprop feature)
+- Removed camera apps from black list (COPG.JSON)
+- Dropped FIFA mobile support.
 ## v4.7.1
 ### HOTFIX Update
 - Added blocked tag to all device packages for safety
