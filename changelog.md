@@ -4,6 +4,8 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v4.7.3
+- fix version code
 ## v4.7.2
 - Fixed camera/setting some apps were crashing (removed resetprop feature)
 - Removed camera apps from black list (COPG.JSON)
