@@ -18,7 +18,6 @@
 - Call of Duty Mobile: 120 FPS (BR/MT)
 - PUBG/BGMI: 120 FPS + Haptic Feedback
 - Delta Force: 120 FPS/HD Graphics
-- Mobile Legends: Ultra 120 FPS
 - Freefire / Freefire max 120 FPS
 - Fortnite 120 FPS
 - Farlight84 max graphic
