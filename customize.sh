@@ -279,22 +279,24 @@ cleanup_gphoto_directories() {
 cleanup_unused_architectures() {
   ABI_LIST=$(getprop ro.product.cpu.abilist)
   
-  # ARM device (including a64): keep ARM64 + ARM32, remove x86/x86_64
-  if echo "$ABI_LIST" | grep -qE "arm64|armeabi|armv7|arm"; then
-    ui_print " 🧹 ARM device - removing x86/x86_64 libraries..."
-    rm -f "$MODPATH/zygisk/x86.so" "$MODPATH/zygisk/x86_64.so" 2>/dev/null
-    ui_print " ✓ Kept: ARM64 + ARM32"
-  
-  # x86_64 device: keep everything (x86_64, x86, arm64, arm32) for Houdini
-  elif echo "$ABI_LIST" | grep -q "x86_64"; then
+  # IMPORTANT: Check in order from most specific to least specific
+  # x86_64 is the most specific (emulators with full compatibility)
+  if echo "$ABI_LIST" | grep -q "x86_64"; then
     ui_print " 🧹 x86_64 emulator - keeping all architectures..."
+    # Keep everything for Houdini compatibility
     ui_print " ✓ Kept: x86_64, x86, ARM64, ARM32"
   
-  # x86 32-bit device: keep x86 + ARM32 (for Houdini), remove arm64 & x86_64
-  elif echo "$ABI_LIST" | grep -q "x86"; then
+  # x86 32-bit (rare)
+  elif echo "$ABI_LIST" | grep -q "x86" && ! echo "$ABI_LIST" | grep -q "x86_64"; then
     ui_print " 🧹 x86 32-bit device - keeping x86 + ARM32..."
     rm -f "$MODPATH/zygisk/arm64-v8a.so" "$MODPATH/zygisk/x86_64.so" 2>/dev/null
     ui_print " ✓ Kept: x86, ARM32"
+  
+  # ARM devices (phones, tablets)
+  elif echo "$ABI_LIST" | grep -qE "arm64|armeabi|armv7|arm"; then
+    ui_print " 🧹 ARM device - removing x86/x86_64 libraries..."
+    rm -f "$MODPATH/zygisk/x86.so" "$MODPATH/zygisk/x86_64.so" 2>/dev/null
+    ui_print " ✓ Kept: ARM64 + ARM32"
   fi
   
   # Remove all controller source files (we only need 'controller')
