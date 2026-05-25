@@ -129,7 +129,6 @@ jobs:
           wget https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp -O zygisk/zygisk.hpp
           wget https://github.com/nlohmann/json/releases/download/v3.12.0/json.hpp -O include/nlohmann/json.hpp
 
-      # === ARM Builds ===
       - name: Build Project (arm64-v8a)
         uses: threeal/cmake-action@v2.1.0
         with:
@@ -150,7 +149,6 @@ jobs:
             -DANDROID_PLATFORM=android-34
             -DCMAKE_MAKE_PROGRAM=/usr/bin/make
 
-      # === x86 Builds ===
       - name: Build Project (x86_64)
         uses: threeal/cmake-action@v2.1.0
         with:
@@ -277,13 +275,11 @@ jobs:
         if: github.event.inputs.upload_to_release == 'true'
         run: |
           TAG="v${{ env.VERSION }}"
-          
           echo "📝 Preparing release notes for v${{ env.VERSION }}..."
           
           RELEASE_NOTES="## COPG v${{ env.VERSION }}\n\n"
           
           if [ -f "changelog.md" ]; then
-            VERSION_ESCAPED=\( (echo " \){{ env.VERSION }}" | sed 's/\./\\./g')
             CHANGELOG_SECTION=\( (awk -v version=" \){{ env.VERSION }}" '
               $0 \~ "^## v" version {
                 found=1
@@ -349,18 +345,12 @@ jobs:
           git checkout JSON
           git pull origin JSON
     
-          if [ -f "update.json" ]; then
-            echo "Updating existing update.json"
-          else
-            echo "Creating new update.json"
-          fi
-    
-          mv -f update.json update.json.new
-          cp update.json.new update.json
+          mv -f update.json update.json.new 2>/dev/null || true
+          cp update.json.new update.json 2>/dev/null || cp update.json update.json
           rm -f update.json.new
     
           git add update.json
-          git commit -m "Update update.json to v${VERSION}"
+          git commit -m "Update update.json to v${VERSION}" || echo "No changes to update.json"
           git push origin JSON
     
           echo "✅ update.json updated successfully in JSON branch"
@@ -404,20 +394,16 @@ jobs:
                   if is_release and changelog_raw and not changelog_raw.startswith("No changelog"):
                       telegraph = Telegraph()
                       telegraph.create_account(short_name='COPG-Bot')
-                      
                       content_html = f"<h3>Changelog for COPG v{version}</h3>"
-                      
                       lines = changelog_raw.split('\n')
                       in_list = False
-                      
                       for line in lines:
                           line = line.strip()
-                          if not line:
+                          if not line: 
                               if in_list:
                                   content_html += "</ul>"
                                   in_list = False
                               continue
-                          
                           if line.startswith('###'):
                               if in_list:
                                   content_html += "</ul>"
@@ -437,10 +423,8 @@ jobs:
                                   content_html += "</ul>"
                                   in_list = False
                               content_html += f"<p>{line}</p>"
-                      
                       if in_list:
                           content_html += "</ul>"
-                      
                       response = telegraph.create_page(
                           title=f'COPG v{version} Changelog',
                           author_name='COPG Build Bot',
@@ -448,7 +432,6 @@ jobs:
                           html_content=content_html
                       )
                       telegraph_url = f"https://telegra.ph/{response['path']}"
-                      
                       message += f"📋 **[Full Changelog]({telegraph_url})**\n\n"
                   
                   message += f"🔗 [View Workflow Run]({workflow_url})"
@@ -464,7 +447,6 @@ jobs:
                   if telegraph_url:
                       print(f"📄 Changelog published at: {telegraph_url}")
                   await client.disconnect()
-                  
               except Exception as e:
                   print(f"❌ Failed to send notification: {e}")
                   exit(1)
