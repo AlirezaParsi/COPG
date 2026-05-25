@@ -63,6 +63,119 @@ print_module_version() {
   print_empty_line
 }
 
+# ====================== Architecture Detection ======================
+detect_architecture() {
+  ABI_LIST=$(getprop ro.product.cpu.abilist)
+  ui_print " 📜 Supported ABIs: $ABI_LIST"
+
+  IS_ARM64=false
+  IS_ARM32=false
+  IS_X86_64=false
+  IS_X86=false
+
+  if echo "$ABI_LIST" | grep -qE "arm64-v8a|aarch64"; then
+    IS_ARM64=true
+  fi
+  if echo "$ABI_LIST" | grep -qE "armeabi-v7a|armv7"; then
+    IS_ARM32=true
+  fi
+  if echo "$ABI_LIST" | grep -qE "x86_64"; then
+    IS_X86_64=true
+  fi
+  if echo "$ABI_LIST" | grep -qE "x86" && ! echo "$ABI_LIST" | grep -qE "x86_64"; then
+    IS_X86=true
+  fi
+}
+
+# ====================== Install Controller ======================
+install_controller() {
+  print_box_start
+  ui_print "      ✦ Installing Controller ✦  "
+  print_empty_line
+
+  CONTROLLER_INSTALLED=false
+
+  # اولویت نصب: x86_64 > arm64 > x86 > arm32
+  if $IS_X86_64 && [ -f "$MODPATH/controller_x86_64" ]; then
+    mv "$MODPATH/controller_x86_64" "$MODPATH/controller"
+    ui_print " ✔ Installed x86_64 Controller"
+    CONTROLLER_INSTALLED=true
+
+  elif $IS_ARM64 && [ -f "$MODPATH/controller_arm64" ]; then
+    mv "$MODPATH/controller_arm64" "$MODPATH/controller"
+    ui_print " ✔ Installed ARM64 Controller"
+    CONTROLLER_INSTALLED=true
+
+  elif $IS_X86 && [ -f "$MODPATH/controller_x86" ]; then
+    mv "$MODPATH/controller_x86" "$MODPATH/controller"
+    ui_print " ✔ Installed x86 Controller"
+    CONTROLLER_INSTALLED=true
+
+  elif $IS_ARM32 && [ -f "$MODPATH/controller_armv7" ]; then
+    mv "$MODPATH/controller_armv7" "$MODPATH/controller"
+    ui_print " ✔ Installed ARM32 Controller"
+    CONTROLLER_INSTALLED=true
+  fi
+
+  if $CONTROLLER_INSTALLED; then
+    chmod 0755 "$MODPATH/controller"
+    ui_print " ➤ Primary controller activated"
+  else
+    ui_print " ✗ No Compatible Controller Found!"
+    print_failure_and_exit "binary"
+  fi
+
+  print_empty_line
+  ui_print " 🧹 Cleaning up unused controller binaries..."
+
+  if $IS_X86_64 || $IS_X86; then
+    ui_print " ➤ Keeping all controllers (Emulator mode)"
+  else
+    if $IS_ARM64; then
+      rm -f "$MODPATH/controller_x86_64" "$MODPATH/controller_x86" 2>/dev/null
+      ui_print " ➤ Kept: arm64 + armv7 (fallback)"
+    else
+      rm -f "$MODPATH/controller_arm64" "$MODPATH/controller_x86_64" "$MODPATH/controller_x86" 2>/dev/null
+      ui_print " ➤ Kept: Only armv7"
+    fi
+  fi
+
+  print_box_end
+  print_empty_line
+}
+
+# ====================== Cleanup Zygisk Libraries ======================
+cleanup_zygisk() {
+  print_box_start
+  ui_print "      ✦ Zygisk Libraries Cleanup ✦"
+  print_empty_line
+
+  if $IS_X86_64 || $IS_X86; then
+    ui_print " ➤ Keeping all Zygisk libraries (Emulator)"
+  else
+    if $IS_ARM64; then
+      rm -f "$MODPATH/zygisk/x86_64.so" "$MODPATH/zygisk/x86.so" 2>/dev/null
+      ui_print " ➤ Kept: arm64-v8a.so + armeabi-v7a.so"
+    else
+      rm -f "$MODPATH/zygisk/arm64-v8a.so" "$MODPATH/zygisk/x86_64.so" "$MODPATH/zygisk/x86.so" 2>/dev/null
+      ui_print " ➤ Kept: Only armeabi-v7a.so"
+    fi
+  fi
+
+  # چک نهایی
+  if [ ! -f "$MODPATH/zygisk/arm64-v8a.so" ] && \
+     [ ! -f "$MODPATH/zygisk/armeabi-v7a.so" ] && \
+     [ ! -f "$MODPATH/zygisk/x86_64.so" ] && \
+     [ ! -f "$MODPATH/zygisk/x86.so" ]; then
+    ui_print " ✗ No Zygisk library found after cleanup!"
+    print_failure_and_exit "binary"
+  fi
+
+  print_box_end
+  print_empty_line
+}
+
+# ====================== Zygisk Detection (Original) ======================
 check_zygisk() {
   ZYGISK_NEXT_PATH="/data/adb/modules/zygisksu"
   REZYGISK_PATH="/data/adb/modules/rezygisk"
@@ -276,6 +389,8 @@ cleanup_gphoto_directories() {
   find "$MODPATH" -type d -empty -delete 2>/dev/null
 }
 
+# ====================== Main Installation Flow ======================
+
 print_module_version
 
 if ! $BOOTMODE; then
@@ -296,6 +411,8 @@ if [ "$API" -lt 26 ]; then
   print_failure_and_exit "initial"
 fi
 
+detect_architecture
+
 if $INSTALL_SUCCESS; then
   check_zygisk || {
     INSTALL_SUCCESS=false
@@ -303,111 +420,59 @@ if $INSTALL_SUCCESS; then
 fi
 
 if $INSTALL_SUCCESS; then
-  print_box_start
-  ui_print "      ✦ Installing Controller ✦  "
-  print_empty_line
-  ui_print " ⚙ Detecting Device Architecture "
-
-  ARM64_VARIANTS="arm64-v8a|armv8-a|arm64|aarch64"
-  ARM32_VARIANTS="armeabi-v7a|armeabi|armv7-a|armv7l|armhf|arm"
-
-  ABI_LIST=$(getprop ro.product.cpu.abilist)
-  ui_print " 📜 Supported ABIs: $ABI_LIST"
-
-  if $INSTALL_SUCCESS; then
-    CONTROLLER_INSTALLED=false
-
-    for ABI in $(echo "$ABI_LIST" | tr ',' ' '); do
-      if echo "$ABI" | grep -qE "$ARM64_VARIANTS"; then
-        if [ -f "$MODPATH/controller_arm64" ]; then
-          mv "$MODPATH/controller_arm64" "$MODPATH/controller" || {
-            ui_print " ✗ Failed to Rename ARM64 Controller!  "
-            print_failure_and_exit "binary"
-          }
-          chmod 0755 "$MODPATH/controller" || {
-            ui_print " ✗ Failed to Set Permissions (controller)!  "
-            print_failure_and_exit "binary"
-          }
-          ui_print " ✔ Installed ARM64 Controller     "
-          ui_print " ➤ ($ABI)                        "
-          CONTROLLER_INSTALLED=true
-          
-          rm -f "$MODPATH/controller_armv7" 2>/dev/null
-          break
-        fi
-      elif echo "$ABI" | grep -qE "$ARM32_VARIANTS"; then
-        if [ -f "$MODPATH/controller_armv7" ]; then
-          mv "$MODPATH/controller_armv7" "$MODPATH/controller" || {
-            ui_print " ✗ Failed to Rename ARM32 Controller!  "
-            print_failure_and_exit "binary"
-          }
-          chmod 0755 "$MODPATH/controller" || {
-            ui_print " ✗ Failed to Set Permissions (controller)!  "
-            print_failure_and_exit "binary"
-          }
-          ui_print " ✔ Installed ARM32 Controller     "
-          ui_print " ➤ ($ABI)                        "
-          CONTROLLER_INSTALLED=true
-          
-          rm -f "$MODPATH/controller_arm64" 2>/dev/null
-          break
-        fi
-      fi
-    done
-
-    if ! $CONTROLLER_INSTALLED; then
-      ui_print " ✗ No Compatible Controller Found! "
-      ui_print " ➤ Supported Architectures:      "
-      ui_print " ➤ • ARM64 (arm64-v8a)          "
-      ui_print " ➤ • ARM32 (armeabi-v7a)        "
-      print_failure_and_exit "binary"
-    fi
-  print_box_end
-  print_empty_line
+  install_controller || {
+    INSTALL_SUCCESS=false
+  }
 fi
-  if $INSTALL_SUCCESS; then
-    chmod 0755 "$MODPATH/service.sh" "$MODPATH/action.sh" "$MODPATH/update_config.sh" 2>/dev/null
-    chmod 0644 "$MODPATH/COPG.json" "$MODPATH/list.json" 2>/dev/null
-    chmod 0444 "$MODPATH/cpuinfo_spoof" 2>/dev/null
-    
-    for file in "$MODPATH/COPG.json" "$MODPATH/list.json" "$MODPATH/cpuinfo_spoof" \
-                "$MODPATH/service.sh" "$MODPATH/action.sh" "$MODPATH/update_config.sh"; do
-      if [ -f "$file" ]; then
-        chcon u:object_r:system_file:s0 "$file" 2>/dev/null
-      fi
-    done
-  fi
 
-  if $INSTALL_SUCCESS; then
-    prompt_gphoto_spoof
-    if $ENABLE_GPHOTO_SPOOF; then
-      setup_gphoto_spoof || {
-        INSTALL_SUCCESS=false
-      }
-    else
-      print_box_start
-      ui_print "      ✦ Google Photos Spoof ✦    "
-      print_empty_line
-      ui_print " ⚙ Removing Google Photos Config "
-      if [ -f "$MODPATH/COPG.json" ]; then
-        sed -i '/com\.google\.android\.apps\.photos/d' "$MODPATH/COPG.json" 2>/dev/null
-        chmod 0644 "$MODPATH/COPG.json" 2>/dev/null
-        chcon u:object_r:system_file:s0 "$MODPATH/COPG.json" 2>/dev/null
-      fi
-      
-      cleanup_gphoto_directories
-      
-      ui_print " ✔ Unlimited Photos Disabled    "
-      print_box_end
+if $INSTALL_SUCCESS; then
+  cleanup_zygisk || {
+    INSTALL_SUCCESS=false
+  }
+fi
+
+if $INSTALL_SUCCESS; then
+  chmod 0755 "$MODPATH/service.sh" "$MODPATH/action.sh" "$MODPATH/update_config.sh" 2>/dev/null
+  chmod 0644 "$MODPATH/COPG.json" "$MODPATH/list.json" 2>/dev/null
+  chmod 0444 "$MODPATH/cpuinfo_spoof" 2>/dev/null
+  
+  for file in "$MODPATH/COPG.json" "$MODPATH/list.json" "$MODPATH/cpuinfo_spoof" \
+              "$MODPATH/service.sh" "$MODPATH/action.sh" "$MODPATH/update_config.sh"; do
+    if [ -f "$file" ]; then
+      chcon u:object_r:system_file:s0 "$file" 2>/dev/null
     fi
-  fi
+  done
+fi
 
-  if $INSTALL_SUCCESS; then
-    print_empty_line
+if $INSTALL_SUCCESS; then
+  prompt_gphoto_spoof
+  if $ENABLE_GPHOTO_SPOOF; then
+    setup_gphoto_spoof || {
+      INSTALL_SUCCESS=false
+    }
+  else
     print_box_start
-    ui_print " ✅ Module Successfully Installed "
+    ui_print "      ✦ Google Photos Spoof ✦    "
+    print_empty_line
+    ui_print " ⚙ Removing Google Photos Config "
+    if [ -f "$MODPATH/COPG.json" ]; then
+      sed -i '/com\.google\.android\.apps\.photos/d' "$MODPATH/COPG.json" 2>/dev/null
+      chmod 0644 "$MODPATH/COPG.json" 2>/dev/null
+      chcon u:object_r:system_file:s0 "$MODPATH/COPG.json" 2>/dev/null
+    fi
+    
+    cleanup_gphoto_directories
+    
+    ui_print " ✔ Unlimited Photos Disabled    "
     print_box_end
   fi
+fi
+
+if $INSTALL_SUCCESS; then
+  print_empty_line
+  print_box_start
+  ui_print " ✅ Module Successfully Installed "
+  print_box_end
 fi
 
 if ! $INSTALL_SUCCESS; then
