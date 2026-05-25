@@ -173,21 +173,18 @@ jobs:
         run: |
           mkdir -p module/zygisk module/META-INF/com/google/android module/webroot/assets module/common module/system
 
-          # Zygisk Libraries
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
           cp build/x86_64/libspoof.so module/zygisk/x86_64.so
           cp build/x86/libspoof.so module/zygisk/x86.so
           chmod 755 module/zygisk/*.so
 
-          # Controllers
           cp controller_arm64 module/controller_arm64
           cp controller_armv7 module/controller_armv7
           cp controller_x86_64 module/controller_x86_64
           cp controller_x86 module/controller_x86
           chmod 755 module/controller_*
 
-          # Other files
           cp config.json module/config.json
           cp COPG.json module/COPG.json
           cp banner.png module/banner.png
@@ -350,7 +347,7 @@ jobs:
           rm -f update.json.new
     
           git add update.json
-          git commit -m "Update update.json to v${VERSION}" || echo "No changes to update.json"
+          git commit -m "Update update.json to v${VERSION}" || echo "No changes"
           git push origin JSON
     
           echo "✅ update.json updated successfully in JSON branch"
@@ -399,7 +396,7 @@ jobs:
                       in_list = False
                       for line in lines:
                           line = line.strip()
-                          if not line: 
+                          if not line:
                               if in_list:
                                   content_html += "</ul>"
                                   in_list = False
