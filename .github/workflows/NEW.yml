@@ -173,18 +173,21 @@ jobs:
         run: |
           mkdir -p module/zygisk module/META-INF/com/google/android module/webroot/assets module/common module/system
 
+          # Zygisk Libraries
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
           cp build/armeabi-v7a/libspoof.so module/zygisk/armeabi-v7a.so
           cp build/x86_64/libspoof.so module/zygisk/x86_64.so
           cp build/x86/libspoof.so module/zygisk/x86.so
           chmod 755 module/zygisk/*.so
 
+          # Controllers
           cp controller_arm64 module/controller_arm64
           cp controller_armv7 module/controller_armv7
           cp controller_x86_64 module/controller_x86_64
           cp controller_x86 module/controller_x86
           chmod 755 module/controller_*
 
+          # Other files
           cp config.json module/config.json
           cp COPG.json module/COPG.json
           cp banner.png module/banner.png
@@ -234,7 +237,7 @@ jobs:
         run: |
           if [ -f "changelog.md" ]; then
             VERSION="${{ env.VERSION }}"
-            CHANGELOG_CONTENT=\( (sed -n "/^## v \){VERSION}/,/^## v/p" changelog.md | sed '$d')
+            CHANGELOG_CONTENT=$(sed -n "/^## v${VERSION}/,/^## v/p" changelog.md | sed '$d')
             if [ -n "$CHANGELOG_CONTENT" ]; then
               CLEAN_CHANGELOG=$(echo "$CHANGELOG_CONTENT" | sed '1d')
               if [ -n "$CLEAN_CHANGELOG" ]; then
@@ -272,13 +275,14 @@ jobs:
         if: github.event.inputs.upload_to_release == 'true'
         run: |
           TAG="v${{ env.VERSION }}"
+          
           echo "📝 Preparing release notes for v${{ env.VERSION }}..."
           
           RELEASE_NOTES="## COPG v${{ env.VERSION }}\n\n"
           
           if [ -f "changelog.md" ]; then
-            CHANGELOG_SECTION=\( (awk -v version=" \){{ env.VERSION }}" '
-              $0 \~ "^## v" version {
+            CHANGELOG_SECTION=$(awk -v version="${{ env.VERSION }}" '
+              $0 ~ "^## v" version {
                 found=1
                 next
               }
@@ -304,7 +308,7 @@ jobs:
           RELEASE_NOTES+="**Build Date**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')\n"
           RELEASE_NOTES+="**Branch**: ${{ github.event.inputs.branch }}\n"
           RELEASE_NOTES+="**Commit**: ${{ github.sha }}\n\n"
-          RELEASE_NOTES+="Read the full changelog for all versions in [changelog.md](https://github.com/\( {{ github.repository }}/blob/ \){{ github.event.inputs.branch }}/changelog.md)"
+          RELEASE_NOTES+="Read the full changelog for all versions in [changelog.md](https://github.com/${{ github.repository }}/blob/${{ github.event.inputs.branch }}/changelog.md)"
           
           echo "Creating release $TAG..."
           echo -e "$RELEASE_NOTES" > release_notes.txt
@@ -326,8 +330,8 @@ jobs:
     
           VERSION="${{ env.VERSION }}"
           VERSION_CODE="${{ env.VERSION_CODE || env.VERSION }}"
-          ZIP_URL="https://github.com/\( {{ github.repository }}/releases/download/v \){VERSION}/${{ env.ZIP_NAME }}"
-          CHANGELOG_URL="https://raw.githubusercontent.com/\( {{ github.repository }}/ \){{ github.event.inputs.branch }}/changelog.md"
+          ZIP_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${{ env.ZIP_NAME }}"
+          CHANGELOG_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.inputs.branch }}/changelog.md"
     
           cat > update.json << EOF
           {
@@ -347,7 +351,7 @@ jobs:
           rm -f update.json.new
     
           git add update.json
-          git commit -m "Update update.json to v${VERSION}" || echo "No changes"
+          git commit -m "Update update.json to v${VERSION}" || echo "No changes to update.json"
           git push origin JSON
     
           echo "✅ update.json updated successfully in JSON branch"
@@ -396,7 +400,7 @@ jobs:
                       in_list = False
                       for line in lines:
                           line = line.strip()
-                          if not line:
+                          if not line: 
                               if in_list:
                                   content_html += "</ul>"
                                   in_list = False
@@ -459,7 +463,7 @@ jobs:
           ZIP_NAME: ${{ env.ZIP_NAME }}
           THUMBNAIL_PATH: icon_thumb.jpg
           TITLE: ${{ github.event.inputs.title || 'New COPG Spoof Module Build' }}
-          WORKFLOW_RUN_URL: \( {{ github.server_url }}/ \){{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           UPLOAD_TO_RELEASE: ${{ github.event.inputs.upload_to_release }}
           VERSION: ${{ env.VERSION }}
           BRANCH: ${{ github.event.inputs.branch }}
