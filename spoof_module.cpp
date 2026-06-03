@@ -17,7 +17,6 @@
 #include <unordered_set>
 #include <fcntl.h>
 #include <sstream>
-#include <ctime>
 
 using json = nlohmann::json;
 
@@ -33,7 +32,6 @@ using json = nlohmann::json;
 #define SPOOF_LOG(...) LOGI("[SPOOF] " __VA_ARGS__)
 #define COMPANION_LOG(...) LOGI("[COMPANION] " __VA_ARGS__)
 #define PKG_LOG(...) LOGI("[PKG] " __VA_ARGS__)
-#define TIMING_LOG(...) LOGI("[TIMING] " __VA_ARGS__)
 
 static bool debug_mode = false;
 
@@ -50,6 +48,7 @@ struct DeviceInfo {
     bool should_spoof_sdk_int = false;
 };
 
+static DeviceInfo current_info;
 static std::mutex info_mutex;
 static jclass buildClass = nullptr;
 static jclass versionClass = nullptr;
@@ -125,15 +124,22 @@ public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
         this->api = api;
         this->env = env;
-        needs_post_spoof = false;
 
         LOGI("Module loaded");
-        ensureBuildClass(env);
+        ensureBuildClass();
         reloadIfNeeded(true);
     }
 
     void onUnload() {
-        LOGI("Module unloading");
+        std::lock_guard<std::mutex> lock(info_mutex);
+        if (buildClass) {
+            env->DeleteGlobalRef(buildClass);
+            buildClass = nullptr;
+        }
+        if (versionClass) {
+            env->DeleteGlobalRef(versionClass);
+            versionClass = nullptr;
+        }
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs* args) override {
@@ -152,8 +158,8 @@ public:
 
         PKG_LOG("Processing: %s", package_name);
         reloadIfNeeded(false);
-        ensureBuildClass(env);
 
+        bool should_close = true;
         bool current_needs_device_spoof = false;
         bool current_needs_cpu_spoof = false;
         bool should_unmount_cpu = false;
@@ -163,6 +169,7 @@ public:
         {
             std::lock_guard<std::mutex> lock(info_mutex);
             
+            DeviceInfo device_info;
             std::string package_setting = "";
             bool found_in_device_list = false;
 
@@ -172,7 +179,8 @@ public:
                     found_in_device_list = true;
                     package_setting = it->second;
                     current_needs_device_spoof = true;
-                    local_device_info = device_entry.first;
+                    device_info = device_entry.first;
+                    current_info = device_info;
                     
                     if (package_setting == "with_cpu") {
                         current_needs_cpu_spoof = true;
@@ -211,8 +219,8 @@ public:
             }
 
             if (current_needs_device_spoof) {
-                spoofDevice(local_device_info);
-                needs_post_spoof = true;
+                spoofDevice(current_info);
+                should_close = false;
             }
 
             if (should_unmount_cpu) {
@@ -220,63 +228,27 @@ public:
             } else if (current_needs_cpu_spoof) {
                 executeCompanionCommand("mount_spoof");
             }
+
+            if (current_needs_device_spoof || current_needs_cpu_spoof || is_blacklisted) {
+                should_close = false;
+            }
         }
 
-        bool should_stay = current_needs_device_spoof || current_needs_cpu_spoof || is_blacklisted;
-
-        if (!should_stay) {
-            PKG_LOG("%s: Not in config, closing", package_name);
+        if (should_close) {
+            LOGI("%s: Not in config, closing", package_name);
+            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+        } else {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        TIMING_LOG("=== postAppSpecialize started ===");
-        
-        if (!needs_post_spoof) {
-            TIMING_LOG("No spoof needed for this process, closing");
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
-        
-        if (buildClass == nullptr || modelField == nullptr) {
-            LOGE("Build class or field is null");
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
-        
-        jstring modelObj = (jstring)env->GetStaticObjectField(buildClass, modelField);
-        if (modelObj == nullptr) {
-            LOGE("Failed to get MODEL field");
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
-        
-        const char* currentModel = env->GetStringUTFChars(modelObj, nullptr);
-        bool spoof_active = (strcmp(currentModel, local_device_info.model.c_str()) == 0);
-        
-        if (spoof_active) {
-            TIMING_LOG("SUCCESS: Spoof is still active! MODEL=%s", currentModel);
-        } else {
-            TIMING_LOG("FAILURE: Spoof lost! Current=%s, Expected=%s", 
-                       currentModel, local_device_info.model.c_str());
-            TIMING_LOG("Re-applying spoof in post...");
-            spoofDevice(local_device_info);
-        }
-        
-        env->ReleaseStringUTFChars(modelObj, currentModel);
-        
-        TIMING_LOG("=== postAppSpecialize finished ===");
-        api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+        api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
     }
 
 private:
     zygisk::Api* api;
     JNIEnv* env;
-    
-    bool needs_post_spoof = false;
-    DeviceInfo local_device_info;
-    
     std::vector<std::pair<DeviceInfo, std::unordered_map<std::string, std::string>>> device_packages;
 
     std::pair<std::string, std::unordered_set<std::string>> parsePackageWithTags(const std::string& package_str) {
@@ -340,57 +312,45 @@ private:
         return result == 0;
     }
 
-    void ensureBuildClass(JNIEnv* currentEnv) {
-        std::call_once(build_once, [&]() {
-            LOGI("Initializing Build class references...");
-            
-            jclass localBuild = currentEnv->FindClass("android/os/Build");
+    void ensureBuildClass() {
+        std::call_once(build_once, [&] {
+            jclass localBuild = env->FindClass("android/os/Build");
             if (!localBuild) {
-                LOGE("Failed to find Build class");
-                currentEnv->ExceptionClear();
+                env->ExceptionClear();
                 return;
             }
 
-            buildClass = static_cast<jclass>(currentEnv->NewGlobalRef(localBuild));
-            currentEnv->DeleteLocalRef(localBuild);
+            buildClass = static_cast<jclass>(env->NewGlobalRef(localBuild));
+            env->DeleteLocalRef(localBuild);
             if (!buildClass) {
-                LOGE("Failed to create global ref for Build class");
                 return;
             }
 
-            modelField = currentEnv->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
-            brandField = currentEnv->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
-            deviceField = currentEnv->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
-            manufacturerField = currentEnv->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
-            fingerprintField = currentEnv->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
-            productField = currentEnv->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
+            modelField = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
+            brandField = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
+            deviceField = env->GetStaticFieldID(buildClass, "DEVICE", "Ljava/lang/String;");
+            manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
+            fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
+            productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
 
-            jclass localVersion = currentEnv->FindClass("android/os/Build$VERSION");
+            jclass localVersion = env->FindClass("android/os/Build$VERSION");
             if (localVersion) {
-                versionClass = static_cast<jclass>(currentEnv->NewGlobalRef(localVersion));
-                currentEnv->DeleteLocalRef(localVersion);
+                versionClass = static_cast<jclass>(env->NewGlobalRef(localVersion));
+                env->DeleteLocalRef(localVersion);
                 
                 if (versionClass) {
-                    releaseField = currentEnv->GetStaticFieldID(versionClass, "RELEASE", "Ljava/lang/String;");
-                    sdkIntField = currentEnv->GetStaticFieldID(versionClass, "SDK_INT", "I");
+                    releaseField = env->GetStaticFieldID(versionClass, "RELEASE", "Ljava/lang/String;");
+                    sdkIntField = env->GetStaticFieldID(versionClass, "SDK_INT", "I");
                 }
             }
 
-            if (currentEnv->ExceptionCheck()) {
-                LOGE("Exception during Build class initialization");
-                currentEnv->ExceptionClear();
-                if (buildClass) {
-                    currentEnv->DeleteGlobalRef(buildClass);
-                    buildClass = nullptr;
-                }
-                if (versionClass) {
-                    currentEnv->DeleteGlobalRef(versionClass);
-                    versionClass = nullptr;
-                }
-                return;
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                if (buildClass) env->DeleteGlobalRef(buildClass);
+                if (versionClass) env->DeleteGlobalRef(versionClass);
+                buildClass = nullptr;
+                versionClass = nullptr;
             }
-            
-            LOGI("Build class references initialized successfully");
         });
     }
 
@@ -527,11 +487,8 @@ private:
 
     void spoofDevice(const DeviceInfo& info) {
         if (!buildClass) {
-            LOGE("buildClass is null, cannot spoof!");
             return;
         }
-
-        TIMING_LOG("Applying spoof at timestamp: %lld", (long long)time(nullptr));
 
         auto setStr = [&](jfieldID field, const std::string& value) {
             if (!field) return;
@@ -570,16 +527,7 @@ private:
             setInt(sdkIntField, info.sdk_int);
         }
         
-        if (modelField != nullptr) {
-            jstring testModel = (jstring)env->GetStaticObjectField(buildClass, modelField);
-            if (testModel != nullptr) {
-                const char* newModel = env->GetStringUTFChars(testModel, nullptr);
-                SPOOF_LOG("Device spoofed: %s (%s)", info.model.c_str(), info.brand.c_str());
-                SPOOF_LOG("Verification - MODEL is now: [%s]", newModel);
-                env->ReleaseStringUTFChars(testModel, newModel);
-                env->DeleteLocalRef(testModel);
-            }
-        }
+        SPOOF_LOG("Device spoofed: %s (%s)", info.model.c_str(), info.brand.c_str());
     }
 };
 
