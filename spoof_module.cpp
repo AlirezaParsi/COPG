@@ -13,7 +13,7 @@
 #include <sys/mman.h>
 #include <cerrno>
 #include <cstring>
-#include <algorithm>
+#include <atomic>
 
 using namespace std::chrono_literals;
 
@@ -23,135 +23,55 @@ using namespace std::chrono_literals;
 
 typedef int (*__system_property_get_fn)(const char* name, char* value);
 static __system_property_get_fn original_prop_get = nullptr;
+static std::atomic<bool> hook_installed{false};
 
 static int hooked_prop_get(const char* name, char* value) {
-    if (name) {
-        if (strcmp(name, "ro.product.model") == 0) {
+    if (name && !hook_installed) {
+        // قبل از نصب hook، مستقیم برگردان
+        return original_prop_get(name, value);
+    }
+    
+    if (name && hook_installed) {
+        std::string prop_name(name);
+        
+        if (prop_name == "ro.product.model") {
             strcpy(value, "SM-F9460");
             LOGI("✅ Hooked: ro.product.model -> SM-F9460");
             return strlen(value);
         }
-        if (strcmp(name, "ro.product.brand") == 0) {
+        if (prop_name == "ro.product.brand") {
             strcpy(value, "samsung");
             LOGI("✅ Hooked: ro.product.brand -> samsung");
             return strlen(value);
         }
-        if (strcmp(name, "ro.product.manufacturer") == 0) {
+        if (prop_name == "ro.product.manufacturer") {
             strcpy(value, "samsung");
             LOGI("✅ Hooked: ro.product.manufacturer -> samsung");
             return strlen(value);
         }
-        if (strcmp(name, "ro.product.device") == 0) {
+        if (prop_name == "ro.product.device") {
             strcpy(value, "q2q");
             LOGI("✅ Hooked: ro.product.device -> q2q");
             return strlen(value);
         }
-        if (strcmp(name, "ro.build.fingerprint") == 0) {
+        if (prop_name == "ro.build.fingerprint") {
             strcpy(value, "samsung/q2qzh/q2q:15/UP1A.231005.007/F946BXXU1BWK4:user/release-keys");
             LOGI("✅ Hooked: ro.build.fingerprint");
             return strlen(value);
         }
-        if (strcmp(name, "ro.boot.vbmeta.device_state") == 0) {
+        if (prop_name == "ro.boot.vbmeta.device_state") {
             strcpy(value, "locked");
             LOGI("✅ Hooked: ro.boot.vbmeta.device_state -> locked");
             return strlen(value);
         }
-        if (strcmp(name, "ro.boot.verifiedbootstate") == 0) {
+        if (prop_name == "ro.boot.verifiedbootstate") {
             strcpy(value, "green");
             LOGI("✅ Hooked: ro.boot.verifiedbootstate -> green");
             return strlen(value);
         }
     }
+    
     return original_prop_get(name, value);
-}
-
-struct LibraryInfo {
-    uintptr_t base = 0;
-    uintptr_t plt_offset = 0x6e74c78;
-    uintptr_t plt_runtime = 0;
-};
-
-static bool findLibraryBase(const char* lib_name, LibraryInfo& info) {
-    std::ifstream maps("/proc/self/maps");
-    if (!maps.is_open()) {
-        LOGE("Failed to open /proc/self/maps");
-        return false;
-    }
-    
-    std::string line;
-    while (std::getline(maps, line)) {
-        // جستجوی کتابخانه بدون در نظر گرفتن پسوند
-        if (line.find(lib_name) != std::string::npos) {
-            // پیدا کردن بخش executable (r-xp)
-            if (line.find("r-xp") != std::string::npos) {
-                size_t dash = line.find('-');
-                if (dash != std::string::npos) {
-                    std::string base_str = line.substr(0, dash);
-                    info.base = std::stoull(base_str, nullptr, 16);
-                    LOGI("Found %s at base: 0x%lx", lib_name, info.base);
-                    info.plt_runtime = info.base + info.plt_offset;
-                    LOGI("PLT entry runtime address: 0x%lx", info.plt_runtime);
-                    return true;
-                }
-            }
-        }
-    }
-    
-    // اگر پیدا نشد، لاگ تمام کتابخانه‌های لود شده
-    maps.clear();
-    maps.seekg(0);
-    LOGI("Searching all loaded libraries:");
-    while (std::getline(maps, line)) {
-        if (line.find(".so") != std::string::npos) {
-            LOGI("  %s", line.c_str());
-        }
-    }
-    
-    return false;
-}
-
-static bool applyPLTHook(LibraryInfo& info) {
-    long page_size = sysconf(_SC_PAGESIZE);
-    if (page_size <= 0) {
-        page_size = 4096;
-    }
-    
-    uintptr_t page_start = info.plt_runtime & ~(page_size - 1);
-    
-    LOGI("Page start: 0x%lx, Page size: 0x%lx", page_start, page_size);
-    
-    // تغییر permission به writable
-    if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) != 0) {
-        LOGE("mprotect WRITE failed: %s", strerror(errno));
-        return false;
-    }
-    
-    // ذخیره تابع اصلی
-    original_prop_get = *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
-    LOGI("Original __system_property_get at: %p", original_prop_get);
-    
-    if (!original_prop_get) {
-        LOGE("Original function is null!");
-        mprotect((void*)page_start, page_size, PROT_READ);
-        return false;
-    }
-    
-    // نوشتن hook
-    *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime) = hooked_prop_get;
-    LOGI("PLT entry patched");
-    
-    // برگرداندن permission
-    mprotect((void*)page_start, page_size, PROT_READ);
-    
-    // verification
-    __system_property_get_fn current = *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
-    if (current == hooked_prop_get) {
-        LOGI("✅ PLT hook verification successful!");
-        return true;
-    } else {
-        LOGE("❌ PLT hook verification failed!");
-        return false;
-    }
 }
 
 static void companion(int fd) {
@@ -167,6 +87,14 @@ public:
         this->api = api;
         this->env = env;
         LOGI("FIFA Hook Module loaded");
+        
+        // گرفتن تابع اصلی از libc
+        original_prop_get = (__system_property_get_fn)dlsym(RTLD_DEFAULT, "__system_property_get");
+        if (original_prop_get) {
+            LOGI("Found __system_property_get at %p", original_prop_get);
+        } else {
+            LOGE("Failed to find __system_property_get");
+        }
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs* args) override {
@@ -184,7 +112,7 @@ public:
             return;
         }
 
-        LOGI("FIFA Mobile detected - preparing hook");
+        LOGI("FIFA Mobile detected");
         needs_hook = true;
     }
 
@@ -194,40 +122,119 @@ public:
             return;
         }
         
-        LOGI("postAppSpecialize - starting hook");
+        LOGI("postAppSpecialize - installing hook via PLT");
         
-        // صبر بیشتر برای بارگذاری کامل کتابخانه
-        for (int i = 0; i < 15; i++) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            
-            LibraryInfo info;
-            // جستجوی با نام‌های مختلف
-            if (findLibraryBase("libFIFAMobileNeon.so", info) ||
-                findLibraryBase("FIFAMobileNeon.so", info) ||
-                findLibraryBase("libFIFAMobileNeon", info)) {
+        // صبر برای بارگذاری کامل کتابخانه
+        std::this_thread::sleep_for(3s);
+        
+        // جستجوی کتابخانه
+        LibraryInfo info;
+        if (findLibrary(info)) {
+            if (installPLTHook(info)) {
+                hook_installed = true;
+                LOGI("✅ Hook installed successfully!");
                 
-                if (applyPLTHook(info)) {
-                    LOGI("✅ FIFA Mobile hook installed successfully!");
-                    
-                    char test_val[256] = {0};
-                    hooked_prop_get("ro.product.model", test_val);
-                    LOGI("Test: ro.product.model = %s", test_val);
-                    
-                    // Hook موفق - ماژول را باز نگه دار
-                    return;
-                }
+                // تست
+                char test[256];
+                hooked_prop_get("ro.product.model", test);
+                LOGI("Test: ro.product.model = %s", test);
+                return;
             }
-            
-            LOGI("Waiting for library... (%d/15)", i + 1);
         }
         
-        LOGE("❌ libFIFAMobileNeon.so not found after 15 seconds");
+        // روش جایگزین: inline hook
+        LOGI("Trying alternative hook method...");
+        if (installInlineHook()) {
+            hook_installed = true;
+            LOGI("✅ Inline hook installed!");
+            return;
+        }
+        
+        LOGE("❌ All hook methods failed!");
     }
 
 private:
     zygisk::Api* api;
     JNIEnv* env;
     bool needs_hook = false;
+    
+    struct LibraryInfo {
+        uintptr_t base = 0;
+        uintptr_t plt_offset = 0x6e74c78;
+        uintptr_t plt_runtime = 0;
+    };
+    
+    bool findLibrary(LibraryInfo& info) {
+        std::ifstream maps("/proc/self/maps");
+        if (!maps.is_open()) {
+            LOGE("Cannot open maps");
+            return false;
+        }
+        
+        std::string line;
+        while (std::getline(maps, line)) {
+            // جستجوی کتابخانه اصلی FIFA
+            if (line.find("libFIFAMobileNeon.so") != std::string::npos ||
+                line.find("FIFAMobileNeon.so") != std::string::npos) {
+                
+                if (line.find("r-xp") != std::string::npos) {
+                    size_t dash = line.find('-');
+                    if (dash != std::string::npos) {
+                        std::string base_str = line.substr(0, dash);
+                        info.base = std::stoull(base_str, nullptr, 16);
+                        info.plt_runtime = info.base + info.plt_offset;
+                        
+                        LOGI("Found library at base: 0x%lx", info.base);
+                        LOGI("PLT entry at: 0x%lx", info.plt_runtime);
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // لاگ کردن برای دیباگ
+        maps.clear();
+        maps.seekg(0);
+        LOGI("Loaded libraries:");
+        while (std::getline(maps, line)) {
+            if (line.find(".so") != std::string::npos && line.find("fifa") != std::string::npos) {
+                LOGI("  %s", line.c_str());
+            }
+        }
+        
+        return false;
+    }
+    
+    bool installPLTHook(LibraryInfo& info) {
+        long page_size = sysconf(_SC_PAGESIZE);
+        if (page_size <= 0) page_size = 4096;
+        
+        uintptr_t page_start = info.plt_runtime & ~(page_size - 1);
+        
+        if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) != 0) {
+            LOGE("mprotect failed: %s", strerror(errno));
+            return false;
+        }
+        
+        auto* plt_entry = reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
+        original_prop_get = *plt_entry;
+        LOGI("Original function: %p", original_prop_get);
+        
+        *plt_entry = hooked_prop_get;
+        
+        mprotect((void*)page_start, page_size, PROT_READ);
+        
+        return (*plt_entry == hooked_prop_get);
+    }
+    
+    bool installInlineHook() {
+        // روش ساده: تابع اصلی را عوض کنیم
+        if (!original_prop_get) return false;
+        
+        // این نیاز به Dobby یا فریمورک مشابه دارد
+        LOGI("Inline hook requires Dobby framework");
+        return false;
+    }
 };
 
 REGISTER_ZYGISK_MODULE(FIFAModule)
