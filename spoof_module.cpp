@@ -14,6 +14,7 @@
 #include <cerrno>
 #include <cstring>
 #include <atomic>
+#include <sys/stat.h>
 
 using namespace std::chrono_literals;
 
@@ -22,12 +23,7 @@ using namespace std::chrono_literals;
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 typedef int (*__system_property_get_fn)(const char* name, char* value);
-typedef void* (*dlsym_fn)(void* handle, const char* symbol);
-typedef void* (*dlopen_fn)(const char* filename, int flags);
-
 static __system_property_get_fn original_prop_get = nullptr;
-static dlsym_fn original_dlsym = nullptr;
-static dlopen_fn original_dlopen = nullptr;
 static std::atomic<bool> hook_installed{false};
 
 static int hooked_prop_get(const char* name, char* value) {
@@ -76,39 +72,6 @@ static int hooked_prop_get(const char* name, char* value) {
     return original_prop_get(name, value);
 }
 
-static void* hooked_dlsym(void* handle, const char* symbol) {
-    void* result = original_dlsym(handle, symbol);
-    
-    if (symbol && strcmp(symbol, "__system_property_get") == 0) {
-        LOGI("🎯 Intercepted dlsym for __system_property_get");
-        original_prop_get = (__system_property_get_fn)result;
-        
-        if (!hook_installed) {
-            hook_installed = true;
-            LOGI("✅ Hook installed via dlsym interception");
-            
-            // تست
-            char test_val[256] = {0};
-            hooked_prop_get("ro.product.model", test_val);
-            LOGI("Test: ro.product.model = %s", test_val);
-        }
-        
-        return (void*)hooked_prop_get;
-    }
-    
-    return result;
-}
-
-static void* hooked_dlopen(const char* filename, int flags) {
-    void* handle = original_dlopen(filename, flags);
-    
-    if (filename && strstr(filename, "libFIFAMobileNeon.so") != nullptr) {
-        LOGI("📚 libFIFAMobileNeon.so loaded");
-    }
-    
-    return handle;
-}
-
 static void companion(int fd) {
     LOGI("Companion started");
     close(fd);
@@ -121,11 +84,9 @@ public:
         this->env = env;
         LOGI("FIFA Hook Module loaded");
         
-        original_dlsym = (dlsym_fn)dlsym(RTLD_DEFAULT, "dlsym");
-        original_dlopen = (dlopen_fn)dlsym(RTLD_DEFAULT, "dlopen");
-        
-        if (original_dlsym) {
-            LOGI("Original dlsym at %p", original_dlsym);
+        original_prop_get = (__system_property_get_fn)dlsym(RTLD_DEFAULT, "__system_property_get");
+        if (original_prop_get) {
+            LOGI("Original __system_property_get at %p", original_prop_get);
         }
     }
 
@@ -144,7 +105,7 @@ public:
             return;
         }
 
-        LOGI("FIFA Mobile detected - will hook dlsym");
+        LOGI("FIFA Mobile detected");
         needs_hook = true;
     }
 
@@ -154,56 +115,88 @@ public:
             return;
         }
         
-        LOGI("Installing dlsym hook...");
+        LOGI("Waiting for library to load...");
         
-        void* libdl = dlopen("libdl.so", RTLD_LAZY);
-        if (!libdl) {
-            libdl = dlopen("libc.so", RTLD_LAZY);
-        }
-        
-        if (libdl) {
-            void* target = dlsym(libdl, "dlsym");
-            if (target) {
-                long page_size = sysconf(_SC_PAGESIZE);
-                uintptr_t page_start = ((uintptr_t)target) & ~(page_size - 1);
+        for (int attempt = 0; attempt < 30; attempt++) {
+            std::this_thread::sleep_for(1s);
+            
+            if (findAndHookLibrary()) {
+                LOGI("✅ Hook installed successfully!");
+                hook_installed = true;
                 
-                if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) == 0) {
-                    auto* dlsym_ptr = reinterpret_cast<dlsym_fn*>(target);
-                    original_dlsym = *dlsym_ptr;
-                    *dlsym_ptr = hooked_dlsym;
-                    mprotect((void*)page_start, page_size, PROT_READ);
-                    LOGI("✅ dlsym hook installed");
-                }
+                char test[256];
+                hooked_prop_get("ro.product.model", test);
+                LOGI("Test: ro.product.model = %s", test);
+                return;
             }
-            dlclose(libdl);
         }
         
-        // همچنین dlopen را هم hook کنیم
-        void* libc = dlopen("libc.so", RTLD_LAZY);
-        if (libc) {
-            void* target = dlsym(libc, "dlopen");
-            if (target) {
-                long page_size = sysconf(_SC_PAGESIZE);
-                uintptr_t page_start = ((uintptr_t)target) & ~(page_size - 1);
-                
-                if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) == 0) {
-                    auto* dlopen_ptr = reinterpret_cast<dlopen_fn*>(target);
-                    original_dlopen = *dlopen_ptr;
-                    *dlopen_ptr = hooked_dlopen;
-                    mprotect((void*)page_start, page_size, PROT_READ);
-                    LOGI("✅ dlopen hook installed");
-                }
-            }
-            dlclose(libc);
-        }
-        
-        LOGI("Waiting for dlsym calls...");
+        LOGE("Failed to find library after 30 seconds");
     }
 
 private:
     zygisk::Api* api;
     JNIEnv* env;
     bool needs_hook = false;
+    
+    bool findAndHookLibrary() {
+        std::ifstream maps("/proc/self/maps");
+        if (!maps.is_open()) return false;
+        
+        std::string line;
+        uintptr_t base = 0;
+        bool found = false;
+        
+        while (std::getline(maps, line)) {
+            if (line.find("libFIFAMobileNeon.so") != std::string::npos) {
+                if (line.find("r-xp") != std::string::npos) {
+                    size_t dash = line.find('-');
+                    if (dash != std::string::npos) {
+                        std::string base_str = line.substr(0, dash);
+                        base = std::stoull(base_str, nullptr, 16);
+                        LOGI("Found libFIFAMobileNeon.so at base: 0x%lx", base);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!found) return false;
+        
+        // آدرس PLT entry
+        uintptr_t plt_offset = 0x6e74c78;
+        uintptr_t plt_addr = base + plt_offset;
+        
+        LOGI("PLT entry address: 0x%lx", plt_addr);
+        
+        long page_size = sysconf(_SC_PAGESIZE);
+        uintptr_t page_start = plt_addr & ~(page_size - 1);
+        
+        if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) != 0) {
+            LOGE("mprotect failed: %s", strerror(errno));
+            return false;
+        }
+        
+        auto* plt_entry = reinterpret_cast<__system_property_get_fn*>(plt_addr);
+        
+        // فقط اگه هنوز hook نشده
+        if (*plt_entry != hooked_prop_get) {
+            original_prop_get = *plt_entry;
+            LOGI("Original PLT entry points to: %p", original_prop_get);
+            *plt_entry = hooked_prop_get;
+            LOGI("PLT entry patched");
+        }
+        
+        mprotect((void*)page_start, page_size, PROT_READ);
+        
+        if (*plt_entry == hooked_prop_get) {
+            LOGI("PLT hook verification successful!");
+            return true;
+        }
+        
+        return false;
+    }
 };
 
 REGISTER_ZYGISK_MODULE(FIFAModule)
