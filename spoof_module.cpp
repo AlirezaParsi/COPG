@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <cerrno>
 #include <cstring>
+#include <algorithm>
 
 using namespace std::chrono_literals;
 
@@ -50,13 +51,23 @@ static int hooked_prop_get(const char* name, char* value) {
             LOGI("✅ Hooked: ro.build.fingerprint");
             return strlen(value);
         }
+        if (strcmp(name, "ro.boot.vbmeta.device_state") == 0) {
+            strcpy(value, "locked");
+            LOGI("✅ Hooked: ro.boot.vbmeta.device_state -> locked");
+            return strlen(value);
+        }
+        if (strcmp(name, "ro.boot.verifiedbootstate") == 0) {
+            strcpy(value, "green");
+            LOGI("✅ Hooked: ro.boot.verifiedbootstate -> green");
+            return strlen(value);
+        }
     }
     return original_prop_get(name, value);
 }
 
 struct LibraryInfo {
     uintptr_t base = 0;
-    uintptr_t plt_offset = 0x6e74c78;  // از readelf گرفتیم
+    uintptr_t plt_offset = 0x6e74c78;
     uintptr_t plt_runtime = 0;
 };
 
@@ -69,36 +80,53 @@ static bool findLibraryBase(const char* lib_name, LibraryInfo& info) {
     
     std::string line;
     while (std::getline(maps, line)) {
-        if (line.find(lib_name) != std::string::npos && line.find("r-xp") != std::string::npos) {
-            size_t dash = line.find('-');
-            if (dash != std::string::npos) {
-                std::string base_str = line.substr(0, dash);
-                info.base = std::stoull(base_str, nullptr, 16);
-                LOGI("Found %s at base: 0x%lx", lib_name, info.base);
-                info.plt_runtime = info.base + info.plt_offset;
-                LOGI("PLT entry runtime address: 0x%lx", info.plt_runtime);
-                return true;
+        // جستجوی کتابخانه بدون در نظر گرفتن پسوند
+        if (line.find(lib_name) != std::string::npos) {
+            // پیدا کردن بخش executable (r-xp)
+            if (line.find("r-xp") != std::string::npos) {
+                size_t dash = line.find('-');
+                if (dash != std::string::npos) {
+                    std::string base_str = line.substr(0, dash);
+                    info.base = std::stoull(base_str, nullptr, 16);
+                    LOGI("Found %s at base: 0x%lx", lib_name, info.base);
+                    info.plt_runtime = info.base + info.plt_offset;
+                    LOGI("PLT entry runtime address: 0x%lx", info.plt_runtime);
+                    return true;
+                }
             }
         }
     }
+    
+    // اگر پیدا نشد، لاگ تمام کتابخانه‌های لود شده
+    maps.clear();
+    maps.seekg(0);
+    LOGI("Searching all loaded libraries:");
+    while (std::getline(maps, line)) {
+        if (line.find(".so") != std::string::npos) {
+            LOGI("  %s", line.c_str());
+        }
+    }
+    
     return false;
 }
 
 static bool applyPLTHook(LibraryInfo& info) {
     long page_size = sysconf(_SC_PAGESIZE);
     if (page_size <= 0) {
-        page_size = 4096;  // fallback
+        page_size = 4096;
     }
     
     uintptr_t page_start = info.plt_runtime & ~(page_size - 1);
     
     LOGI("Page start: 0x%lx, Page size: 0x%lx", page_start, page_size);
     
+    // تغییر permission به writable
     if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) != 0) {
         LOGE("mprotect WRITE failed: %s", strerror(errno));
         return false;
     }
     
+    // ذخیره تابع اصلی
     original_prop_get = *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
     LOGI("Original __system_property_get at: %p", original_prop_get);
     
@@ -108,11 +136,14 @@ static bool applyPLTHook(LibraryInfo& info) {
         return false;
     }
     
+    // نوشتن hook
     *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime) = hooked_prop_get;
     LOGI("PLT entry patched");
     
+    // برگرداندن permission
     mprotect((void*)page_start, page_size, PROT_READ);
     
+    // verification
     __system_property_get_fn current = *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
     if (current == hooked_prop_get) {
         LOGI("✅ PLT hook verification successful!");
@@ -125,6 +156,8 @@ static bool applyPLTHook(LibraryInfo& info) {
 
 static void companion(int fd) {
     LOGI("Companion started");
+    char buf[256];
+    read(fd, buf, sizeof(buf));
     close(fd);
 }
 
@@ -163,22 +196,32 @@ public:
         
         LOGI("postAppSpecialize - starting hook");
         
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        
-        LibraryInfo info;
-        if (findLibraryBase("libFIFAMobileNeon.so", info)) {
-            if (applyPLTHook(info)) {
-                LOGI("✅ FIFA Mobile hook installed successfully!");
+        // صبر بیشتر برای بارگذاری کامل کتابخانه
+        for (int i = 0; i < 15; i++) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            
+            LibraryInfo info;
+            // جستجوی با نام‌های مختلف
+            if (findLibraryBase("libFIFAMobileNeon.so", info) ||
+                findLibraryBase("FIFAMobileNeon.so", info) ||
+                findLibraryBase("libFIFAMobileNeon", info)) {
                 
-                char test_val[256] = {0};
-                hooked_prop_get("ro.product.model", test_val);
-                LOGI("Test: ro.product.model = %s", test_val);
-            } else {
-                LOGE("❌ Failed to install hook");
+                if (applyPLTHook(info)) {
+                    LOGI("✅ FIFA Mobile hook installed successfully!");
+                    
+                    char test_val[256] = {0};
+                    hooked_prop_get("ro.product.model", test_val);
+                    LOGI("Test: ro.product.model = %s", test_val);
+                    
+                    // Hook موفق - ماژول را باز نگه دار
+                    return;
+                }
             }
-        } else {
-            LOGE("❌ libFIFAMobileNeon.so not found");
+            
+            LOGI("Waiting for library... (%d/15)", i + 1);
         }
+        
+        LOGE("❌ libFIFAMobileNeon.so not found after 15 seconds");
     }
 
 private:
