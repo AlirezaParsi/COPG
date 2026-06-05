@@ -28,51 +28,8 @@ static dlopen_fn original_dlopen = nullptr;
 static std::atomic<bool> hook_installed{false};
 static std::atomic<bool> library_hooked{false};
 
-static int hooked_prop_get(const char* name, char* value) {
-    if (!name) {
-        return original_prop_get(name, value);
-    }
-    
-    std::string prop_name(name);
-    
-    if (prop_name == "ro.product.model") {
-        strcpy(value, "SM-F9460");
-        LOGI("✅ Hooked: ro.product.model -> SM-F9460");
-        return strlen(value);
-    }
-    if (prop_name == "ro.product.brand") {
-        strcpy(value, "samsung");
-        LOGI("✅ Hooked: ro.product.brand -> samsung");
-        return strlen(value);
-    }
-    if (prop_name == "ro.product.manufacturer") {
-        strcpy(value, "samsung");
-        LOGI("✅ Hooked: ro.product.manufacturer -> samsung");
-        return strlen(value);
-    }
-    if (prop_name == "ro.product.device") {
-        strcpy(value, "q2q");
-        LOGI("✅ Hooked: ro.product.device -> q2q");
-        return strlen(value);
-    }
-    if (prop_name == "ro.build.fingerprint") {
-        strcpy(value, "samsung/q2qzh/q2q:15/UP1A.231005.007/F946BXXU1BWK4:user/release-keys");
-        LOGI("✅ Hooked: ro.build.fingerprint");
-        return strlen(value);
-    }
-    if (prop_name == "ro.boot.vbmeta.device_state") {
-        strcpy(value, "locked");
-        LOGI("✅ Hooked: ro.boot.vbmeta.device_state -> locked");
-        return strlen(value);
-    }
-    if (prop_name == "ro.boot.verifiedbootstate") {
-        strcpy(value, "green");
-        LOGI("✅ Hooked: ro.boot.verifiedbootstate -> green");
-        return strlen(value);
-    }
-    
-    return original_prop_get(name, value);
-}
+static int hooked_prop_get(const char* name, char* value);
+static void hookLibraryPLT();
 
 static void* hooked_dlopen(const char* filename, int flags) {
     void* handle = original_dlopen(filename, flags);
@@ -80,8 +37,7 @@ static void* hooked_dlopen(const char* filename, int flags) {
     if (filename && strstr(filename, "libFIFAMobileNeon.so") != nullptr) {
         LOGI("📚 libFIFAMobileNeon.so loaded at %p", handle);
         
-        // حالا که کتابخانه لود شده، PLT رو hook کن
-        std::thread([handle]() {
+        std::thread([]() {
             std::this_thread::sleep_for(500ms);
             hookLibraryPLT();
         }).detach();
@@ -131,6 +87,52 @@ static void hookLibraryPLT() {
     }
 }
 
+static int hooked_prop_get(const char* name, char* value) {
+    if (!name || !hook_installed) {
+        return original_prop_get(name, value);
+    }
+    
+    std::string prop_name(name);
+    
+    if (prop_name == "ro.product.model") {
+        strcpy(value, "SM-F9460");
+        LOGI("✅ Hooked: ro.product.model -> SM-F9460");
+        return strlen(value);
+    }
+    if (prop_name == "ro.product.brand") {
+        strcpy(value, "samsung");
+        LOGI("✅ Hooked: ro.product.brand -> samsung");
+        return strlen(value);
+    }
+    if (prop_name == "ro.product.manufacturer") {
+        strcpy(value, "samsung");
+        LOGI("✅ Hooked: ro.product.manufacturer -> samsung");
+        return strlen(value);
+    }
+    if (prop_name == "ro.product.device") {
+        strcpy(value, "q2q");
+        LOGI("✅ Hooked: ro.product.device -> q2q");
+        return strlen(value);
+    }
+    if (prop_name == "ro.build.fingerprint") {
+        strcpy(value, "samsung/q2qzh/q2q:15/UP1A.231005.007/F946BXXU1BWK4:user/release-keys");
+        LOGI("✅ Hooked: ro.build.fingerprint");
+        return strlen(value);
+    }
+    if (prop_name == "ro.boot.vbmeta.device_state") {
+        strcpy(value, "locked");
+        LOGI("✅ Hooked: ro.boot.vbmeta.device_state -> locked");
+        return strlen(value);
+    }
+    if (prop_name == "ro.boot.verifiedbootstate") {
+        strcpy(value, "green");
+        LOGI("✅ Hooked: ro.boot.verifiedbootstate -> green");
+        return strlen(value);
+    }
+    
+    return original_prop_get(name, value);
+}
+
 static void companion(int fd) {
     LOGI("Companion started");
     close(fd);
@@ -176,7 +178,6 @@ public:
         
         LOGI("Installing dlopen hook...");
         
-        // Hook کردن dlopen در libc
         void* libc = dlopen("libc.so", RTLD_LAZY);
         if (libc) {
             void* target = dlsym(libc, "dlopen");
