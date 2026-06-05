@@ -9,6 +9,10 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <cerrno>
+#include <cstring>
 
 using namespace std::chrono_literals;
 
@@ -65,15 +69,12 @@ static bool findLibraryBase(const char* lib_name, LibraryInfo& info) {
     
     std::string line;
     while (std::getline(maps, line)) {
-        if (line.find(lib_name) != std::string::npos) {
-            // پیدا کردن base address (قبل از -)
+        if (line.find(lib_name) != std::string::npos && line.find("r-xp") != std::string::npos) {
             size_t dash = line.find('-');
             if (dash != std::string::npos) {
                 std::string base_str = line.substr(0, dash);
                 info.base = std::stoull(base_str, nullptr, 16);
                 LOGI("Found %s at base: 0x%lx", lib_name, info.base);
-                
-                // محاسبه runtime address PLT entry
                 info.plt_runtime = info.base + info.plt_offset;
                 LOGI("PLT entry runtime address: 0x%lx", info.plt_runtime);
                 return true;
@@ -84,30 +85,34 @@ static bool findLibraryBase(const char* lib_name, LibraryInfo& info) {
 }
 
 static bool applyPLTHook(LibraryInfo& info) {
-    // پیدا کردن page شروع برای mprotect
-    size_t page_size = sysconf(_SC_PAGE_SIZE);
+    long page_size = sysconf(_SC_PAGESIZE);
+    if (page_size <= 0) {
+        page_size = 4096;  // fallback
+    }
+    
     uintptr_t page_start = info.plt_runtime & ~(page_size - 1);
     
     LOGI("Page start: 0x%lx, Page size: 0x%lx", page_start, page_size);
     
-    // تغییر permission به writable
-    if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-        LOGE("mprotect failed: %s", strerror(errno));
+    if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) != 0) {
+        LOGE("mprotect WRITE failed: %s", strerror(errno));
         return false;
     }
     
-    // ذخیره تابع اصلی
     original_prop_get = *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
     LOGI("Original __system_property_get at: %p", original_prop_get);
     
-    // نوشتن hook
+    if (!original_prop_get) {
+        LOGE("Original function is null!");
+        mprotect((void*)page_start, page_size, PROT_READ);
+        return false;
+    }
+    
     *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime) = hooked_prop_get;
     LOGI("PLT entry patched");
     
-    // برگرداندن permission
-    mprotect((void*)page_start, page_size, PROT_READ | PROT_EXEC);
+    mprotect((void*)page_start, page_size, PROT_READ);
     
-    // verification
     __system_property_get_fn current = *reinterpret_cast<__system_property_get_fn*>(info.plt_runtime);
     if (current == hooked_prop_get) {
         LOGI("✅ PLT hook verification successful!");
@@ -116,6 +121,11 @@ static bool applyPLTHook(LibraryInfo& info) {
         LOGE("❌ PLT hook verification failed!");
         return false;
     }
+}
+
+static void companion(int fd) {
+    LOGI("Companion started");
+    close(fd);
 }
 
 class FIFAModule : public zygisk::ModuleBase {
@@ -143,7 +153,6 @@ public:
 
         LOGI("FIFA Mobile detected - preparing hook");
         needs_hook = true;
-        // DLCLOSE نزن - ماژول باید بمونه برای hook
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
@@ -154,15 +163,13 @@ public:
         
         LOGI("postAppSpecialize - starting hook");
         
-        // صبر کردن برای load شدن کامل کتابخانه
-        std::this_thread::sleep_for(1s);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         
         LibraryInfo info;
         if (findLibraryBase("libFIFAMobileNeon.so", info)) {
             if (applyPLTHook(info)) {
                 LOGI("✅ FIFA Mobile hook installed successfully!");
                 
-                // تست hook
                 char test_val[256] = {0};
                 hooked_prop_get("ro.product.model", test_val);
                 LOGI("Test: ro.product.model = %s", test_val);
@@ -172,9 +179,6 @@ public:
         } else {
             LOGE("❌ libFIFAMobileNeon.so not found");
         }
-        
-        // با hook فعال، DLCLOSE نزن
-        // api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
     }
 
 private:
