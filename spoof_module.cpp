@@ -15,22 +15,28 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// از readelf گرفتیم
 static const uintptr_t GOT_FILE_OFFSET = 0x6e74c78;
 
 typedef int (*prop_get_t)(const char*, char*);
-static prop_get_t original_prop_get = nullptr;
+static std::atomic<prop_get_t> original_prop_get{nullptr};
 static std::atomic<bool> hook_ready{false};
 
 static int hooked_prop_get(const char* name, char* value) {
-    // اول original رو صدا بزن
-    int result = original_prop_get(name, value);
-
-    if (!name) return result;
+    prop_get_t orig = original_prop_get.load();
+    
+    // Safety check - اگه هنوز مقداردهی نشده
+    if (!orig) {
+        LOGI("Hook called before initialization, calling fallback");
+        return 0;
+    }
+    
+    if (!name) {
+        return orig(name, value);
+    }
 
     if (strcmp(name, "ro.product.model") == 0) {
         strcpy(value, "SM-F9460");
-        LOGI("Hooked: ro.product.model -> SM-F9460");
+        LOGI("✅ Hooked: ro.product.model -> SM-F9460");
         return strlen(value);
     }
     if (strcmp(name, "ro.product.brand") == 0) {
@@ -49,8 +55,16 @@ static int hooked_prop_get(const char* name, char* value) {
         strcpy(value, "samsung/q2qzh/q2q:15/UP1A.231005.007/F946BXXU1BWK4:user/release-keys");
         return strlen(value);
     }
+    if (strcmp(name, "ro.boot.vbmeta.device_state") == 0) {
+        strcpy(value, "locked");
+        return strlen(value);
+    }
+    if (strcmp(name, "ro.boot.verifiedbootstate") == 0) {
+        strcpy(value, "green");
+        return strlen(value);
+    }
 
-    return result;
+    return orig(name, value);
 }
 
 static bool findLoadBase(uintptr_t& load_base) {
@@ -65,11 +79,8 @@ static bool findLoadBase(uintptr_t& load_base) {
 
     while (fgets(line, sizeof(line), maps)) {
         if (!strstr(line, "libFIFAMobileNeon.so")) continue;
-
-        // اولین r--p = load base (offset 0 در فایل)
         if (!strstr(line, "r--p")) continue;
 
-        // چک کن offset فایل صفر باشه
         uintptr_t start, end;
         char perms[8];
         uintptr_t file_offset;
@@ -97,40 +108,41 @@ static bool applyHook() {
     uintptr_t got_addr = load_base + GOT_FILE_OFFSET;
     LOGI("GOT address: 0x%lx", got_addr);
 
-    // ذخیره تابع اصلی
-    original_prop_get = *(prop_get_t*)got_addr;
-    if (!original_prop_get) {
+    prop_get_t orig = *(prop_get_t*)got_addr;
+    if (!orig) {
         LOGE("original_prop_get is null!");
         return false;
     }
-    LOGI("Original __system_property_get: %p", original_prop_get);
+    
+    // ذخیره تابع اصلی با atomic
+    original_prop_get.store(orig);
+    LOGI("Original __system_property_get: %p", orig);
 
-    // writable کن
     size_t page_size = getpagesize();
     uintptr_t page = got_addr & ~(page_size - 1);
+    
     if (mprotect((void*)page, page_size, PROT_READ | PROT_WRITE) != 0) {
         LOGE("mprotect failed: %s", strerror(errno));
         return false;
     }
 
-    // patch کن
     *(prop_get_t*)got_addr = hooked_prop_get;
 
-    // برگردون به read-only
-    mprotect((void*)page, page_size, PROT_READ);
+    if (mprotect((void*)page, page_size, PROT_READ) != 0) {
+        LOGE("mprotect restore failed: %s", strerror(errno));
+    }
 
-    // verify
     if (*(prop_get_t*)got_addr != hooked_prop_get) {
         LOGE("Hook verification failed!");
         return false;
     }
 
-    LOGI("Hook verified successfully");
+    LOGI("✅ Hook verified successfully!");
+    hook_ready.store(true);
 
-    // تست
     char test[256] = {0};
     hooked_prop_get("ro.product.model", test);
-    LOGI("Test result: ro.product.model = %s", test);
+    LOGI("Test: ro.product.model = %s", test);
 
     return true;
 }
@@ -160,7 +172,6 @@ public:
 
         LOGI("FIFA Mobile detected");
         needs_hook = true;
-        // DLCLOSE نزن - ماژول باید باز بمونه
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
@@ -171,12 +182,10 @@ public:
 
         LOGI("Starting hook thread...");
 
-        // thread جدا - منتظر load شدن library
         std::thread([]() {
             LOGI("Hook thread running");
 
             for (int i = 0; i < 60; i++) {
-                // چک کن library load شده
                 FILE* maps = fopen("/proc/self/maps", "r");
                 if (!maps) {
                     sleep(1);
@@ -188,7 +197,6 @@ public:
                 while (fgets(line, sizeof(line), maps)) {
                     if (strstr(line, "libFIFAMobileNeon.so") &&
                         strstr(line, "r--p")) {
-                        // چک offset = 0
                         uintptr_t start, end;
                         char perms[8];
                         uintptr_t offset;
@@ -204,10 +212,9 @@ public:
 
                 if (loaded) {
                     LOGI("Library loaded after %d seconds", i);
-                    sleep(1); // کمی صبر کن تا GOT fill بشه
+                    sleep(1); // Wait for GOT to be filled
                     if (applyHook()) {
-                        hook_ready = true;
-                        LOGI("Hook applied successfully!");
+                        LOGI("✅ Hook applied successfully!");
                     } else {
                         LOGE("Hook failed!");
                     }
@@ -219,8 +226,6 @@ public:
 
             LOGE("Library never loaded after 60s");
         }).detach();
-
-        // DLCLOSE نزن چون hook داریم
     }
 
 private:
