@@ -26,7 +26,7 @@ static __system_property_get_fn original_prop_get = nullptr;
 static std::atomic<bool> hook_installed{false};
 
 static int hooked_prop_get(const char* name, char* value) {
-    if (!name || !hook_installed) {
+    if (!name) {
         return original_prop_get(name, value);
     }
     
@@ -82,6 +82,12 @@ public:
         this->api = api;
         this->env = env;
         LOGI("FIFA Hook Module loaded");
+        
+        // گرفتن تابع اصلی برای reference
+        original_prop_get = (__system_property_get_fn)dlsym(RTLD_DEFAULT, "__system_property_get");
+        if (original_prop_get) {
+            LOGI("Original __system_property_get at %p", original_prop_get);
+        }
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs* args) override {
@@ -99,7 +105,7 @@ public:
             return;
         }
 
-        LOGI("FIFA Mobile detected");
+        LOGI("FIFA Mobile detected - will hook in post");
         needs_hook = true;
     }
 
@@ -109,65 +115,94 @@ public:
             return;
         }
         
-        LOGI("Installing hook on __system_property_get");
+        LOGI("Waiting for library to load...");
         
-        // روش: پیدا کردن آدرس تابع در libc و تغییر مستقیم
-        void* libc = dlopen("libc.so", RTLD_LAZY);
-        if (!libc) {
-            LOGE("Failed to open libc.so");
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
+        // صبر برای بارگذاری کتابخانه FIFA
+        for (int attempt = 0; attempt < 30; attempt++) {
+            std::this_thread::sleep_for(1s);
+            
+            // پیدا کردن کتابخانه در مموری
+            if (findAndHookLibrary()) {
+                LOGI("✅ Hook installed successfully!");
+                hook_installed = true;
+                
+                // تست نهایی
+                char test[256];
+                original_prop_get = (__system_property_get_fn)dlsym(RTLD_DEFAULT, "__system_property_get");
+                hooked_prop_get("ro.product.model", test);
+                LOGI("Final test: ro.product.model = %s", test);
+                return;
+            }
         }
         
-        void* target = dlsym(libc, "__system_property_get");
-        if (!target) {
-            LOGE("Failed to find __system_property_get");
-            dlclose(libc);
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
-        
-        LOGI("Found __system_property_get at %p", target);
-        
-        // ذخیره تابع اصلی
-        original_prop_get = (__system_property_get_fn)target;
-        
-        // تغییر permission صفحه حافظه
-        long page_size = sysconf(_SC_PAGESIZE);
-        uintptr_t page_start = ((uintptr_t)target) & ~(page_size - 1);
-        
-        if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-            LOGE("mprotect failed: %s", strerror(errno));
-            dlclose(libc);
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
-        
-        // نوشتن hook (روش: تغییر pointer تابع)
-        // در ARM64، می‌تونیم یک branch instruction بنویسیم
-        
-        // روش ساده‌تر: تغییر GOT entry برای هر کتابخانه
-        // ولی چون نمی‌دونیم کدوم کتابخانه استفاده می‌کنه، 
-        // از روش جایگزین استفاده می‌کنیم
-        
-        // برگردوندن permission
-        mprotect((void*)page_start, page_size, PROT_READ | PROT_EXEC);
-        
-        LOGI("Hook installation attempted");
-        hook_installed = true;
-        
-        // تست
-        char test_val[256] = {0};
-        hooked_prop_get("ro.product.model", test_val);
-        LOGI("Test: ro.product.model = %s", test_val);
-        
-        dlclose(libc);
+        LOGE("Failed to find and hook library after 30 seconds");
     }
 
 private:
     zygisk::Api* api;
     JNIEnv* env;
     bool needs_hook = false;
+    
+    bool findAndHookLibrary() {
+        std::ifstream maps("/proc/self/maps");
+        if (!maps.is_open()) return false;
+        
+        std::string line;
+        uintptr_t base = 0;
+        bool found = false;
+        
+        while (std::getline(maps, line)) {
+            if (line.find("libFIFAMobileNeon.so") != std::string::npos) {
+                if (line.find("r-xp") != std::string::npos) {
+                    size_t dash = line.find('-');
+                    if (dash != std::string::npos) {
+                        std::string base_str = line.substr(0, dash);
+                        base = std::stoull(base_str, nullptr, 16);
+                        LOGI("Found libFIFAMobileNeon.so at base: 0x%lx", base);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!found) return false;
+        
+        // آدرس PLT entry برای __system_property_get
+        // این offset رو از readelf قبلاً گرفتی: 0x6e74c78
+        uintptr_t plt_offset = 0x6e74c78;
+        uintptr_t plt_addr = base + plt_offset;
+        
+        LOGI("PLT entry address: 0x%lx", plt_addr);
+        
+        // تغییر permission
+        long page_size = sysconf(_SC_PAGESIZE);
+        uintptr_t page_start = plt_addr & ~(page_size - 1);
+        
+        if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) != 0) {
+            LOGE("mprotect failed: %s", strerror(errno));
+            return false;
+        }
+        
+        // ذخیره تابع اصلی
+        auto* plt_entry = reinterpret_cast<__system_property_get_fn*>(plt_addr);
+        original_prop_get = *plt_entry;
+        LOGI("Original PLT entry points to: %p", original_prop_get);
+        
+        // تغییر به hook
+        *plt_entry = hooked_prop_get;
+        
+        // برگردوندن permission
+        mprotect((void*)page_start, page_size, PROT_READ);
+        
+        // verification
+        if (*plt_entry == hooked_prop_get) {
+            LOGI("PLT hook verification successful!");
+            return true;
+        }
+        
+        return false;
+    }
 };
 
 REGISTER_ZYGISK_MODULE(FIFAModule)
