@@ -22,70 +22,13 @@ using namespace std::chrono_literals;
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 typedef int (*__system_property_get_fn)(const char* name, char* value);
+typedef void* (*dlsym_fn)(void* handle, const char* symbol);
 typedef void* (*dlopen_fn)(const char* filename, int flags);
+
 static __system_property_get_fn original_prop_get = nullptr;
+static dlsym_fn original_dlsym = nullptr;
 static dlopen_fn original_dlopen = nullptr;
 static std::atomic<bool> hook_installed{false};
-static std::atomic<bool> library_hooked{false};
-
-static int hooked_prop_get(const char* name, char* value);
-static void hookLibraryPLT();
-
-static void* hooked_dlopen(const char* filename, int flags) {
-    void* handle = original_dlopen(filename, flags);
-    
-    if (filename && strstr(filename, "libFIFAMobileNeon.so") != nullptr) {
-        LOGI("📚 libFIFAMobileNeon.so loaded at %p", handle);
-        
-        std::thread([]() {
-            std::this_thread::sleep_for(500ms);
-            hookLibraryPLT();
-        }).detach();
-    }
-    
-    return handle;
-}
-
-static void hookLibraryPLT() {
-    if (library_hooked) return;
-    
-    std::ifstream maps("/proc/self/maps");
-    if (!maps.is_open()) return;
-    
-    std::string line;
-    uintptr_t base = 0;
-    
-    while (std::getline(maps, line)) {
-        if (line.find("libFIFAMobileNeon.so") != std::string::npos) {
-            if (line.find("r-xp") != std::string::npos) {
-                size_t dash = line.find('-');
-                if (dash != std::string::npos) {
-                    std::string base_str = line.substr(0, dash);
-                    base = std::stoull(base_str, nullptr, 16);
-                    LOGI("Found libFIFAMobileNeon.so at base: 0x%lx", base);
-                    
-                    uintptr_t plt_offset = 0x6e74c78;
-                    uintptr_t plt_addr = base + plt_offset;
-                    
-                    long page_size = sysconf(_SC_PAGESIZE);
-                    uintptr_t page_start = plt_addr & ~(page_size - 1);
-                    
-                    if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) == 0) {
-                        auto* plt_entry = reinterpret_cast<__system_property_get_fn*>(plt_addr);
-                        original_prop_get = *plt_entry;
-                        *plt_entry = hooked_prop_get;
-                        mprotect((void*)page_start, page_size, PROT_READ);
-                        
-                        LOGI("✅ PLT hook installed for libFIFAMobileNeon.so");
-                        library_hooked = true;
-                        hook_installed = true;
-                    }
-                    break;
-                }
-            }
-        }
-    }
-}
 
 static int hooked_prop_get(const char* name, char* value) {
     if (!name || !hook_installed) {
@@ -133,6 +76,39 @@ static int hooked_prop_get(const char* name, char* value) {
     return original_prop_get(name, value);
 }
 
+static void* hooked_dlsym(void* handle, const char* symbol) {
+    void* result = original_dlsym(handle, symbol);
+    
+    if (symbol && strcmp(symbol, "__system_property_get") == 0) {
+        LOGI("🎯 Intercepted dlsym for __system_property_get");
+        original_prop_get = (__system_property_get_fn)result;
+        
+        if (!hook_installed) {
+            hook_installed = true;
+            LOGI("✅ Hook installed via dlsym interception");
+            
+            // تست
+            char test_val[256] = {0};
+            hooked_prop_get("ro.product.model", test_val);
+            LOGI("Test: ro.product.model = %s", test_val);
+        }
+        
+        return (void*)hooked_prop_get;
+    }
+    
+    return result;
+}
+
+static void* hooked_dlopen(const char* filename, int flags) {
+    void* handle = original_dlopen(filename, flags);
+    
+    if (filename && strstr(filename, "libFIFAMobileNeon.so") != nullptr) {
+        LOGI("📚 libFIFAMobileNeon.so loaded");
+    }
+    
+    return handle;
+}
+
 static void companion(int fd) {
     LOGI("Companion started");
     close(fd);
@@ -145,9 +121,11 @@ public:
         this->env = env;
         LOGI("FIFA Hook Module loaded");
         
+        original_dlsym = (dlsym_fn)dlsym(RTLD_DEFAULT, "dlsym");
         original_dlopen = (dlopen_fn)dlsym(RTLD_DEFAULT, "dlopen");
-        if (original_dlopen) {
-            LOGI("Original dlopen at %p", original_dlopen);
+        
+        if (original_dlsym) {
+            LOGI("Original dlsym at %p", original_dlsym);
         }
     }
 
@@ -166,7 +144,7 @@ public:
             return;
         }
 
-        LOGI("FIFA Mobile detected - will hook dlopen");
+        LOGI("FIFA Mobile detected - will hook dlsym");
         needs_hook = true;
     }
 
@@ -176,8 +154,31 @@ public:
             return;
         }
         
-        LOGI("Installing dlopen hook...");
+        LOGI("Installing dlsym hook...");
         
+        void* libdl = dlopen("libdl.so", RTLD_LAZY);
+        if (!libdl) {
+            libdl = dlopen("libc.so", RTLD_LAZY);
+        }
+        
+        if (libdl) {
+            void* target = dlsym(libdl, "dlsym");
+            if (target) {
+                long page_size = sysconf(_SC_PAGESIZE);
+                uintptr_t page_start = ((uintptr_t)target) & ~(page_size - 1);
+                
+                if (mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE) == 0) {
+                    auto* dlsym_ptr = reinterpret_cast<dlsym_fn*>(target);
+                    original_dlsym = *dlsym_ptr;
+                    *dlsym_ptr = hooked_dlsym;
+                    mprotect((void*)page_start, page_size, PROT_READ);
+                    LOGI("✅ dlsym hook installed");
+                }
+            }
+            dlclose(libdl);
+        }
+        
+        // همچنین dlopen را هم hook کنیم
         void* libc = dlopen("libc.so", RTLD_LAZY);
         if (libc) {
             void* target = dlsym(libc, "dlopen");
@@ -196,7 +197,7 @@ public:
             dlclose(libc);
         }
         
-        LOGI("Waiting for libFIFAMobileNeon.so to be loaded...");
+        LOGI("Waiting for dlsym calls...");
     }
 
 private:
