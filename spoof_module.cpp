@@ -18,7 +18,6 @@
 #include <zygisk.hpp>
 #include <nlohmann/json.hpp>
 #include <fstream>
-#include <sstream>
 
 using json = nlohmann::json;
 
@@ -26,18 +25,12 @@ using json = nlohmann::json;
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// ─────────────────────────────────────────
-// انواع تابع
-// ─────────────────────────────────────────
 typedef int      (*prop_get_t)    (const char*, char*);
 typedef void     (*prop_read_cb_t)(void*, const char*, const char*, uint32_t);
 typedef void     (*prop_read_t)   (const void*, prop_read_cb_t, void*);
 typedef const void* (*prop_find_t)(const char*);
 typedef void     (*prop_read_old_t)(const void*, unsigned*, char*, char*);
 
-// ─────────────────────────────────────────
-// symbols هدف
-// ─────────────────────────────────────────
 static const char* TARGET_SYMBOLS[] = {
     "__system_property_get",
     "__system_property_read_callback",
@@ -46,9 +39,6 @@ static const char* TARGET_SYMBOLS[] = {
     nullptr
 };
 
-// ─────────────────────────────────────────
-// ساختارها
-// ─────────────────────────────────────────
 struct HookEntry {
     std::string  lib_path;
     std::string  lib_name;
@@ -64,22 +54,15 @@ struct ProcessContext {
     std::vector<HookEntry>                        hooks;
     std::atomic<bool>                             ready{false};
     std::string                                   package_name;
-
     prop_get_t     orig_get      = nullptr;
     prop_read_t    orig_read_cb  = nullptr;
     prop_find_t    orig_find     = nullptr;
     prop_read_old_t orig_read_old = nullptr;
 };
 
-// ─────────────────────────────────────────
-// global per-process
-// ─────────────────────────────────────────
 static ProcessContext* g_ctx = nullptr;
 static prop_read_cb_t g_app_callback = nullptr;
 
-// ─────────────────────────────────────────
-// hook functions
-// ─────────────────────────────────────────
 static int hooked_prop_get(const char* name, char* value) {
     if (!g_ctx || !g_ctx->orig_get) return 0;
 
@@ -142,46 +125,30 @@ static void hooked_prop_read_old(const void* pi,
     }
 }
 
-// ─────────────────────────────────────────
-// پیدا کردن مسیر APK و Lib از طریق دستور pm
-// ─────────────────────────────────────────
-static std::string findApkPath(const std::string& pkg) {
-    std::string cmd = "pm path " + pkg;
-    FILE* fp = popen(cmd.c_str(), "r");
-    if (!fp) return "";
-    
-    char line[512];
-    std::string result;
-    if (fgets(line, sizeof(line), fp)) {
-        // خروجی: package:/data/app/~~xxx==/com.pkg-xxx==/base.apk
-        char* colon = strchr(line, ':');
-        if (colon) {
-            char* newline = strchr(colon, '\n');
-            if (newline) *newline = '\0';
-            result = colon + 1;
-        }
-    }
-    pclose(fp);
-    return result;
-}
-
 static std::string findLibDir(const std::string& pkg) {
-    // روش 1: از دستور pm path
-    std::string apk_path = findApkPath(pkg);
-    if (!apk_path.empty()) {
-        // حذف /base.apk و اضافه کردن /lib/arm64
-        size_t pos = apk_path.rfind('/');
-        if (pos != std::string::npos) {
-            std::string lib_dir = apk_path.substr(0, pos) + "/lib/arm64";
-            struct stat st;
+    struct stat st;
+    
+    // Method 1: realpath from /data/data symlink
+    std::vector<std::string> data_paths = {
+        "/data/data/" + pkg,
+        "/data/user/0/" + pkg,
+        "/data/user_de/0/" + pkg
+    };
+    
+    for (const auto& path : data_paths) {
+        if (stat(path.c_str(), &st) != 0) continue;
+        
+        char resolved[PATH_MAX];
+        if (realpath(path.c_str(), resolved)) {
+            std::string lib_dir = std::string(resolved) + "/lib/arm64";
             if (stat(lib_dir.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-                LOGI("Lib dir found via pm: %s", lib_dir.c_str());
+                LOGI("Lib dir found via realpath: %s", lib_dir.c_str());
                 return lib_dir;
             }
         }
     }
     
-    // روش 2: اسکن /data/app (fallback)
+    // Method 2: scan /data/app
     const char* base = "/data/app";
     DIR* d1 = opendir(base);
     if (!d1) return "";
@@ -199,13 +166,13 @@ static std::string findLibDir(const std::string& pkg) {
         struct dirent* e2;
         while ((e2 = readdir(d2)) && result.empty()) {
             if (e2->d_name[0] == '.') continue;
-            if (strncmp(e2->d_name, pkg.c_str(), pkg.size()) != 0) continue;
-            if (e2->d_name[pkg.size()] != '-') continue;
+            if (strstr(e2->d_name, pkg.c_str()) == nullptr) continue;
             
             std::string lib = tier1 + "/" + e2->d_name + "/lib/arm64";
-            struct stat st;
-            if (stat(lib.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+            if (stat(lib.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
                 result = lib;
+                break;
+            }
         }
         closedir(d2);
     }
@@ -219,9 +186,6 @@ static std::string findLibDir(const std::string& pkg) {
     return result;
 }
 
-// ─────────────────────────────────────────
-// ELF parser - با fallback برای stripped
-// ─────────────────────────────────────────
 static uintptr_t findFromSections(FILE* f,
                                    const Elf64_Ehdr& ehdr,
                                    const char* symbol) {
@@ -380,9 +344,6 @@ static uintptr_t findGotOffset(const char* lib_path, const char* symbol) {
     return offset;
 }
 
-// ─────────────────────────────────────────
-// اسکن .so فایل‌های lib dir
-// ─────────────────────────────────────────
 static std::vector<std::string> scanLibDir(const std::string& dir) {
     std::vector<std::string> libs;
     DIR* d = opendir(dir.c_str());
@@ -400,9 +361,6 @@ static std::vector<std::string> scanLibDir(const std::string& dir) {
     return libs;
 }
 
-// ─────────────────────────────────────────
-// پیدا کردن load base از /proc/self/maps
-// ─────────────────────────────────────────
 static uintptr_t getLoadBase(const char* lib_name) {
     FILE* maps = fopen("/proc/self/maps", "r");
     if (!maps) return 0;
@@ -423,9 +381,6 @@ static uintptr_t getLoadBase(const char* lib_name) {
     return base;
 }
 
-// ─────────────────────────────────────────
-// اعمال یک hook entry
-// ─────────────────────────────────────────
 static bool applyHook(HookEntry& e) {
     uintptr_t got = e.load_base + e.got_offset;
     
@@ -461,15 +416,10 @@ static bool applyHook(HookEntry& e) {
     if (e.hooked)
         LOGI("Hooked %s in %s (GOT=0x%lx orig=%p)",
              e.symbol.c_str(), e.lib_name.c_str(), got, e.original);
-    else
-        LOGE("Hook verify failed: %s", e.symbol.c_str());
     
     return e.hooked;
 }
 
-// ─────────────────────────────────────────
-// ماژول اصلی
-// ─────────────────────────────────────────
 class COPGGotHook : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
@@ -502,8 +452,7 @@ public:
         
         std::string lib_dir = findLibDir(pkg);
         if (lib_dir.empty()) {
-            LOGE("No lib dir, GOT hook disabled (JNI only)");
-            // فقط JNI fallback - ماژول رو میبندیم چون GOT hook نشد
+            LOGE("No lib dir found");
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
@@ -527,12 +476,11 @@ public:
             }
         }
         
-        LOGI("Pre-scanned %zu hook targets for %s", precomputed.size(), pkg.c_str());
+        LOGI("Pre-scanned %zu hook targets", precomputed.size());
         
         current_pkg   = pkg;
         current_props = it->second;
         needs_hook    = true;
-        // DLCLOSE نزن
     }
     
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
@@ -548,9 +496,6 @@ public:
         std::vector<HookEntry> to_hook = precomputed;
         
         std::thread([to_hook]() {
-            LOGI("Hook thread started (%zu targets)", to_hook.size());
-            
-            // منتظر load شدن کتابخانه‌ها
             for (int wait = 0; wait < 30; wait++) {
                 bool any_loaded = false;
                 for (auto& h : to_hook) {
@@ -568,10 +513,8 @@ public:
             
             for (auto h : to_hook) {
                 h.load_base = getLoadBase(h.lib_name.c_str());
-                if (!h.load_base) {
-                    LOGE("Not loaded: %s", h.lib_name.c_str());
-                    continue;
-                }
+                if (!h.load_base) continue;
+                
                 if (applyHook(h)) {
                     if (h.symbol == "__system_property_get")
                         g_ctx->orig_get = (prop_get_t)h.original;
