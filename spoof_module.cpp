@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <cstdio>
 #include <cstring>
@@ -21,243 +22,455 @@
 using json = nlohmann::json;
 
 #define LOG_TAG "COPGHook"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-struct GotHookInfo {
-    std::string lib_name;
-    std::string symbol;
-    std::unordered_map<std::string, std::string> props;
+// ─────────────────────────────────────────
+// انواع تابع
+// ─────────────────────────────────────────
+typedef int      (*prop_get_t)    (const char*, char*);
+typedef void     (*prop_read_cb_t)(void*, const char*, const char*, uint32_t);
+typedef void     (*prop_read_t)   (const void*, prop_read_cb_t, void*);
+typedef const void* (*prop_find_t)(const char*);
+typedef void     (*prop_read_old_t)(const void*, unsigned*, char*, char*);
+
+// ─────────────────────────────────────────
+// symbols هدف
+// ─────────────────────────────────────────
+static const char* TARGET_SYMBOLS[] = {
+    "__system_property_get",
+    "__system_property_read_callback",
+    "__system_property_find",
+    "__system_property_read",
+    nullptr
 };
 
-typedef int (*prop_get_t)(const char*, char*);
-
-struct HookContext {
-    std::atomic<prop_get_t> original{nullptr};
-    std::atomic<bool> ready{false};
-    std::unordered_map<std::string, std::string> props;
+// ─────────────────────────────────────────
+// ساختارها
+// ─────────────────────────────────────────
+struct HookEntry {
+    std::string  lib_path;
+    std::string  lib_name;
+    std::string  symbol;
+    uintptr_t    got_offset  = 0;
+    uintptr_t    load_base   = 0;
+    void*        original    = nullptr;
+    bool         hooked      = false;
 };
 
-static HookContext* g_ctx = nullptr;
+struct ProcessContext {
+    std::unordered_map<std::string, std::string> props;
+    std::vector<HookEntry>                        hooks;
+    std::atomic<bool>                             ready{false};
+    std::string                                   package_name;
 
+    // اصلی‌های هر symbol - برای دسترسی سریع
+    prop_get_t     orig_get      = nullptr;
+    prop_read_t    orig_read_cb  = nullptr;
+    prop_find_t    orig_find     = nullptr;
+    prop_read_old_t orig_read_old = nullptr;
+};
+
+// ─────────────────────────────────────────
+// global per-process
+// (هر fork پروسه جداست - race condition نداریم)
+// ─────────────────────────────────────────
+static ProcessContext* g_ctx = nullptr;
+
+// callback که برنامه پاس داده - per-call نگه می‌داریم
+// چون read_callback synchronous صدا میشه safe هست
+static prop_read_cb_t g_app_callback = nullptr;
+
+// ─────────────────────────────────────────
+// hook functions
+// ─────────────────────────────────────────
 static int hooked_prop_get(const char* name, char* value) {
-    if (!g_ctx) return 0;
-
-    prop_get_t orig = g_ctx->original.load();
-    if (!orig) return 0;
+    if (!g_ctx || !g_ctx->orig_get) return 0;
 
     if (name && g_ctx->ready.load()) {
         auto it = g_ctx->props.find(name);
         if (it != g_ctx->props.end()) {
-            strncpy(value, it->second.c_str(), 92);
+            strncpy(value, it->second.c_str(), 91);
             value[91] = '\0';
-            LOGI("Hooked: %s -> %s", name, value);
-            return strlen(value);
+            LOGI("[%s] prop_get: %s -> %s",
+                 g_ctx->package_name.c_str(), name, value);
+            return (int)strlen(value);
         }
     }
-
-    return orig(name, value);
+    return g_ctx->orig_get(name, value);
 }
 
-static uintptr_t findGotOffsetFromElf(const char* lib_path, const char* symbol) {
-    FILE* f = fopen(lib_path, "rb");
-    if (!f) {
-        LOGE("Cannot open ELF: %s", lib_path);
-        return 0;
-    }
+static void hooked_read_cb(void* cookie, const char* name,
+                            const char* value, uint32_t serial) {
+    if (!g_app_callback) return;
 
-    Elf64_Ehdr ehdr;
-    if (fread(&ehdr, sizeof(ehdr), 1, f) != 1) {
-        fclose(f);
-        return 0;
-    }
-
-    if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0) {
-        LOGE("Not an ELF file");
-        fclose(f);
-        return 0;
-    }
-
-    if (ehdr.e_shoff == 0 || ehdr.e_shentsize == 0) {
-        LOGE("No section headers");
-        fclose(f);
-        return 0;
-    }
-
-    std::vector<Elf64_Shdr> shdrs(ehdr.e_shnum);
-    fseek(f, ehdr.e_shoff, SEEK_SET);
-    if (fread(shdrs.data(), sizeof(Elf64_Shdr), ehdr.e_shnum, f) != ehdr.e_shnum) {
-        fclose(f);
-        return 0;
-    }
-
-    Elf64_Shdr& shstrtab = shdrs[ehdr.e_shstrndx];
-    std::vector<char> shstrtab_data(shstrtab.sh_size);
-    fseek(f, shstrtab.sh_offset, SEEK_SET);
-    fread(shstrtab_data.data(), 1, shstrtab.sh_size, f);
-
-    Elf64_Shdr* rela_plt = nullptr;
-    Elf64_Shdr* dynsym = nullptr;
-    Elf64_Shdr* dynstr = nullptr;
-
-    for (auto& shdr : shdrs) {
-        const char* name_str = shstrtab_data.data() + shdr.sh_name;
-        if (strcmp(name_str, ".rela.plt") == 0) rela_plt = &shdr;
-        else if (strcmp(name_str, ".dynsym") == 0) dynsym = &shdr;
-        else if (strcmp(name_str, ".dynstr") == 0) dynstr = &shdr;
-    }
-
-    if (!rela_plt || !dynsym || !dynstr) {
-        LOGE("Missing sections");
-        fclose(f);
-        return 0;
-    }
-
-    std::vector<char> dynstr_data(dynstr->sh_size);
-    fseek(f, dynstr->sh_offset, SEEK_SET);
-    fread(dynstr_data.data(), 1, dynstr->sh_size, f);
-
-    size_t sym_count = dynsym->sh_size / sizeof(Elf64_Sym);
-    std::vector<Elf64_Sym> syms(sym_count);
-    fseek(f, dynsym->sh_offset, SEEK_SET);
-    fread(syms.data(), sizeof(Elf64_Sym), sym_count, f);
-
-    size_t rela_count = rela_plt->sh_size / sizeof(Elf64_Rela);
-    std::vector<Elf64_Rela> relas(rela_count);
-    fseek(f, rela_plt->sh_offset, SEEK_SET);
-    fread(relas.data(), sizeof(Elf64_Rela), rela_count, f);
-
-    fclose(f);
-
-    for (auto& rela : relas) {
-        uint32_t sym_idx = ELF64_R_SYM(rela.r_info);
-        if (sym_idx >= sym_count) continue;
-
-        const char* sym_name = dynstr_data.data() + syms[sym_idx].st_name;
-        if (strcmp(sym_name, symbol) == 0) {
-            LOGI("Found %s at GOT offset: 0x%lx", symbol, (uintptr_t)rela.r_offset);
-            return (uintptr_t)rela.r_offset;
+    if (g_ctx && name && g_ctx->ready.load()) {
+        auto it = g_ctx->props.find(name);
+        if (it != g_ctx->props.end()) {
+            LOGI("[%s] read_cb: %s -> %s",
+                 g_ctx->package_name.c_str(), name,
+                 it->second.c_str());
+            g_app_callback(cookie, name,
+                           it->second.c_str(), serial);
+            return;
         }
     }
+    g_app_callback(cookie, name, value, serial);
+}
 
-    LOGE("Symbol %s not found in ELF", symbol);
+static void hooked_prop_read(const void* pi,
+                              prop_read_cb_t cb, void* cookie) {
+    if (!g_ctx || !g_ctx->orig_read_cb) return;
+    g_app_callback = cb;
+    g_ctx->orig_read_cb(pi, hooked_read_cb, cookie);
+}
+
+static const void* hooked_prop_find(const char* name) {
+    if (!g_ctx || !g_ctx->orig_find) return nullptr;
+    // find فقط pointer برمیگردونه
+    // spoof در read_old انجام میشه
+    return g_ctx->orig_find(name);
+}
+
+static void hooked_prop_read_old(const void* pi,
+                                  unsigned* serial,
+                                  char* name, char* value) {
+    if (!g_ctx || !g_ctx->orig_read_old) return;
+
+    // اول مقدار واقعی رو بخون
+    g_ctx->orig_read_old(pi, serial, name, value);
+
+    // بعد spoof کن
+    if (name && value && g_ctx->ready.load()) {
+        auto it = g_ctx->props.find(name);
+        if (it != g_ctx->props.end()) {
+            strncpy(value, it->second.c_str(), 91);
+            value[91] = '\0';
+            LOGI("[%s] read_old: %s -> %s",
+                 g_ctx->package_name.c_str(), name, value);
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// ELF parser - با fallback برای stripped
+// ─────────────────────────────────────────
+
+// روش ۱: از section headers (کامل‌تر)
+static uintptr_t findFromSections(FILE* f,
+                                   const Elf64_Ehdr& ehdr,
+                                   const char* symbol) {
+    std::vector<Elf64_Shdr> shdrs(ehdr.e_shnum);
+    fseek(f, ehdr.e_shoff, SEEK_SET);
+    if (fread(shdrs.data(), sizeof(Elf64_Shdr),
+              ehdr.e_shnum, f) != (size_t)ehdr.e_shnum)
+        return 0;
+
+    Elf64_Shdr& shstr_hdr = shdrs[ehdr.e_shstrndx];
+    std::vector<char> shstrtab(shstr_hdr.sh_size);
+    fseek(f, shstr_hdr.sh_offset, SEEK_SET);
+    fread(shstrtab.data(), 1, shstr_hdr.sh_size, f);
+
+    Elf64_Shdr *rela_plt=nullptr, *rela_dyn=nullptr,
+               *dynsym_h=nullptr, *dynstr_h=nullptr;
+
+    for (auto& s : shdrs) {
+        const char* n = shstrtab.data() + s.sh_name;
+        if      (!strcmp(n, ".rela.plt")) rela_plt  = &s;
+        else if (!strcmp(n, ".rela.dyn")) rela_dyn  = &s;
+        else if (!strcmp(n, ".dynsym"))   dynsym_h  = &s;
+        else if (!strcmp(n, ".dynstr"))   dynstr_h  = &s;
+    }
+    if (!dynsym_h || !dynstr_h) return 0;
+
+    std::vector<char> dynstr(dynstr_h->sh_size);
+    fseek(f, dynstr_h->sh_offset, SEEK_SET);
+    fread(dynstr.data(), 1, dynstr_h->sh_size, f);
+
+    size_t sym_count = dynsym_h->sh_size / sizeof(Elf64_Sym);
+    std::vector<Elf64_Sym> syms(sym_count);
+    fseek(f, dynsym_h->sh_offset, SEEK_SET);
+    fread(syms.data(), sizeof(Elf64_Sym), sym_count, f);
+
+    auto search = [&](Elf64_Shdr* rh) -> uintptr_t {
+        if (!rh) return 0;
+        size_t cnt = rh->sh_size / sizeof(Elf64_Rela);
+        std::vector<Elf64_Rela> rs(cnt);
+        fseek(f, rh->sh_offset, SEEK_SET);
+        fread(rs.data(), sizeof(Elf64_Rela), cnt, f);
+        for (auto& r : rs) {
+            uint32_t idx = ELF64_R_SYM(r.r_info);
+            if (idx >= sym_count) continue;
+            if (!strcmp(dynstr.data()+syms[idx].st_name, symbol))
+                return (uintptr_t)r.r_offset;
+        }
+        return 0;
+    };
+
+    uintptr_t off = search(rela_plt);
+    if (!off) off = search(rela_dyn);
+    return off;
+}
+
+// روش ۲: از PT_DYNAMIC (برای stripped)
+static uintptr_t findFromDynamic(FILE* f,
+                                  const Elf64_Ehdr& ehdr,
+                                  const char* symbol) {
+    std::vector<Elf64_Phdr> phdrs(ehdr.e_phnum);
+    fseek(f, ehdr.e_phoff, SEEK_SET);
+    fread(phdrs.data(), sizeof(Elf64_Phdr), ehdr.e_phnum, f);
+
+    // پیدا کردن PT_DYNAMIC
+    Elf64_Phdr* dyn_ph = nullptr;
+    for (auto& ph : phdrs)
+        if (ph.p_type == PT_DYNAMIC) { dyn_ph = &ph; break; }
+    if (!dyn_ph) return 0;
+
+    size_t dyn_cnt = dyn_ph->p_filesz / sizeof(Elf64_Dyn);
+    std::vector<Elf64_Dyn> dyns(dyn_cnt);
+    fseek(f, dyn_ph->p_offset, SEEK_SET);
+    fread(dyns.data(), sizeof(Elf64_Dyn), dyn_cnt, f);
+
+    // جمع‌آوری آدرس‌های مورد نیاز
+    uintptr_t strtab_va=0, symtab_va=0;
+    uintptr_t rela_va=0,   rela_sz=0;
+    uintptr_t syment=24; // sizeof Elf64_Sym
+
+    for (auto& d : dyns) {
+        switch(d.d_tag) {
+            case DT_STRTAB:   strtab_va = d.d_un.d_ptr; break;
+            case DT_SYMTAB:   symtab_va = d.d_un.d_ptr; break;
+            case DT_JMPREL:   rela_va   = d.d_un.d_ptr; break;
+            case DT_PLTRELSZ: rela_sz   = d.d_un.d_val; break;
+            case DT_SYMENT:   syment    = d.d_un.d_val; break;
+        }
+    }
+    if (!strtab_va || !symtab_va || !rela_va) return 0;
+
+    // تبدیل VA به file offset با LOAD segment
+    auto va2off = [&](uintptr_t va) -> uintptr_t {
+        for (auto& ph : phdrs) {
+            if (ph.p_type != PT_LOAD) continue;
+            if (va >= ph.p_vaddr &&
+                va < ph.p_vaddr + ph.p_filesz)
+                return va - ph.p_vaddr + ph.p_offset;
+        }
+        return 0;
+    };
+
+    uintptr_t strtab_off = va2off(strtab_va);
+    uintptr_t symtab_off = va2off(symtab_va);
+    uintptr_t rela_off   = va2off(rela_va);
+
+    if (!strtab_off || !symtab_off || !rela_off) return 0;
+
+    // خوندن rela
+    size_t rela_cnt = rela_sz / sizeof(Elf64_Rela);
+    std::vector<Elf64_Rela> relas(rela_cnt);
+    fseek(f, rela_off, SEEK_SET);
+    fread(relas.data(), sizeof(Elf64_Rela), rela_cnt, f);
+
+    // خوندن strtab
+    // اندازه رو estimate می‌کنیم
+    std::vector<char> strtab(4096);
+    fseek(f, strtab_off, SEEK_SET);
+    fread(strtab.data(), 1, strtab.size(), f);
+
+    for (auto& r : relas) {
+        uint32_t sym_idx = ELF64_R_SYM(r.r_info);
+        uintptr_t sym_off = symtab_off + sym_idx * syment;
+
+        Elf64_Sym sym;
+        fseek(f, sym_off, SEEK_SET);
+        fread(&sym, sizeof(sym), 1, f);
+
+        if (sym.st_name >= strtab.size()) continue;
+        const char* sym_name = strtab.data() + sym.st_name;
+
+        if (!strcmp(sym_name, symbol))
+            return (uintptr_t)r.r_offset;
+    }
     return 0;
 }
 
-static std::string findLibPath(const char* lib_name) {
-    FILE* maps = fopen("/proc/self/maps", "r");
-    if (!maps) return "";
+// تابع اصلی با fallback
+static uintptr_t findGotOffset(const char* lib_path,
+                                const char* symbol) {
+    FILE* f = fopen(lib_path, "rb");
+    if (!f) return 0;
 
-    char line[512];
-    std::string result;
-
-    while (fgets(line, sizeof(line), maps)) {
-        if (strstr(line, lib_name)) {
-            char* path_start = strrchr(line, ' ');
-            if (path_start) {
-                path_start++;
-                size_t len = strlen(path_start);
-                if (len > 0 && path_start[len-1] == '\n')
-                    path_start[len-1] = '\0';
-                result = path_start;
-                break;
-            }
-        }
+    Elf64_Ehdr ehdr;
+    if (fread(&ehdr, sizeof(ehdr), 1, f) != 1
+        || memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0) {
+        fclose(f);
+        return 0;
     }
 
-    fclose(maps);
+    uintptr_t offset = 0;
+
+    if (ehdr.e_shoff != 0) {
+        // روش اول: section headers
+        offset = findFromSections(f, ehdr, symbol);
+    }
+
+    if (!offset) {
+        // روش دوم: PT_DYNAMIC (fallback برای stripped)
+        offset = findFromDynamic(f, ehdr, symbol);
+    }
+
+    fclose(f);
+    if (offset)
+        LOGI("Found %s in %s @ offset 0x%lx",
+             symbol,
+             strrchr(lib_path,'/')?strrchr(lib_path,'/')+1:lib_path,
+             offset);
+    return offset;
+}
+
+// ─────────────────────────────────────────
+// پیدا کردن lib dir از package name
+// ─────────────────────────────────────────
+static std::string findLibDir(const std::string& pkg) {
+    const char* base = "/data/app";
+    DIR* d1 = opendir(base);
+    if (!d1) return "";
+
+    std::string result;
+    struct dirent* e1;
+
+    while ((e1 = readdir(d1)) && result.empty()) {
+        if (e1->d_name[0] == '.') continue;
+
+        std::string tier1 = std::string(base) + "/" + e1->d_name;
+        DIR* d2 = opendir(tier1.c_str());
+        if (!d2) continue;
+
+        struct dirent* e2;
+        while ((e2 = readdir(d2)) && result.empty()) {
+            if (e2->d_name[0] == '.') continue;
+            if (strncmp(e2->d_name, pkg.c_str(), pkg.size()) != 0)
+                continue;
+
+            // چک کن بعد از pkg نام یه - داره (نه پکیج دیگه)
+            if (e2->d_name[pkg.size()] != '-') continue;
+
+            std::string lib = tier1 + "/" + e2->d_name + "/lib/arm64";
+            struct stat st;
+            if (stat(lib.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+                result = lib;
+        }
+        closedir(d2);
+    }
+    closedir(d1);
+
+    if (!result.empty())
+        LOGI("Lib dir for %s: %s", pkg.c_str(), result.c_str());
+    else
+        LOGE("Lib dir not found for %s", pkg.c_str());
+
     return result;
 }
 
-static bool findLoadBase(const char* lib_name, uintptr_t& load_base) {
+// ─────────────────────────────────────────
+// اسکن .so فایل‌های lib dir
+// ─────────────────────────────────────────
+static std::vector<std::string> scanLibDir(const std::string& dir) {
+    std::vector<std::string> libs;
+    DIR* d = opendir(dir.c_str());
+    if (!d) return libs;
+
+    struct dirent* e;
+    while ((e = readdir(d))) {
+        size_t len = strlen(e->d_name);
+        if (len < 4) continue;
+        if (strcmp(e->d_name + len - 3, ".so") != 0) continue;
+        libs.push_back(dir + "/" + e->d_name);
+    }
+    closedir(d);
+    LOGI("Found %zu .so files in %s", libs.size(), dir.c_str());
+    return libs;
+}
+
+// ─────────────────────────────────────────
+// پیدا کردن load base از /proc/self/maps
+// ─────────────────────────────────────────
+static uintptr_t getLoadBase(const char* lib_name) {
     FILE* maps = fopen("/proc/self/maps", "r");
-    if (!maps) return false;
+    if (!maps) return 0;
 
     char line[512];
-    bool found = false;
+    uintptr_t base = 0;
 
     while (fgets(line, sizeof(line), maps)) {
         if (!strstr(line, lib_name)) continue;
         if (!strstr(line, "r--p")) continue;
 
-        uintptr_t start, end;
+        uintptr_t start, end, offset;
         char perms[8];
-        uintptr_t file_offset;
-        sscanf(line, "%lx-%lx %s %lx", &start, &end, perms, &file_offset);
-
-        if (file_offset == 0) {
-            load_base = start;
-            LOGI("Load base of %s: 0x%lx", lib_name, load_base);
-            found = true;
-            break;
-        }
+        sscanf(line, "%lx-%lx %s %lx",
+               &start, &end, perms, &offset);
+        if (offset == 0) { base = start; break; }
     }
-
     fclose(maps);
-    return found;
+    return base;
 }
 
-static bool applyGotHook(const GotHookInfo& hook_info, HookContext* ctx) {
-    const char* lib_name = hook_info.lib_name.c_str();
-    const char* symbol = hook_info.symbol.c_str();
+// ─────────────────────────────────────────
+// اعمال یک hook entry
+// ─────────────────────────────────────────
+static bool applyHook(HookEntry& e) {
+    uintptr_t got = e.load_base + e.got_offset;
 
-    std::string lib_path = findLibPath(lib_name);
-    if (lib_path.empty()) {
-        LOGE("Library %s not found in maps", lib_name);
-        return false;
-    }
-    LOGI("Library path: %s", lib_path.c_str());
-
-    uintptr_t got_offset = findGotOffsetFromElf(lib_path.c_str(), symbol);
-    if (got_offset == 0) {
-        LOGE("GOT offset not found for %s", symbol);
+    // ذخیره original
+    e.original = *(void**)got;
+    if (!e.original) {
+        LOGE("Original null: %s in %s",
+             e.symbol.c_str(), e.lib_name.c_str());
         return false;
     }
 
-    uintptr_t load_base = 0;
-    if (!findLoadBase(lib_name, load_base)) {
-        LOGE("Load base not found for %s", lib_name);
-        return false;
-    }
+    // انتخاب hook function
+    void* hook = nullptr;
+    if      (e.symbol == "__system_property_get")
+        hook = (void*)hooked_prop_get;
+    else if (e.symbol == "__system_property_read_callback")
+        hook = (void*)hooked_prop_read;
+    else if (e.symbol == "__system_property_find")
+        hook = (void*)hooked_prop_find;
+    else if (e.symbol == "__system_property_read")
+        hook = (void*)hooked_prop_read_old;
 
-    uintptr_t got_addr = load_base + got_offset;
-    LOGI("GOT address: 0x%lx", got_addr);
+    if (!hook) return false;
 
-    prop_get_t orig = *(prop_get_t*)got_addr;
-    if (!orig) {
-        LOGE("Original function is null!");
-        return false;
-    }
-    ctx->original.store(orig);
-    LOGI("Original %s: %p", symbol, orig);
-
-    size_t page_size = getpagesize();
-    uintptr_t page = got_addr & ~(page_size - 1);
-    if (mprotect((void*)page, page_size, PROT_READ | PROT_WRITE) != 0) {
+    // writable
+    size_t ps = getpagesize();
+    uintptr_t pg = got & ~(ps - 1);
+    if (mprotect((void*)pg, ps, PROT_READ | PROT_WRITE) != 0) {
         LOGE("mprotect failed: %s", strerror(errno));
         return false;
     }
 
-    *(prop_get_t*)got_addr = hooked_prop_get;
+    *(void**)got = hook;
+    mprotect((void*)pg, ps, PROT_READ);
 
-    mprotect((void*)page, page_size, PROT_READ);
+    e.hooked = (*(void**)got == hook);
+    if (e.hooked)
+        LOGI("Hooked %s in %s (GOT=0x%lx orig=%p)",
+             e.symbol.c_str(), e.lib_name.c_str(), got, e.original);
+    else
+        LOGE("Hook verify failed: %s", e.symbol.c_str());
 
-    if (*(prop_get_t*)got_addr != hooked_prop_get) {
-        LOGE("Hook verification failed!");
-        return false;
-    }
-
-    ctx->ready.store(true);
-    LOGI("GOT hook applied for %s in %s", symbol, lib_name);
-    return true;
+    return e.hooked;
 }
 
-class COPGModule : public zygisk::ModuleBase {
+// ─────────────────────────────────────────
+// ماژول اصلی
+// ─────────────────────────────────────────
+class COPGGotHook : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
         this->api = api;
         this->env = env;
-        LOGI("COPG module loaded");
         loadConfig();
     }
 
@@ -267,103 +480,160 @@ public:
             return;
         }
 
-        const char* pkg = env->GetStringUTFChars(args->nice_name, nullptr);
-        if (!pkg) {
+        const char* raw = env->GetStringUTFChars(
+            args->nice_name, nullptr);
+        if (!raw) {
+            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+            return;
+        }
+        std::string pkg = raw;
+        env->ReleaseStringUTFChars(args->nice_name, raw);
+
+        // چک کن در کانفیگ هست
+        auto it = package_props.find(pkg);
+        if (it == package_props.end()) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
 
-        std::string package_name = pkg;
-        env->ReleaseStringUTFChars(args->nice_name, pkg);
+        LOGI("Target package: %s", pkg.c_str());
 
-        LOGI("Processing: %s", package_name.c_str());
-
-        auto it = got_hooks.find(package_name);
-        if (it != got_hooks.end()) {
-            current_hook_info = it->second;
-            needs_got_hook = true;
-            LOGI("%s: needs GOT hook", package_name.c_str());
+        // ─ پیدا کردن lib dir ─
+        std::string lib_dir = findLibDir(pkg);
+        if (lib_dir.empty()) {
+            LOGE("No lib dir, falling back to JNI only");
+            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
 
-        api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+        // ─ pre-scan همه .so ها ─
+        auto so_files = scanLibDir(lib_dir);
+        for (auto& so : so_files) {
+            const char* name = strrchr(so.c_str(), '/');
+            if (name) name++;
+            if (!name) continue;
+
+            for (int i = 0; TARGET_SYMBOLS[i]; i++) {
+                uintptr_t off = findGotOffset(
+                    so.c_str(), TARGET_SYMBOLS[i]);
+                if (!off) continue;
+
+                HookEntry e;
+                e.lib_path   = so;
+                e.lib_name   = name;
+                e.symbol     = TARGET_SYMBOLS[i];
+                e.got_offset = off;
+                precomputed.push_back(e);
+            }
+        }
+
+        LOGI("Pre-scanned %zu hook targets for %s",
+             precomputed.size(), pkg.c_str());
+
+        current_pkg   = pkg;
+        current_props = it->second;
+        needs_hook    = true;
+        // DLCLOSE نزن
     }
 
-    void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        if (!needs_got_hook) {
+    void postAppSpecialize(
+            const zygisk::AppSpecializeArgs* args) override {
+
+        if (!needs_hook) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
 
-        g_ctx = new HookContext();
-        g_ctx->props = current_hook_info.props;
+        // ساخت context این پروسه
+        g_ctx = new ProcessContext();
+        g_ctx->props        = current_props;
+        g_ctx->package_name = current_pkg;
 
-        GotHookInfo hook_info = current_hook_info;
+        std::vector<HookEntry> to_hook = precomputed;
 
-        std::thread([hook_info]() {
-            LOGI("GOT hook thread started for %s", hook_info.lib_name.c_str());
+        std::thread([to_hook]() {
+            LOGI("Hook thread started (%zu targets)",
+                 to_hook.size());
 
-            for (int i = 0; i < 60; i++) {
-                uintptr_t base = 0;
-                if (findLoadBase(hook_info.lib_name.c_str(), base)) {
-                    LOGI("Library found after %d seconds", i);
-                    sleep(1);
-
-                    if (applyGotHook(hook_info, g_ctx)) {
-                        LOGI("GOT hook successful!");
-
-                        char test[256] = {0};
-                        hooked_prop_get("ro.product.model", test);
-                        LOGI("Test: ro.product.model = %s", test);
-                    } else {
-                        LOGE("GOT hook failed!");
+            // منتظر load شدن اولین lib مورد نظر
+            for (int wait = 0; wait < 30; wait++) {
+                bool any_loaded = false;
+                for (auto& h : to_hook) {
+                    if (getLoadBase(h.lib_name.c_str())) {
+                        any_loaded = true;
+                        break;
                     }
-                    return;
+                }
+                if (any_loaded) {
+                    sleep(1); // GOT fill بشه
+                    break;
                 }
                 sleep(1);
             }
-            LOGE("Library never loaded");
+
+            // اعمال همه hooks
+            for (auto h : to_hook) {
+                h.load_base = getLoadBase(h.lib_name.c_str());
+                if (!h.load_base) {
+                    LOGE("Not loaded: %s", h.lib_name.c_str());
+                    continue;
+                }
+                if (applyHook(h)) {
+                    // ذخیره original در ctx
+                    if (h.symbol == "__system_property_get")
+                        g_ctx->orig_get =
+                            (prop_get_t)h.original;
+                    else if (h.symbol ==
+                             "__system_property_read_callback")
+                        g_ctx->orig_read_cb =
+                            (prop_read_t)h.original;
+                    else if (h.symbol == "__system_property_find")
+                        g_ctx->orig_find =
+                            (prop_find_t)h.original;
+                    else if (h.symbol == "__system_property_read")
+                        g_ctx->orig_read_old =
+                            (prop_read_old_t)h.original;
+
+                    g_ctx->hooks.push_back(h);
+                }
+            }
+
+            g_ctx->ready.store(true);
+            LOGI("Done: %zu hooks active for %s",
+                 g_ctx->hooks.size(),
+                 g_ctx->package_name.c_str());
         }).detach();
+
+        // DLCLOSE نزن
     }
 
 private:
     zygisk::Api* api;
-    JNIEnv* env;
-    bool needs_got_hook = false;
-    GotHookInfo current_hook_info;
-    std::unordered_map<std::string, GotHookInfo> got_hooks;
+    JNIEnv*      env;
+    bool         needs_hook = false;
+    std::string  current_pkg;
+    std::vector<HookEntry> precomputed;
+    std::unordered_map<std::string, std::string> current_props;
+    std::unordered_map<std::string,
+        std::unordered_map<std::string, std::string>> package_props;
 
     void loadConfig() {
-        const char* config_path = "/data/adb/modules/COPG/COPG.json";
-        std::ifstream f(config_path);
+        std::ifstream f("/data/adb/modules/COPG/COPG.json");
         if (!f.is_open()) return;
-
         try {
-            json config = json::parse(f);
-
-            if (config.contains("got_hooks")) {
-                for (auto& [pkg, hook_data] : config["got_hooks"].items()) {
-                    GotHookInfo info;
-                    info.lib_name = hook_data.value("lib", "");
-                    info.symbol = hook_data.value("symbol", "__system_property_get");
-
-                    if (hook_data.contains("props")) {
-                        for (auto& [k, v] : hook_data["props"].items()) {
-                            info.props[k] = v.get<std::string>();
-                        }
-                    }
-
-                    if (!info.lib_name.empty()) {
-                        got_hooks[pkg] = info;
-                        LOGI("Loaded GOT hook for %s -> %s",
-                             pkg.c_str(), info.lib_name.c_str());
-                    }
-                }
+            json cfg = json::parse(f);
+            if (!cfg.contains("got_hooks")) return;
+            for (auto& [pkg, data] : cfg["got_hooks"].items()) {
+                if (!data.contains("props")) continue;
+                std::unordered_map<std::string,std::string> props;
+                for (auto& [k,v] : data["props"].items())
+                    props[k] = v.get<std::string>();
+                package_props[pkg] = props;
+                LOGI("Config: %s (%zu props)",
+                     pkg.c_str(), props.size());
             }
-        } catch (...) {
-            LOGE("Config parse error");
-        }
+        } catch(...) { LOGE("Config parse error"); }
     }
 };
 
-REGISTER_ZYGISK_MODULE(COPGModule)
+REGISTER_ZYGISK_MODULE(COPGGotHook)
