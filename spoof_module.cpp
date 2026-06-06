@@ -41,12 +41,12 @@ static const char* TARGET_SYMBOLS[] = {
 };
 
 static const char* ABI_DIRS[] = {
-    "arm64",        // arm64-v8a
-    "arm64-v8a",    // alias
-    "arm",          // armeabi-v7a
-    "armeabi-v7a",  // alias
-    "x86_64",       // x86_64
-    "x86",          // x86
+    "arm64",
+    "arm64-v8a",
+    "arm",
+    "armeabi-v7a",
+    "x86_64",
+    "x86",
     nullptr
 };
 
@@ -280,7 +280,6 @@ static uintptr_t findFromDynamic64(FILE* f, const Elf64_Ehdr& ehdr,
         return 0;
     };
 
-    // اولویت با JMPREL (PLT) سپس RELA
     uintptr_t off = searchRela(plt_va, plt_sz);
     if (!off) off = searchRela(rela_va, rela_sz);
     return off;
