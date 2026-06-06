@@ -1,12 +1,12 @@
 {
   "got_hooks": {
-    "com.h73.jhqyna": {
+    "com.ea.gp.fifamobile": {
       "props": {
-        "ro.product.model": "NX809J",
-        "ro.product.brand": "REDMAGIC",
-        "ro.product.manufacturer": "Nubia",
-        "ro.product.device": "NX809J",
-        "ro.build.fingerprint": "REDMAGIC/NX809J-UN/NX809J:16/BP2A.250605.031.A3/20251017.000000:user/release-keys"
+        "ro.product.model": "SM-F9460",
+        "ro.product.brand": "samsung",
+        "ro.product.manufacturer": "samsung",
+        "ro.product.device": "q2q",
+        "ro.build.fingerprint": "samsung/q2qzh/q2q:15/UP1A.231005.007/F946BXXU1BWK4:user/release-keys"
       }
     }
   }
