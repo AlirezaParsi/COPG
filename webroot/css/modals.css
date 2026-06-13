@@ -65,11 +65,18 @@
   font-size:.72rem; font-weight:600; letter-spacing:.02em;
   color:var(--text-secondary); padding-left:2px;
 }
-/* muted "(optional)" hint after a field label */
+/* label row: label + "(optional)" inline, with an optional action (Generate) pushed right */
+.field__head { display:flex; align-items:baseline; gap:6px; }
 .field__opt {
-  margin-left:5px; font-size:.66rem; font-weight:500;
+  font-size:.66rem; font-weight:500;
   letter-spacing:0; color:var(--text-tertiary);
 }
+.field__gen {
+  margin-left:auto; font-size:.66rem; font-weight:600; letter-spacing:.02em;
+  color:var(--accent-primary); cursor:pointer; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.field__gen:active { opacity:.55; }
 .field__input, .field__select {
   width:100%; padding:11px 14px;
   background:var(--glass-bg); border:1px solid var(--glass-border);

@@ -26,7 +26,7 @@
       <form class="sheet-body form-body" id="deviceForm" autocomplete="off">
         <label class="field"><span class="field__label" data-i18n="dev_f_name">Device Name</span>
           <input class="field__input" id="dfName" type="text" required /></label>
-        <label class="field"><span class="field__label" data-i18n="dev_f_brand">Brand</span><span class="field__opt" data-i18n="opt_optional">(optional)</span>
+        <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_brand">Brand</span><span class="field__opt" data-i18n="opt_optional">(optional)</span></span>
           <input class="field__input" id="dfBrand" type="text" /></label>
         <label class="field"><span class="field__label" data-i18n="dev_f_model">Model</span>
           <input class="field__input" id="dfModel" type="text" required /></label>
@@ -35,12 +35,12 @@
         <label class="field"><span class="field__label" data-i18n="dev_f_fingerprint">Fingerprint</span>
           <input class="field__input field__input--mono" id="dfFingerprint" type="text" required /></label>
         <div class="field-row">
-          <label class="field"><span class="field__label" data-i18n="dev_f_android">Android Version</span><span class="field__opt" data-i18n="opt_optional">(optional)</span>
+          <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_android">Android Version</span><span class="field__opt" data-i18n="opt_optional">(optional)</span></span>
             <input class="field__input" id="dfAndroid" type="text" inputmode="decimal" /></label>
           <label class="field"><span class="field__label" data-i18n="dev_f_sdk">SDK Int</span>
             <input class="field__input" id="dfSdk" type="text" inputmode="numeric" /></label>
         </div>
-        <label class="field"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span><span class="field__opt" data-i18n="opt_optional">(optional)</span>
+        <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__gen" id="dfSerialGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
           <input class="field__input field__input--mono" id="dfSerial" type="text" maxlength="24" /></label>
         <div class="form-buttons">
           <button type="button" class="btn btn--ghost" data-close="deviceModal" data-i18n="btn_cancel">Cancel</button>
@@ -210,15 +210,35 @@
   function wireAndroidSdk() {
     const a = $m('#dfAndroid'), s = $m('#dfSdk');
     if (!a || !s) return;
-    s.readOnly = true;
-    s.classList.add('field__input--locked');
+    // SDK auto-fills from a known Android version for convenience, but stays
+    // editable: an unknown/future version (not in the map) leaves SDK alone so
+    // you can type it by hand — no need to update the module for a new Android.
     const sync = () => {
       const v = a.value.trim();
       const sug = v ? COPG.sdkFromAndroid(v) : null;
-      const next = (sug != null) ? String(sug) : '';
-      if (next !== s.value) { s.value = next; if (next) flash(s); }
+      if (sug != null && String(sug) !== s.value) { s.value = String(sug); flash(s); }
     };
     a.addEventListener('input', sync);
+  }
+  // Random plausible serial (uppercase alphanumeric) — typing 24 chars by hand is painful.
+  function genSerial(n = 16) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let out = '';
+    try {
+      const buf = new Uint32Array(n);
+      crypto.getRandomValues(buf);
+      for (let i = 0; i < n; i++) out += chars[buf[i] % chars.length];
+    } catch (_) {
+      for (let i = 0; i < n; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return out;
+  }
+  function wireSerialGen() {
+    const g = $m('#dfSerialGen'), s = $m('#dfSerial');
+    if (!g || !s) return;
+    const gen = e => { if (e) { e.preventDefault(); e.stopPropagation(); } s.value = genSerial(); flash(s); };
+    g.addEventListener('click', gen);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') gen(e); });
   }
   function flash(el) {
     el.classList.add('field__input--suggested');
@@ -480,6 +500,7 @@
 
   /* init */
   wireAndroidSdk();
+  wireSerialGen();
 
   w.Modals = { openDevice, openPackage, confirm, confirmDelete, info, closeAll };
 

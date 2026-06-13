@@ -197,6 +197,7 @@ I18N.register('fa', {
   dev_f_sdk:          'SDK Int',
   dev_f_serial:       'شماره سریال',
   opt_optional:       '(اختیاری)',
+  serial_gen:         'تولید',
 
   /* Package modal */
   pkg_add_title:  'افزودن بسته',

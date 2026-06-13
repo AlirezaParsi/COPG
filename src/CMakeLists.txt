@@ -1,11 +1,4 @@
 cmake_minimum_required(VERSION 3.21)
-
-# Bundle libc++ statically: Zygisk injects this .so into app processes that have
-# NO libc++_shared.so in their linker namespace (it's not in /system), so a
-# dynamic libc++ dependency makes dlopen fail and the module never loads.
-# Must be set before project() so the NDK toolchain picks it up.
-set(ANDROID_STL c++_static)
-
 project(SpoofModule)
 
 set(CMAKE_CXX_STANDARD 17)
