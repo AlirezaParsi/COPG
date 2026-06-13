@@ -80,7 +80,7 @@ EOF
 
 # ── build Zygisk companion (.so) ─────────────────────────────────────────────
 log "building zygisk companion ($ABI.so)"
-clang++ -std=c++17 -shared -fPIC -Os -flto -ffunction-sections -fdata-sections \
+clang++ -std=c++17 -shared -fPIC -static-libstdc++ -Os -flto -ffunction-sections -fdata-sections \
   -Wl,--gc-sections -Wl,--exclude-libs,ALL \
   -I src/include src/spoof_module.cpp src/atexit.cpp -llog \
   -o "$STAGE/zygisk/$ABI.so"
