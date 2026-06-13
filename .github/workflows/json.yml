@@ -1,4 +1,4 @@
-name: up
+name: json
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
         description: 'Branch to build from'
         type: string
         required: true
-        default: 'JSON'
+        default: 'rewrite'
       title:
         description: 'Custom title for Telegram message'
         type: string
@@ -90,31 +90,29 @@ jobs:
 
       - name: Build Unified Controller (All Architectures)
         run: |
-          wget -q https://github.com/nlohmann/json/releases/download/v3.12.0/json.hpp -O json.hpp
-          
           echo "Building ARM64..."
           ${{ env.NDK_PATH }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++ \
             -std=c++17 -O3 -Os -fPIE -pie -static-libstdc++ \
             -fdata-sections -ffunction-sections -Wl,--gc-sections \
-            -I. src/unified_controller.cpp -o controller_arm64
+            -I src/include src/unified_controller.cpp -o controller_arm64
           
           echo "Building ARMv7..."
           ${{ env.NDK_PATH }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi34-clang++ \
             -std=c++17 -O3 -Os -fPIE -pie -static-libstdc++ \
             -fdata-sections -ffunction-sections -Wl,--gc-sections \
-            -I. src/unified_controller.cpp -o controller_armv7
+            -I src/include src/unified_controller.cpp -o controller_armv7
           
           echo "Building x86_64..."
           ${{ env.NDK_PATH }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android34-clang++ \
             -std=c++17 -O3 -Os -fPIE -pie -static-libstdc++ \
             -fdata-sections -ffunction-sections -Wl,--gc-sections \
-            -I. src/unified_controller.cpp -o controller_x86_64
+            -I src/include src/unified_controller.cpp -o controller_x86_64
           
           echo "Building x86..."
           ${{ env.NDK_PATH }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android34-clang++ \
             -std=c++17 -O3 -Os -fPIE -pie -static-libstdc++ \
             -fdata-sections -ffunction-sections -Wl,--gc-sections \
-            -I. src/unified_controller.cpp -o controller_x86
+            -I src/include src/unified_controller.cpp -o controller_x86
 
           echo "Stripping and compressing binaries..."
           ${{ env.NDK_PATH }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip --strip-unneeded controller_*
@@ -186,11 +184,13 @@ jobs:
           chmod 755 module/controller_*
 
           # Other files
-          cp runtime.json module/runtime.json
+          cp COPG.json module/COPG.json
+          cp list.json module/list.json
+          cp -r META-INF module/META-INF
           cp -rf system/* module/system/ 2>/dev/null || true
           cp -r webroot/* module/webroot/ 2>/dev/null || true
 
-          chmod 755 module/customize.sh module/service.sh module/action.sh module/uninstall.sh module/update_config.sh
+          chmod 755 module/customize.sh module/service.sh module/uninstall.sh module/META-INF/com/google/android/update-binary
 
           VERSION="${{ github.event.inputs.custom_version || '4.3.5' }}"
           VERSION_CODE="${{ github.event.inputs.custom_version_code || '435' }}"

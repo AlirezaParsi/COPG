@@ -432,12 +432,12 @@ if $INSTALL_SUCCESS; then
 fi
 
   if $INSTALL_SUCCESS; then
-    chmod 0755 "$MODPATH/service.sh" "$MODPATH/action.sh" "$MODPATH/update_config.sh" 2>/dev/null
+    chmod 0755 "$MODPATH/service.sh" 2>/dev/null
     chmod 0644 "$MODPATH/COPG.json" "$MODPATH/list.json" 2>/dev/null
     chmod 0444 "$MODPATH/cpuinfo_spoof" 2>/dev/null
-    
+
     for file in "$MODPATH/COPG.json" "$MODPATH/list.json" "$MODPATH/cpuinfo_spoof" \
-                "$MODPATH/service.sh" "$MODPATH/action.sh" "$MODPATH/update_config.sh"; do
+                "$MODPATH/service.sh"; do
       if [ -f "$file" ]; then
         chcon u:object_r:system_file:s0 "$file" 2>/dev/null
       fi
