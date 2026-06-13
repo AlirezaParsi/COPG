@@ -196,6 +196,7 @@ I18N.register('fa', {
   dev_f_android:      'نسخه اندروید',
   dev_f_sdk:          'SDK Int',
   dev_f_serial:       'شماره سریال',
+  opt_optional:       '(اختیاری)',
 
   /* Package modal */
   pkg_add_title:  'افزودن بسته',

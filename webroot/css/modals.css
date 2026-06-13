@@ -65,6 +65,11 @@
   font-size:.72rem; font-weight:600; letter-spacing:.02em;
   color:var(--text-secondary); padding-left:2px;
 }
+/* muted "(optional)" hint after a field label */
+.field__opt {
+  margin-left:5px; font-size:.66rem; font-weight:500;
+  letter-spacing:0; color:var(--text-tertiary);
+}
 .field__input, .field__select {
   width:100%; padding:11px 14px;
   background:var(--glass-bg); border:1px solid var(--glass-border);
