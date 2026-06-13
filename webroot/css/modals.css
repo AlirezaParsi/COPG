@@ -77,6 +77,13 @@
   -webkit-tap-highlight-color:transparent;
 }
 .field__gen:active { opacity:.55; }
+.field__warn {
+  margin-left:auto; display:inline-grid; place-items:center;
+  width:18px; height:18px; color:#FBBF24; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.field__warn svg { width:14px; height:14px; }
+.field__warn:active { opacity:.55; }
 .field__input, .field__select {
   width:100%; padding:11px 14px;
   background:var(--glass-bg); border:1px solid var(--glass-border);

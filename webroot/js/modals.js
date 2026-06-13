@@ -12,6 +12,8 @@
   /* little info "ⓘ" used on the cpu/got toggle rows → tap for a plain explanation */
   const INFO_SVG =
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+  const WARN_SVG =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
 
   mount.insertAdjacentHTML('beforeend', `
     <!-- DEVICE MODAL -->
@@ -26,8 +28,8 @@
       <form class="sheet-body form-body" id="deviceForm" autocomplete="off">
         <label class="field"><span class="field__label" data-i18n="dev_f_name">Device Name</span>
           <input class="field__input" id="dfName" type="text" required /></label>
-        <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_brand">Brand</span><span class="field__opt" data-i18n="opt_optional">(optional)</span></span>
-          <input class="field__input" id="dfBrand" type="text" /></label>
+        <label class="field"><span class="field__label" data-i18n="dev_f_brand">Brand</span>
+          <input class="field__input" id="dfBrand" type="text" required /></label>
         <label class="field"><span class="field__label" data-i18n="dev_f_model">Model</span>
           <input class="field__input" id="dfModel" type="text" required /></label>
         <label class="field"><span class="field__label" data-i18n="dev_f_manufacturer">Manufacturer</span>
@@ -37,7 +39,7 @@
         <div class="field-row">
           <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_android">Android Version</span><span class="field__opt" data-i18n="opt_optional">(optional)</span></span>
             <input class="field__input" id="dfAndroid" type="text" inputmode="decimal" /></label>
-          <label class="field"><span class="field__label" data-i18n="dev_f_sdk">SDK Int</span>
+          <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_sdk">SDK Int</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__warn" id="dfSdkWarn" role="button" tabindex="0" data-i18n-attr="aria-label:info_aria" aria-label="What's this?">${WARN_SVG}</span></span>
             <input class="field__input" id="dfSdk" type="text" inputmode="numeric" /></label>
         </div>
         <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__gen" id="dfSerialGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
@@ -239,6 +241,14 @@
     const gen = e => { if (e) { e.preventDefault(); e.stopPropagation(); } s.value = genSerial(); flash(s); };
     g.addEventListener('click', gen);
     g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') gen(e); });
+  }
+  function wireSdkWarn() {
+    const w = $m('#dfSdkWarn');
+    if (!w) return;
+    const open = e => { if (e) { e.preventDefault(); e.stopPropagation(); }
+      info({ title: I18N.t('info_sdk_title'), message: I18N.t('info_sdk_msg') }); };
+    w.addEventListener('click', open);
+    w.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(e); });
   }
   function flash(el) {
     el.classList.add('field__input--suggested');
@@ -501,6 +511,7 @@
   /* init */
   wireAndroidSdk();
   wireSerialGen();
+  wireSdkWarn();
 
   w.Modals = { openDevice, openPackage, confirm, confirmDelete, info, closeAll };
 
