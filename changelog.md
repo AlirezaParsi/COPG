@@ -16,7 +16,7 @@
 ### Simpler, Safer Spoofing
 *   **CPU spoof is now blocked by default.** Every device package is safe out of the box — flip on **With CPU Spoofing** only for the games that need the chipset faked.
 *   **Retired the `blocked` and `notweak` tags.** They are no longer needed; a single clear toggle replaces them.
-*   **GOT Hooking** now shows a plain risk warning (with a community link) before it can be enabled.
+*   **New — GOT Hooking:** an advanced in-memory spoof method for stubborn apps that ignore the normal spoof. Off by default and gated behind a clear risk warning — it can be detected and may even get a game account banned, so only enable it if you know you need it.
 *   Plain-language ℹ️ explanations sit next to every toggle, so you always know what each one does.
 
 ### Per-App Game Tweaks (New)

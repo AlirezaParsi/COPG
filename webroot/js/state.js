@@ -10,7 +10,6 @@ const State = {
   rootEnv:      '—',
   rootSecondary: [],
   debugLogs:    false,
-  experimental: false,
 
   /* devices & packages now come from COPG.json via js/copg-data.js
      (COPG.listDevices() / COPG.listPackages()) — no fake data here. */

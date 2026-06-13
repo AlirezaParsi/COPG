@@ -61,7 +61,6 @@ I18N.register('en', {
   set_theme:        'Theme',
   set_language:     'Language',
   set_debug:        'Debug Logs',
-  set_experimental: 'Experimental Features',
 
   /* Theme hints (settings row) */
   theme_auto:   'Auto',
@@ -83,7 +82,7 @@ I18N.register('en', {
   about_build:   'Build Date',
   about_vcode:   'Version Code',
   about_author:  'Author',
-  about_desc:    'A Zygisk module that spoofs your device — and optionally its CPU — per game or app.',
+  about_desc:    'A Zygisk module that spoofs your device — and optionally its CPU — per game or app, unlocking higher FPS, better graphics, and premium features otherwise locked to specific phones. Add or remove apps anytime from this WebUI, no reboot needed.',
 
   /* Nav */
   nav_home:     'Home',
@@ -94,8 +93,6 @@ I18N.register('en', {
   toast_console:   'Console — coming soon',
   toast_debug_on:  'Debug logs enabled',
   toast_debug_off: 'Debug logs disabled',
-  toast_exp_on:    'Experimental features on',
-  toast_exp_off:   'Experimental features off',
   status_connected: 'Connected',
   status_offline:   'Offline',
 

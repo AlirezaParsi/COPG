@@ -61,7 +61,6 @@ I18N.register('fa', {
   set_theme:        'پوسته',
   set_language:     'زبان',
   set_debug:        'گزارش‌های اشکال‌زدایی',
-  set_experimental: 'قابلیت‌های آزمایشی',
 
   /* Theme hints (settings row) */
   theme_auto:   'خودکار',
@@ -83,7 +82,7 @@ I18N.register('fa', {
   about_build:   'تاریخ ساخت',
   about_vcode:   'کد نسخه',
   about_author:  'سازنده',
-  about_desc:    'یک ماژول Zygisk که دستگاه — و در صورت نیاز CPU — را برای هر بازی یا برنامه جعل می‌کند.',
+  about_desc:    'یک ماژول Zygisk که دستگاه — و در صورت نیاز CPU — را برای هر بازی یا برنامه جعل می‌کند تا FPS بالاتر، گرافیک بهتر و قابلیت‌های ویژه‌ای که مخصوص گوشی‌های دیگر است باز شود. افزودن یا حذف برنامه‌ها هر زمان از همین WebUI، بدون نیاز به ریبوت.',
 
   /* Nav */
   nav_home:     'خانه',
@@ -94,8 +93,6 @@ I18N.register('fa', {
   toast_console:   'کنسول — به‌زودی',
   toast_debug_on:  'گزارش‌های اشکال‌زدایی فعال شد',
   toast_debug_off: 'گزارش‌های اشکال‌زدایی غیرفعال شد',
-  toast_exp_on:    'قابلیت‌های آزمایشی روشن شد',
-  toast_exp_off:   'قابلیت‌های آزمایشی خاموش شد',
   status_connected: 'متصل',
   status_offline:   'آفلاین',
 

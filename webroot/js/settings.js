@@ -3,7 +3,6 @@
    (theme/lang in theme.js)
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const debugToggle = $('#debugToggle');
-const expToggle   = $('#expToggle');
 
 if (debugToggle) {
   // Restore persisted state into BOTH the checkbox and State (so the Console's
@@ -17,15 +16,6 @@ if (debugToggle) {
     // This line is always shown (it's the user turning the feature on/off).
     if (window.Log) Log[debugToggle.checked ? 'success' : 'warn'](
       'Debug Logs ' + (debugToggle.checked ? 'enabled — UI activity will appear here.' : 'disabled.'));
-  });
-}
-
-if (expToggle) {
-  try { expToggle.checked = localStorage.getItem('copg-exp') === '1'; } catch(_) {}
-  expToggle.addEventListener('change', () => {
-    State.experimental = expToggle.checked;
-    showToast(I18N.t(expToggle.checked ? 'toast_exp_on' : 'toast_exp_off'));
-    try { localStorage.setItem('copg-exp', expToggle.checked ? '1' : '0'); } catch(_) {}
   });
 }
 
