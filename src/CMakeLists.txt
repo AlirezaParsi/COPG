@@ -12,7 +12,7 @@ if(NOT DEBUG)
     add_link_options(-s)
 endif()
 
-# Zygisk companion (.so). Header-only nlohmann json — no yyjson translation unit.
+# Zygisk companion (.so).
 add_library(spoof SHARED
             spoof_module.cpp
             atexit.cpp)
