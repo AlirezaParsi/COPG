@@ -162,6 +162,8 @@ struct DeviceInfo {
     int sdk_int;
     bool should_spoof_android_version = false;
     bool should_spoof_sdk_int = false;
+    std::string serial;                       // Build.SERIAL spoof (optional, per device profile)
+    bool should_spoof_serial = false;
     std::unordered_map<std::string, std::string> prop_overrides;
 };
 
@@ -184,6 +186,7 @@ static jfieldID fingerprintField = nullptr;
 static jfieldID productField = nullptr;
 static jfieldID releaseField = nullptr;
 static jfieldID sdkIntField = nullptr;
+static jfieldID serialField = nullptr;
 
 static time_t last_config_mtime = 0;
 static const std::string config_path = "/data/adb/modules/COPG/COPG.json";
@@ -1007,6 +1010,9 @@ private:
         manufacturerField = env->GetStaticFieldID(buildClass, "MANUFACTURER", "Ljava/lang/String;");
         fingerprintField = env->GetStaticFieldID(buildClass, "FINGERPRINT", "Ljava/lang/String;");
         productField = env->GetStaticFieldID(buildClass, "PRODUCT", "Ljava/lang/String;");
+        // SERIAL exists on all Androids (reads "unknown" on 8+); guard in case it throws.
+        serialField = env->GetStaticFieldID(buildClass, "SERIAL", "Ljava/lang/String;");
+        if (env->ExceptionCheck()) { env->ExceptionClear(); serialField = nullptr; }
 
         jclass localVersion = env->FindClass("android/os/Build$VERSION");
         if (localVersion) {
@@ -1075,6 +1081,8 @@ private:
                     info.model = device.value("MODEL", "generic");
                     info.fingerprint = device.value("FINGERPRINT", "generic/brand/device:13/TQ3A.230805.001/123456:user/release-keys");
                     info.product = device.value("PRODUCT", info.brand);
+                    info.serial = device.value("SERIAL", "");
+                    info.should_spoof_serial = !info.serial.empty();
 
                     // Auto-generate props
                     info.prop_overrides["ro.product.model"] = info.model;
@@ -1174,8 +1182,10 @@ private:
         
         if (info.should_spoof_android_version && versionClass && releaseField) setStr(releaseField, info.android_version);
         if (info.should_spoof_sdk_int && versionClass && sdkIntField) setInt(sdkIntField, info.sdk_int);
-        
-        SPOOF_LOG("Device spoofed: %s (%s)", info.model.c_str(), info.brand.c_str());
+        if (info.should_spoof_serial && serialField) setStr(serialField, info.serial);
+
+        SPOOF_LOG("Device spoofed: %s (%s)%s", info.model.c_str(), info.brand.c_str(),
+                  info.should_spoof_serial ? " +serial" : "");
     }
 };
 

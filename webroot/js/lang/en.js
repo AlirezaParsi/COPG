@@ -195,6 +195,7 @@ I18N.register('en', {
   dev_f_fingerprint:  'Fingerprint',
   dev_f_android:      'Android Version',
   dev_f_sdk:          'SDK Int',
+  dev_f_serial:       'Serial Number',
 
   /* Package modal */
   pkg_add_title:  'Add Package',

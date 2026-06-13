@@ -40,6 +40,8 @@
           <label class="field"><span class="field__label" data-i18n="dev_f_sdk">SDK Int</span>
             <input class="field__input" id="dfSdk" type="text" inputmode="numeric" /></label>
         </div>
+        <label class="field"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span>
+          <input class="field__input field__input--mono" id="dfSerial" type="text" /></label>
         <div class="form-buttons">
           <button type="button" class="btn btn--ghost" data-close="deviceModal" data-i18n="btn_cancel">Cancel</button>
           <button type="submit" class="btn btn--primary" data-i18n="btn_save">Save</button>
@@ -196,6 +198,7 @@
       $m('#dfFingerprint').value = d.FINGERPRINT || '';
       $m('#dfAndroid').value = d.ANDROID_VERSION || '';
       $m('#dfSdk').value = d.SDK_INT || '';
+      $m('#dfSerial').value = d.SERIAL || '';
     } else {
       form.reset();
     }
@@ -248,7 +251,7 @@
     COPG.upsertDevice({
       name, brand: $m('#dfBrand').value, model,
       manufacturer: fields.manufacturer.value, fingerprint: fields.fingerprint.value,
-      android: $m('#dfAndroid').value, sdk: $m('#dfSdk').value,
+      android: $m('#dfAndroid').value, sdk: $m('#dfSdk').value, serial: $m('#dfSerial').value,
     }, editingDeviceKey);
 
     closeAll();
