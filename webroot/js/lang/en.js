@@ -82,6 +82,7 @@ I18N.register('en', {
   about_build:   'Build Date',
   about_vcode:   'Version Code',
   about_author:  'Author',
+  about_license: 'License',
   about_desc:    'A Zygisk module that spoofs your device — and optionally its CPU — per game or app, unlocking higher FPS, better graphics, and premium features otherwise locked to specific phones. Add or remove apps anytime from this WebUI, no reboot needed.',
 
   /* Nav */
