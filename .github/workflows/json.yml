@@ -183,10 +183,7 @@ jobs:
           cp controller_x86 module/controller_x86
           chmod 755 module/controller_*
 
-          # Other files
-          cp COPG.json module/COPG.json
-          cp list.json module/list.json
-          cp -r META-INF module/META-INF
+          # Other files (COPG.json, list.json, META-INF already live under module/)
           cp -rf system/* module/system/ 2>/dev/null || true
           cp -r webroot/* module/webroot/ 2>/dev/null || true
 

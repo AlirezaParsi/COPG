@@ -59,11 +59,11 @@ mkdir -p "$STAGE/zygisk" "$STAGE/webroot" "$STAGE/system"
 
 # ── assemble static module files ─────────────────────────────────────────────
 log "assembling module tree"
-cp -r module/.   "$STAGE/"            # customize/service/uninstall.sh, system.prop, config.json, banner.png, cpuinfo_spoof, common/
-cp COPG.json list.json "$STAGE/"
+cp -r module/.   "$STAGE/"            # everything that ships at module root: customize/service/uninstall.sh,
+                                      # system.prop, config.json, banner.png, cpuinfo_spoof, common/,
+                                      # COPG.json, list.json, META-INF/
 cp -r webroot/.  "$STAGE/webroot/"
 cp -r system/.   "$STAGE/system/" 2>/dev/null || true
-cp -r META-INF   "$STAGE/META-INF"
 
 cat > "$STAGE/module.prop" <<EOF
 id=COPG

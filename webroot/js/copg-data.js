@@ -22,8 +22,10 @@
   // (AlirezaParsi/COPG, JSON branch). Downloaded straight to stdout, parsed +
   // applied + saved through the normal path; downloader fallback curl → wget →
   // busybox wget (each a single, simple command — no compound shell).
-  const SYNC_CONFIG_URL = 'https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/COPG.json';
-  const SYNC_LIST_URL   = 'https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/list.json';
+  // COPG.json / list.json live under module/ in the repo; branch stays JSON (this
+  // repo is PR'd into JSON), so only the path carries the module/ prefix.
+  const SYNC_CONFIG_URL = 'https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/COPG.json';
+  const SYNC_LIST_URL   = 'https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/list.json';
 
   /* ─── KernelSU exec bridge (Promise wrapper, from old.js) ─── */
   function execCommand(command) {
@@ -124,8 +126,9 @@
       try { cfgText  = await execCommand(`cat ${CONFIG_PATH}`); } catch (_) {}
       try { listText = await execCommand(`cat ${LIST_PATH}`);   } catch (_) {}
     } else {
-      cfgText  = await readFilePreview('COPG.json');
-      listText = await readFilePreview('list.json');
+      // webroot/ is module/webroot/; the JSON lives one level up at module/COPG.json
+      cfgText  = await readFilePreview('../COPG.json');
+      listText = await readFilePreview('../list.json');
     }
     try { config = cfgText ? JSON.parse(cfgText) : {}; }
     catch (_) { config = {}; }
