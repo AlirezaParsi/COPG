@@ -1,0 +1,425 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   modals.css — Add/Edit forms, card actions, chips, preview banner
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── Per-card action buttons (edit/delete) ── */
+.card-actions { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.card-btn {
+  width:34px; height:34px; border-radius:var(--radius-sm);
+  display:grid; place-items:center; cursor:pointer;
+  background:transparent; border:1px solid transparent;
+  color:var(--text-tertiary);
+  transition:background var(--dur-fast) var(--ease-out),
+             color var(--dur-fast) var(--ease-out),
+             border-color var(--dur-fast) var(--ease-out),
+             transform var(--dur-fast) var(--spring);
+  outline:none; appearance:none; -webkit-appearance:none;
+}
+.card-btn:hover  { background:var(--glass-bg-hover); color:var(--text-primary); border-color:var(--glass-border); }
+.card-btn:active { transform:scale(.88); }
+.card-btn--delete:hover { color:var(--accent-danger); border-color:rgba(248,113,113,.3); background:rgba(248,113,113,.1); }
+
+/* package card needs column layout room for chips */
+.package-card__chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+
+/* ── Chips (type + tags) ── */
+.chip {
+  display:inline-flex; align-items:center;
+  font-size:.62rem; font-weight:600; letter-spacing:.01em;
+  padding:2px 8px; border-radius:var(--radius-full);
+  border:1px solid transparent; white-space:nowrap; max-width:160px;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.chip--device  { background:rgba(129,140,248,.12); border-color:rgba(129,140,248,.28); color:var(--accent-primary); }
+.chip--cpu     { background:rgba(167,139,250,.14); border-color:rgba(167,139,250,.3);  color:var(--accent-secondary); }
+.chip--blocked { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.3);  color:var(--accent-danger); }
+.chip--withcpu { background:rgba(103,232,249,.12); border-color:rgba(103,232,249,.3);  color:var(--accent-glow); }
+.chip--got     { background:rgba(251,191,36,.14);  border-color:rgba(251,191,36,.35);  color:#FBBF24; }
+/* tweak chips — one muted neutral style so the 4 comfort tags group quietly
+   under the louder spoof chips */
+.chip--tweak   { background:rgba(148,163,184,.1);  border-color:rgba(148,163,184,.24); color:var(--text-secondary); font-weight:500; }
+.chip--installed{ background:rgba(52,211,153,.14); border-color:rgba(52,211,153,.35);  color:var(--accent-success); }
+
+/* ── Preview (no bridge) banner ── */
+.preview-banner {
+  display:none; align-items:center; gap:8px;
+  margin-bottom:12px; padding:9px 14px;
+  border-radius:var(--radius-md);
+  background:rgba(167,139,250,.12); border:1px solid rgba(167,139,250,.3);
+  color:var(--accent-secondary); font-size:.74rem; font-weight:500; line-height:1.4;
+}
+.preview-banner.visible { display:flex; }
+.preview-banner svg { flex-shrink:0; width:16px; height:16px; }
+
+/* ━━━━━━━ Form sheets (device / package) ━━━━━━━ */
+.sheet--form { max-height:88dvh; display:flex; flex-direction:column; }
+.sheet--form .form-body {
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px);
+}
+.sheet--form .form-body::-webkit-scrollbar { display:none; }
+
+.field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.field__label {
+  font-size:.72rem; font-weight:600; letter-spacing:.02em;
+  color:var(--text-secondary); padding-left:2px;
+}
+.field__input, .field__select {
+  width:100%; padding:11px 14px;
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  border-radius:var(--radius-md);
+  color:var(--text-primary); font-family:var(--font-sans);
+  font-size:.85rem; font-weight:500; outline:none;
+  transition:border-color var(--dur-fast) var(--ease-out),
+             background var(--dur-fast) var(--ease-out),
+             box-shadow var(--dur-fast) var(--ease-out);
+  appearance:none; -webkit-appearance:none;
+}
+.field__input:focus, .field__select:focus {
+  border-color:var(--glass-border-active); background:var(--glass-bg-hover);
+  box-shadow:0 0 0 3px rgba(129,140,248,.12);
+}
+.field__input::placeholder { color:var(--text-tertiary); font-weight:400; }
+.field__input--mono { font-family:var(--font-mono); font-size:.78rem; direction:ltr; }
+.field__input--suggested {
+  border-color:var(--accent-glow);
+  box-shadow:0 0 0 3px rgba(103,232,249,.18);
+}
+.field__select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23818CF8' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; padding-right:38px;
+}
+[dir="rtl"] .field__select { background-position:left 12px center; padding-right:14px; padding-left:38px; }
+
+.field-row { display:flex; gap:10px; }
+.field-row .field { flex:1; }
+
+/* validation */
+.field--error .field__input,
+.field--error .field__select { border-color:var(--accent-danger); box-shadow:0 0 0 3px rgba(248,113,113,.14); }
+.field-msg { font-size:.68rem; color:var(--accent-danger); padding-left:2px; }
+.form-error {
+  background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3);
+  color:var(--accent-danger); border-radius:var(--radius-md);
+  padding:9px 12px; font-size:.74rem; font-weight:500; margin-bottom:12px; line-height:1.45;
+}
+
+/* ── Segmented type control ── */
+.seg {
+  display:flex; gap:4px; padding:4px;
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  border-radius:var(--radius-md);
+}
+.seg__opt {
+  flex:1; padding:9px 8px; border-radius:calc(var(--radius-md) - 4px);
+  background:transparent; border:none; cursor:pointer;
+  font-family:var(--font-sans); font-size:.78rem; font-weight:600;
+  color:var(--text-secondary);
+  transition:background var(--dur-med) var(--ease-out), color var(--dur-med) var(--ease-out),
+             transform var(--dur-fast) var(--spring);
+  outline:none; appearance:none; -webkit-appearance:none; white-space:nowrap;
+}
+.seg__opt:active { transform:scale(.96); }
+.seg__opt.active { background:var(--bg-surface-3); color:var(--accent-primary); box-shadow:0 2px 8px rgba(0,0,0,.25); }
+
+/* ── Toggle rows in package modal ── */
+.toggles {
+  display:flex; flex-direction:column;
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  border-radius:var(--radius-md); overflow:hidden; margin-bottom:14px;
+}
+.trow {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; cursor:pointer; gap:12px;
+  font-size:.82rem; font-weight:500; color:var(--text-primary);
+}
+.trow + .trow { border-top:1px solid var(--glass-border); }
+/* group header inside a .toggles card (Spoofing / Tweaks …). Subsequent groups get
+   a divider above. Future input-based tweaks (custom DPI, etc.) can sit as a .trow
+   followed by a reveal-on-toggle body without changing this header pattern. */
+.toggles__head {
+  padding:11px 14px 7px;
+  font-size:.66rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--text-tertiary);
+}
+.toggles__head.has-divider { border-top:1px solid var(--glass-border); margin-top:4px; }
+/* label text + its ⓘ info button on the left of a toggle row */
+.trow__label { display:flex; align-items:center; gap:7px; min-width:0; }
+.trow__info {
+  flex-shrink:0; display:inline-grid; place-items:center;
+  width:20px; height:20px; padding:0; border:none; border-radius:50%;
+  background:none; color:var(--text-tertiary); cursor:pointer;
+  -webkit-appearance:none; appearance:none; outline:none;
+  transition:color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out),
+             transform var(--dur-fast) var(--spring);
+}
+.trow__info svg { width:16px; height:16px; display:block; }
+.trow__info:hover  { color:var(--accent-primary); background:rgba(129,140,248,.12); }
+.trow__info:active { transform:scale(.88); }
+
+/* ── Buttons row ── */
+.form-buttons { display:flex; gap:10px; margin-top:6px; }
+.btn {
+  flex:1; padding:12px 16px; border-radius:var(--radius-md);
+  font-family:var(--font-sans); font-size:.85rem; font-weight:600;
+  cursor:pointer; outline:none; appearance:none; -webkit-appearance:none;
+  border:1px solid transparent;
+  transition:background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--spring),
+             border-color var(--dur-fast) var(--ease-out), opacity var(--dur-fast);
+}
+.btn:active { transform:scale(.97); }
+.btn--primary { background:var(--accent-primary); color:#0A0A12; }
+.btn--primary:hover { background:#9aa3fb; }
+.btn--ghost { background:var(--glass-bg); border-color:var(--glass-border); color:var(--text-secondary); }
+.btn--ghost:hover { background:var(--glass-bg-hover); color:var(--text-primary); }
+.btn--danger { background:var(--accent-danger); color:#fff; }
+.btn--danger:hover { background:#fa8a8a; }
+
+/* ── Confirm sheet ── */
+/* It's a nested confirmation that can open ON TOP of another bottom-sheet
+   (e.g. restore from the Backup sheet). All sheets share z-index:300, so a
+   later-injected sheet would otherwise paint over the confirm and bury it —
+   lift the confirm above them so its buttons stay visible/tappable. */
+.sheet--confirm { z-index:320; }
+.sheet--confirm .confirm-msg {
+  font-size:.85rem; color:var(--text-secondary); line-height:1.55;
+  white-space:pre-line; margin-bottom:14px; padding:0 2px;
+}
+/* community link inside a warning confirm (e.g. GOT Hooking) */
+.sheet--confirm .confirm-link {
+  display:inline-flex; align-items:center; gap:7px;
+  margin:0 2px 18px; padding:9px 13px; border-radius:var(--radius-md);
+  font-size:.82rem; font-weight:600; text-decoration:none;
+  color:var(--accent-primary);
+  background:rgba(129,140,248,.12); border:1px solid rgba(129,140,248,.3);
+  transition:background var(--dur-fast) var(--ease-out);
+}
+.sheet--confirm .confirm-link::before {
+  content:""; width:16px; height:16px; flex-shrink:0; background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21.9 4.3 2.6 11.8c-1.3.5-1.3 1.3-.2 1.6l4.9 1.5 1.9 5.8c.2.5.4.7.8.7.4 0 .6-.2.9-.5l2.4-2.3 4.9 3.6c.9.5 1.5.2 1.8-.8l3.2-15c.3-1.2-.4-1.7-1.2-1.4z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21.9 4.3 2.6 11.8c-1.3.5-1.3 1.3-.2 1.6l4.9 1.5 1.9 5.8c.2.5.4.7.8.7.4 0 .6-.2.9-.5l2.4-2.3 4.9 3.6c.9.5 1.5.2 1.8-.8l3.2-15c.3-1.2-.4-1.7-1.2-1.4z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.sheet--confirm .confirm-link:hover { background:rgba(129,140,248,.2); }
+.sheet--confirm .confirm-link[hidden] { display:none; }
+
+/* light theme: primary button text stays readable */
+[data-theme="light"] .btn--primary { color:#fff; }
+
+/* keep focused inputs above the on-screen keyboard */
+.sheet--form .form-body { scroll-padding-bottom:120px; }
+.sheet--form .field { scroll-margin-bottom:120px; scroll-margin-top:80px; }
+
+/* ── Package field + "pick installed" button ── */
+.field-with-btn { display:flex; gap:8px; align-items:stretch; }
+.field-with-btn .field__input { flex:1; min-width:0; }
+.field-pick-btn {
+  flex-shrink:0; width:44px; border-radius:var(--radius-md);
+  background:rgba(129,140,248,.14); border:1px solid rgba(129,140,248,.3);
+  color:var(--accent-primary); display:grid; place-items:center; cursor:pointer;
+  outline:none; appearance:none; -webkit-appearance:none;
+  transition:background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--spring);
+}
+.field-pick-btn:hover  { background:rgba(129,140,248,.22); }
+.field-pick-btn:active { transform:scale(.92); }
+
+/* SDK field is derived/locked from the Android version */
+.field__input--locked {
+  opacity:.85; cursor:not-allowed;
+  background:rgba(255,255,255,.03);
+}
+
+/* ━━━━━━━ App picker sheet ━━━━━━━ */
+/* DEFINITE height (not just max-height): the body below is `flex:1` and its
+   children are position:absolute (they add no intrinsic height). Without a real
+   height to fill, `flex:1` collapses the body to 0 → the list is invisible and
+   the sheet looks like an empty header strip (the "picker won't open" bug). */
+.sheet--picker {
+  height:80vh; max-height:86vh;            /* fallback for engines without dvh */
+  height:80dvh; max-height:86dvh;
+  display:flex; flex-direction:column;
+}
+.picker-search {
+  display:flex; align-items:center; gap:10px; margin:0 12px 8px;
+  padding:10px 14px; border-radius:var(--radius-lg);
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+}
+.picker-search svg { color:var(--text-tertiary); flex-shrink:0; }
+.picker-search:focus-within { border-color:var(--glass-border-active); box-shadow:0 0 0 3px rgba(129,140,248,.12); }
+.picker-search input {
+  flex:1; min-width:0; border:none; outline:none; background:transparent;
+  color:var(--text-primary); font-family:var(--font-sans); font-size:.85rem; font-weight:500;
+}
+.picker-search input::placeholder { color:var(--text-tertiary); font-weight:400; }
+.picker-search input::-webkit-search-cancel-button { -webkit-appearance:none; appearance:none; }
+
+/* ── Picker filter chips + sort toggle ──
+   pk-* names are deliberately distinct from the Library's lib-* controls so a
+   global selector in library.js can never accidentally grab a picker element. */
+.picker-controls { display:flex; align-items:center; gap:8px; margin:0 12px 8px; }
+.pk-filters {
+  display:flex; gap:6px; flex:1; min-width:0;
+  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.pk-filters::-webkit-scrollbar { display:none; }
+.pk-chip, .pk-sort {
+  flex-shrink:0; padding:6px 12px; border-radius:var(--radius-full);
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  color:var(--text-secondary); font-family:var(--font-sans);
+  font-size:.78rem; font-weight:600; white-space:nowrap; cursor:pointer;
+  outline:none; appearance:none; -webkit-appearance:none;
+  transition:background var(--dur-fast) var(--ease-out),
+             color var(--dur-fast) var(--ease-out),
+             border-color var(--dur-fast) var(--ease-out),
+             transform var(--dur-fast) var(--spring);
+}
+.pk-chip:active, .pk-sort:active { transform:scale(.96); }
+.pk-chip.selected {
+  background:rgba(129,140,248,.14); border-color:rgba(129,140,248,.35);
+  color:var(--accent-primary);
+}
+.pk-sort { display:inline-flex; align-items:center; gap:6px; padding:6px 11px; }
+.pk-sort svg { flex-shrink:0; }
+
+/* relative wrapper so the empty state can sit centered over the list area
+   without removing the rows (picker stays stable, never collapses) */
+.picker-body { flex:1; position:relative; min-height:0; }
+.picker-list {
+  position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:0 8px calc(env(safe-area-inset-bottom,0px) + 16px);
+  scrollbar-width:none;
+}
+.picker-list::-webkit-scrollbar { display:none; }
+.picker-empty {
+  position:absolute; inset:0; display:grid; place-content:center; justify-items:center;
+  gap:10px; pointer-events:none; color:var(--text-tertiary);
+  animation:fadeIn var(--dur-med) var(--ease-out);
+}
+.picker-empty[hidden] { display:none; }
+.picker-empty svg { opacity:.6; }
+.picker-empty span { font-size:.82rem; font-weight:500; }
+
+.app-row {
+  display:flex; align-items:center; gap:12px; width:100%;
+  padding:9px 12px; border-radius:var(--radius-md);
+  background:transparent; border:none; cursor:pointer; text-align:start;
+  outline:none; appearance:none; -webkit-appearance:none;
+  transition:background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--spring);
+}
+.app-row:active { transform:scale(.98); }
+.app-row:hover  { background:var(--glass-bg-hover); }
+.app-row__icon {
+  width:40px; height:40px; border-radius:var(--radius-md); flex-shrink:0;
+  overflow:hidden; display:grid; place-items:center;
+  background:rgba(255,255,255,.04); border:1px solid var(--glass-border);
+}
+.app-row__icon .app-icon-img { width:100%; height:100%; object-fit:cover; transition:opacity .3s var(--ease-out); }
+.app-row__text  { display:flex; flex-direction:column; min-width:0; gap:1px; }
+.app-row__label { font-size:.85rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.app-row__pkg   { font-size:.66rem; color:var(--text-tertiary); font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.picker-loading { display:grid; place-items:center; padding:40px 0; }
+.picker-loading .spin {
+  width:26px; height:26px; border-radius:50%;
+  border:2.5px solid var(--glass-border); border-top-color:var(--accent-primary);
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ━━━━━━━ Backup & Restore sheet ━━━━━━━ */
+.sheet--backup .sheet-body { padding:0 16px 22px; }
+.backup-intro {
+  font-size:.82rem; line-height:1.5; color:var(--text-secondary);
+  margin:2px 4px 14px;
+}
+
+/* Primary actions (Export / Import) — large tappable cards */
+.backup-action {
+  width:100%; display:flex; align-items:center; gap:14px;
+  padding:14px; margin-bottom:10px;
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg); cursor:pointer; text-align:start;
+  outline:none; appearance:none; -webkit-appearance:none;
+  position:relative; overflow:hidden;
+  transition:background var(--dur-fast) var(--ease-out),
+             border-color var(--dur-fast) var(--ease-out),
+             transform var(--dur-fast) var(--spring);
+}
+.backup-action:hover  { background:var(--glass-bg-hover); border-color:var(--glass-border-active); }
+.backup-action:active { transform:scale(.985); }
+.backup-action__icon {
+  flex-shrink:0; width:42px; height:42px; border-radius:var(--radius-md);
+  display:grid; place-items:center;
+  background:rgba(129,140,248,.14); border:1px solid rgba(129,140,248,.28);
+  color:var(--accent-primary);
+}
+.backup-action__icon svg { width:22px; height:22px; }
+/* Sync busy: spin the circular arrows + dim the whole card while pulling */
+.backup-action.is-busy { pointer-events:none; opacity:.7; }
+.backup-action.is-busy .backup-action__icon--sync svg { animation:spin .8s linear infinite; }
+.backup-action__text  { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.backup-action__title { font-size:.92rem; font-weight:600; color:var(--text-primary); }
+.backup-action__sub   { font-size:.74rem; color:var(--text-tertiary); }
+.backup-action__chev  { flex-shrink:0; color:var(--text-tertiary); display:grid; place-items:center; }
+.backup-action__chev svg { width:18px; height:18px; }
+/* only the one-shot ">" (Export) mirrors in RTL; the vertical Import caret must not */
+[dir="rtl"] .backup-action__chev:not(.backup-action__chev--toggle) svg { transform:scaleX(-1); }
+/* Import caret: ▼ closed → ▲ while its list is open */
+.backup-action__chev--toggle svg { transition:transform var(--dur-fast) var(--ease-out); }
+.backup-action.is-open .backup-action__chev--toggle svg { transform:rotate(180deg); }
+
+/* Backup list (revealed under Import on device) */
+.backup-list { margin-top:2px; }
+.backup-loading { display:grid; place-items:center; padding:28px 0; }
+.backup-loading .spin {
+  width:24px; height:24px; border-radius:50%;
+  border:2.5px solid var(--glass-border); border-top-color:var(--accent-primary);
+  animation:spin .8s linear infinite;
+}
+.backup-empty {
+  font-size:.82rem; color:var(--text-tertiary);
+  text-align:center; padding:18px 8px 14px;
+}
+.backup-row {
+  width:100%; display:flex; align-items:center; gap:12px;
+  padding:11px 12px; margin-bottom:8px;
+  background:transparent; border:1px solid var(--glass-border);
+  border-radius:var(--radius-md); cursor:pointer; text-align:start;
+  outline:none; appearance:none; -webkit-appearance:none;
+  transition:background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.backup-row:active { background:var(--glass-bg-hover); }
+.backup-row__icon {
+  flex-shrink:0; width:34px; height:34px; border-radius:var(--radius-sm,10px);
+  display:grid; place-items:center;
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  color:var(--text-secondary);
+}
+.backup-row__icon svg { width:18px; height:18px; }
+.backup-row__text  { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.backup-row__title { font-size:.85rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.backup-row__sub   { font-size:.68rem; color:var(--text-tertiary); font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.backup-row__go    { flex-shrink:0; color:var(--accent-primary); display:grid; place-items:center; }
+.backup-row__go svg { width:18px; height:18px; }
+.backup-row--browse { border-style:dashed; }
+.backup-row--browse .backup-row__icon { background:rgba(129,140,248,.10); border-color:rgba(129,140,248,.24); color:var(--accent-primary); }
+.backup-row--browse .backup-row__title { color:var(--accent-primary); }
+
+/* Import type chooser (after picking a file) */
+.backup-kind-head {
+  font-size:.72rem; font-weight:600; letter-spacing:.04em;
+  color:var(--text-secondary); padding:2px 2px 6px;
+}
+.backup-kind-file {
+  font-family:var(--font-mono); font-size:.7rem; color:var(--text-tertiary);
+  background:var(--glass-bg); border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm,10px); padding:5px 9px; margin-bottom:10px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; direction:ltr; text-align:start;
+}
+.backup-kind-row .backup-row__icon { background:rgba(129,140,248,.10); border-color:rgba(129,140,248,.24); color:var(--accent-primary); }
+.backup-kind-badge {
+  flex-shrink:0; font-size:.62rem; font-weight:600; letter-spacing:.03em;
+  color:var(--accent-primary); background:rgba(129,140,248,.14);
+  border:1px solid rgba(129,140,248,.30); border-radius:var(--radius-full,999px);
+  padding:3px 9px; text-transform:lowercase;
+}

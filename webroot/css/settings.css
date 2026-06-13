@@ -1,0 +1,111 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   settings.css — Settings page, rows, toggles, bottom sheets
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── Settings card wrapper ── */
+.settings-card { padding:4px 0; }
+
+/* ── Setting row (generic) ── */
+.setting-row {
+  display:flex;align-items:center;gap:12px;padding:13px 16px;
+  cursor:pointer;transition:background var(--dur-fast) var(--ease-out);
+}
+.setting-row:active { background:var(--glass-bg-hover); }
+.setting-row__icon {
+  width:28px;height:28px;border-radius:8px;
+  background:rgba(255,255,255,.05);
+  display:grid;place-items:center;flex-shrink:0;color:var(--accent-primary);
+}
+.setting-row__label { flex:1;font-size:.875rem;font-weight:500;color:var(--text-primary); }
+.setting-row__value-hint { font-size:.8rem;color:var(--text-tertiary); }
+.setting-row__chevron { color:var(--text-tertiary); }
+
+/* toggle rows non-clickable background */
+.setting-row--toggle { cursor:default; }
+
+/* ── Toggle switch ── */
+.toggle { position:relative;display:inline-flex;cursor:pointer; }
+.toggle input { position:absolute;opacity:0;width:0;height:0; }
+.toggle__track {
+  width:46px;height:26px;border-radius:var(--radius-full);
+  background:var(--bg-surface-3);border:1px solid var(--glass-border);
+  position:relative;
+  transition:background var(--dur-med) var(--ease-out),
+             border-color var(--dur-med) var(--ease-out),
+             box-shadow var(--dur-med) var(--ease-out);
+}
+.toggle input:checked + .toggle__track {
+  background:var(--accent-primary);border-color:var(--accent-primary);
+  box-shadow:0 0 12px rgba(129,140,248,.4);
+}
+.toggle__thumb {
+  position:absolute;top:3px;left:3px;width:18px;height:18px;
+  border-radius:50%;background:rgba(255,255,255,.7);
+  transition:transform var(--dur-med) var(--spring),background var(--dur-med) var(--ease-out);
+  box-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.toggle input:checked + .toggle__track .toggle__thumb { transform:translateX(20px);background:#fff; }
+
+/* ── Bottom Sheet overlay ── */
+.sheet-overlay {
+  position:fixed;inset:0;z-index:200;
+  background:var(--overlay-bg);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;
+  transition:opacity var(--dur-med) var(--ease-out);
+}
+.sheet-overlay.visible { opacity:1;pointer-events:auto; }
+
+/* ── Bottom Sheet panel ── */
+.bottom-sheet {
+  position:fixed;bottom:0;left:0;right:0;z-index:300;
+  background:var(--sheet-bg);
+  border-top:1px solid var(--glass-border);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding-bottom:env(safe-area-inset-bottom,0);
+  transform:translateY(100%);
+  transition:transform var(--dur-slow) var(--spring);
+  will-change:transform;
+  max-width:480px;margin:0 auto;
+}
+.bottom-sheet.open { transform:translateY(0); }
+
+.sheet-handle {
+  width:36px;height:4px;border-radius:2px;
+  background:var(--glass-border);margin:12px auto 0;
+}
+.sheet-header {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px 12px;
+}
+.sheet-header__title { font-size:1rem;font-weight:700;color:var(--text-primary);letter-spacing:-.01em; }
+.sheet-header__close {
+  width:30px;height:30px;border-radius:var(--radius-full);
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  display:grid;place-items:center;cursor:pointer;
+  color:var(--text-secondary);
+  transition:background var(--dur-fast),color var(--dur-fast);
+  outline:none;appearance:none;-webkit-appearance:none;
+}
+.sheet-header__close:hover { background:var(--glass-bg-hover);color:var(--text-primary); }
+
+.sheet-body { padding:4px 12px 20px; }
+
+/* ── Sheet option row ── */
+.sheet-option {
+  display:flex;align-items:center;gap:14px;
+  padding:13px 10px;border-radius:var(--radius-md);
+  cursor:pointer;
+  transition:background var(--dur-fast) var(--ease-out);
+}
+.sheet-option:active { background:var(--glass-bg-hover); }
+.sheet-option__icon {
+  width:38px;height:38px;border-radius:var(--radius-md);
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  display:grid;place-items:center;flex-shrink:0;color:var(--accent-primary);
+}
+.sheet-option__label  { flex:1;font-size:.9rem;font-weight:500;color:var(--text-primary); }
+.sheet-option__check  { display:none;color:var(--accent-primary); }
+.sheet-option.selected .sheet-option__check { display:flex; }
+.sheet-option.selected .sheet-option__label { color:var(--accent-primary); }
+.sheet-option.selected .sheet-option__icon  { background:rgba(129,140,248,.12);border-color:rgba(129,140,248,.25); }

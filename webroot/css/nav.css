@@ -1,0 +1,53 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   nav.css — Bottom floating dock navigation
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bottom-nav {
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  height:var(--bot-nav-h);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-top:0;
+  /* Float the dock up off the gesture bar / screen edge */
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+  pointer-events:none;
+}
+.bottom-nav__dock { pointer-events:auto; }
+.bottom-nav__dock {
+  display:flex;gap:8px;
+  background:var(--nav-bg);
+  backdrop-filter:blur(28px) saturate(1.8);
+  -webkit-backdrop-filter:blur(28px) saturate(1.8);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-xl);padding:6px 12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.06) inset;
+  position:relative;overflow:hidden;
+}
+.bottom-nav__dock::before {
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);
+}
+.nav-item {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  width:78px;height:48px;border-radius:var(--radius-lg);
+  /* extra bottom padding lifts the icon+label, leaving a clear gap above the pill */
+  padding-bottom:8px;
+  background:transparent;border:none;cursor:pointer;
+  color:var(--text-tertiary);
+  transition:color var(--dur-med) var(--ease-out),transform var(--dur-fast) var(--spring);
+  position:relative;outline:none;appearance:none;-webkit-appearance:none;
+}
+.nav-item:active { transform:scale(.9); }
+.nav-item__icon  { display:block;transition:transform var(--dur-med) var(--spring); }
+.nav-item.active .nav-item__icon { transform:translateY(-1px); }
+.nav-item__label { font-size:.64rem;font-weight:500;letter-spacing:.01em;transition:color var(--dur-med) var(--ease-out); }
+.nav-item.active { color:var(--accent-primary); }
+.nav-item.active .nav-item__label { color:var(--accent-primary); }
+.nav-item__pill {
+  position:absolute;bottom:5px;left:50%;
+  transform:translateX(-50%) scaleX(0);
+  width:22px;height:3px;border-radius:2px;
+  background:var(--accent-primary);
+  box-shadow:0 0 10px rgba(129,140,248,.7);
+  transition:transform var(--dur-med) var(--spring);
+}
+.nav-item.active .nav-item__pill { transform:translateX(-50%) scaleX(1); }
+.nav-item.active svg { filter:drop-shadow(0 0 6px rgba(129,140,248,.6)); }

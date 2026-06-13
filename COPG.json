@@ -9,25 +9,25 @@
     ]
   },
   "PACKAGES_REDMAGIC_9_PRO": [
-    "com.supercell.brawlstars:blocked",
-    "com.blizzard.diablo.immortal:blocked",
-    "com.netease.newspike:blocked",
-    "com.activision.callofduty.warzone:blocked",
-    "com.gamedevltd.destinywarfare:blocked",
-    "com.pikpok.dr2.play:blocked",
-    "com.CarXTech.highWay:blocked",
-    "com.nekki.shadowfight3:blocked",
-    "com.nekki.shadowfightarena:blocked",
-    "com.gameloft.android.ANMP.GloftA8HM:blocked",
-    "com.nekki.shadowfight:blocked",
-    "com.ea.game.nfs14_row:blocked",
-    "com.ea.games.r3_row:blocked",
-    "com.supercell.squad:blocked",
-    "com.blitzteam.battleprime:blocked",
-    "com.tencent.tmgp.gnyx:blocked",
+    "com.supercell.brawlstars",
+    "com.blizzard.diablo.immortal",
+    "com.netease.newspike",
+    "com.activision.callofduty.warzone",
+    "com.gamedevltd.destinywarfare",
+    "com.pikpok.dr2.play",
+    "com.CarXTech.highWay",
+    "com.nekki.shadowfight3",
+    "com.nekki.shadowfightarena",
+    "com.gameloft.android.ANMP.GloftA8HM",
+    "com.nekki.shadowfight",
+    "com.ea.game.nfs14_row",
+    "com.ea.games.r3_row",
+    "com.supercell.squad",
+    "com.blitzteam.battleprime",
+    "com.tencent.tmgp.gnyx",
     "com.ss.android.ugc.trill:notweak",
     "com.zhiliaoapp.musically:notweak",
-    "com.garena.game.df:blocked"
+    "com.garena.game.df"
   ],
   "PACKAGES_REDMAGIC_9_PRO_DEVICE": {
     "BRAND": "nubia",
@@ -38,7 +38,7 @@
     "PRODUCT": "NX769J"
   },
   "PACKAGES_BLACK_SHARK_4_(CHINA)": [
-    "com.proximabeta.mf.uamo:blocked"
+    "com.proximabeta.mf.uamo"
   ],
   "PACKAGES_BLACK_SHARK_4_(CHINA)_DEVICE": {
     "BRAND": "Black Shark",
@@ -49,9 +49,9 @@
     "PRODUCT": "2SM-X706B"
   },
   "PACKAGES_XIAOMI_11T_PRO": [
-    "com.levelinfinite.hotta.gp:blocked",
-    "com.supercell.clashofclans:blocked",
-    "com.vng.mlbbvn:blocked"
+    "com.levelinfinite.hotta.gp",
+    "com.supercell.clashofclans",
+    "com.vng.mlbbvn"
   ],
   "PACKAGES_XIAOMI_11T_PRO_DEVICE": {
     "BRAND": "Xiaomi",
@@ -62,16 +62,10 @@
     "PRODUCT": "2107113SG"
   },
   "PACKAGES_XIAOMI_13_PRO": [
-    "com.levelinfinite.sgameGlobal:blocked",
-    "com.tencent.tmgp.sgame:blocked",
-    "com.pubg.krmobile:blocked",
-    "com.rekoo.pubgm:blocked",
-    "com.tencent.tmgp.pubgmhd:blocked",
-    "com.vng.pubgmobile:blocked",
-    "com.pubg.imobile:blocked",
+    "com.levelinfinite.sgameGlobal",
+    "com.tencent.tmgp.sgame",
     "com.netflix.mediaclient:notweak",
-    "com.netflix.ninja:notweak",
-    "com.tencent.ig:blocked"
+    "com.netflix.ninja:notweak"
   ],
   "PACKAGES_XIAOMI_13_PRO_DEVICE": {
     "BRAND": "Xiaomi",
@@ -82,10 +76,10 @@
     "PRODUCT": "2210132G"
   },
   "PACKAGES_ONEPLUS_8_PRO_5G": [
-    "com.netease.lztgglobal:blocked",
-    "com.riotgames.league.wildrift:blocked",
-    "com.riotgames.league.wildrifttw:blocked",
-    "com.riotgames.league.wildriftvn:blocked"
+    "com.netease.lztgglobal",
+    "com.riotgames.league.wildrift",
+    "com.riotgames.league.wildrifttw",
+    "com.riotgames.league.wildriftvn"
   ],
   "PACKAGES_ONEPLUS_8_PRO_5G_DEVICE": {
     "BRAND": "OnePlus",
@@ -96,9 +90,9 @@
     "PRODUCT": "IN2023"
   },
   "PACKAGES_ROG_PHONE_6D_ULTIMATE": [
-    "com.madfingergames.legends:blocked",
-    "com.pearlabyss.blackdesertm:blocked",
-    "com.pearlabyss.blackdesertm.gl:blocked"
+    "com.madfingergames.legends",
+    "com.pearlabyss.blackdesertm",
+    "com.pearlabyss.blackdesertm.gl"
   ],
   "PACKAGES_ROG_PHONE_6D_ULTIMATE_DEVICE": {
     "BRAND": "ASUS",
@@ -109,7 +103,7 @@
     "PRODUCT": "AI2203"
   },
   "PACKAGES_LEGION_Y700_(2023)": [
-    "com.activision.callofduty.shooter:blocked"
+    "com.activision.callofduty.shooter"
   ],
   "PACKAGES_LEGION_Y700_(2023)_DEVICE": {
     "BRAND": "Lenovo",
@@ -120,7 +114,7 @@
     "PRODUCT": "TB-9707F"
   },
   "PACKAGES_XIAOMI_13": [
-    "com.tencent.lolm:blocked"
+    "com.tencent.lolm"
   ],
   "PACKAGES_XIAOMI_13_DEVICE": {
     "BRAND": "Xiaomi",
@@ -131,7 +125,7 @@
     "PRODUCT": "2211133G"
   },
   "PACKAGES_ONEPLUS_13": [
-    "com.proxima.dfm:blocked"
+    "com.proxima.dfm"
   ],
   "PACKAGES_ONEPLUS_13_DEVICE": {
     "BRAND": "OnePlus",
@@ -141,31 +135,25 @@
     "FINGERPRINT": "OnePlus/PJZ110/OP5D0DL1:15/AP3A.240617.008/V.1bd19a1-1-2:user/release-keys",
     "PRODUCT": "PJZ110"
   },
-  "PACKAGES_REALME_P3_5G": [
-    "com.dts.freefireth:blocked",
-    "com.dts.freefiremax:blocked"
+  "PACKAGES_REDMAGIC_11_PRO": [
+    "com.kurogame.wutheringwaves.global",
+    "com.vng.codmvn",
+    "com.tencent.tmgp.kr.codm",
+    "com.garena.game.codm",
+    "com.pubg.krmobile",
+    "com.rekoo.pubgm",
+    "com.tencent.tmgp.pubgmhd",
+    "com.vng.pubgmobile",
+    "com.pubg.imobile",
+    "com.tencent.ig"
   ],
-  "PACKAGES_REALME_P3_5G_DEVICE": {
-    "BRAND": "realme",
-    "DEVICE": "Realme P3 5G",
-    "MANUFACTURER": "realme",
-    "MODEL": "RMX5070",
-    "FINGERPRINT": "realme/RMX5070/RMX5070:15/SKQ1.230119.001/eng.user.20250415.155201:user/release-keys",
-    "PRODUCT": "RMX5070"
-  },
-  "PACKAGES_REDMAGIC_10_PRO": [
-    "com.kurogame.wutheringwaves.global:blocked",
-    "com.vng.codmvn:blocked",
-    "com.tencent.tmgp.kr.codm:blocked",
-    "com.garena.game.codm:blocked"
-  ],
-  "PACKAGES_REDMAGIC_10_PRO_DEVICE": {
-    "BRAND": "nubia",
-    "DEVICE": "RedMagic 10 Pro",
-    "MANUFACTURER": "ZTE",
-    "MODEL": "NX789J",
-    "FINGERPRINT": "nubia/NX789J-UN/NX789J:15/AQ3A.240812.002/20241212.194919:user/release-keys",
-    "PRODUCT": "NX789J"
+  "PACKAGES_REDMAGIC_11_PRO_DEVICE": {
+    "BRAND": "REDMAGIC",
+    "DEVICE": "REDMAGIC 11 PRO",
+    "MANUFACTURER": "Nubia",
+    "MODEL": "NX809J",
+    "FINGERPRINT": "REDMAGIC/NX809J-UN/NX809J:16/BP2A.250605.031.A3/20251017.000000:user/release-keys",
+    "PRODUCT": "NX809J"
   },
   "PACKAGES_PIXEL_XL": [
     "com.google.android.apps.photos:notweak"
@@ -179,20 +167,20 @@
     "PRODUCT": "marlin"
   },
   "PACKAGES_REALME_15_PRO_5G": [
-    "com.ngame.allstar.eu:blocked",
-    "com.clashoftitansandroid.india:blocked",
-    "com.garena.game.kgvn:blocked",
-    "com.garena.game.kgid:blocked",
-    "com.garena.game.kgth:blocked",
-    "com.tencent.ngjp:blocked",
-    "com.garena.game.kgtw:blocked",
-    "com.tencent.ngame.chty:blocked",
-    "com.garena.game.kgvntest:blocked",
-    "com.levelinfinite.aov:blocked",
-    "com.tencent.aovindia:blocked",
-    "com.garena.game.kgms:blocked",
-    "com.tencent.aovjp:blocked",
-    "com.garena.game.kgph:blocked"
+    "com.ngame.allstar.eu",
+    "com.clashoftitansandroid.india",
+    "com.garena.game.kgvn",
+    "com.garena.game.kgid",
+    "com.garena.game.kgth",
+    "com.tencent.ngjp",
+    "com.garena.game.kgtw",
+    "com.tencent.ngame.chty",
+    "com.garena.game.kgvntest",
+    "com.levelinfinite.aov",
+    "com.tencent.aovindia",
+    "com.garena.game.kgms",
+    "com.tencent.aovjp",
+    "com.garena.game.kgph"
   ],
   "PACKAGES_REALME_15_PRO_5G_DEVICE": {
     "name": "Realme 15 Pro 5G",
@@ -204,7 +192,7 @@
     "PRODUCT": "RMX5101"
   },
   "PACKAGES_GALAXY_Z_FOLD_5": [
-    "com.ea.gp.fifamobile:blocked"
+    "com.ea.gp.fifamobile:got"
   ],
   "PACKAGES_GALAXY_Z_FOLD_5_DEVICE": {
     "BRAND": "samsung",
@@ -215,7 +203,7 @@
     "PRODUCT": "SM-F9460"
   },
   "PACKAGES_HONOR_MAGIC_V2_RSR": [
-    "com.gameloft.android.ANMP.GloftA9HM:blocked"
+    "com.gameloft.android.ANMP.GloftA9HM"
   ],
   "PACKAGES_HONOR_MAGIC_V2_RSR_DEVICE": {
     "BRAND": "HONOR",
@@ -224,5 +212,17 @@
     "MODEL": "VER-N49DP",
     "FINGERPRINT": "HONOR/VER-N49DP/VER:13/ENG.20240918.123456:user/release-keys",
     "PRODUCT": "VER-N49DP"
+  },
+  "PACKAGES_INFINIX_GT_50_PRO_5G": [
+    "com.dts.freefireth",
+    "com.dts.freefiremax"
+  ],
+  "PACKAGES_INFINIX_GT_50_PRO_5G_DEVICE": {
+    "BRAND": "INFINIX",
+    "DEVICE": "INFINIX GT 50 PRO 5G",
+    "MANUFACTURER": "INFINIX",
+    "MODEL": "Infinix X6891",
+    "FINGERPRINT": "Infinix/X6891/Infinix GT 50 Pro 5G:15/AP3A.240617.008/20250520.123456:user/release-keys",
+    "PRODUCT": "X6891"
   }
 }
