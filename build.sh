@@ -67,7 +67,7 @@ cp -r META-INF   "$STAGE/META-INF"
 
 cat > "$STAGE/module.prop" <<EOF
 id=COPG
-name=✨ COPG Spoof ✨
+name=✨ COPG SPOOF ✨
 version=$VERSION
 versionCode=$VERSION_CODE
 author=AlirezaParsi

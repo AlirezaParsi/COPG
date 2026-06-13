@@ -196,7 +196,7 @@ jobs:
           VERSION_CODE="${{ github.event.inputs.custom_version_code || '435' }}"
           cat > module/module.prop << EOF
           id=COPG
-          name=✨ COPG Spoof ✨
+          name=✨ COPG SPOOF ✨
           version=$VERSION
           versionCode=$VERSION_CODE
           author=AlirezaParsi
