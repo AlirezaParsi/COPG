@@ -239,8 +239,11 @@ jobs:
       - name: Download and Prepare Thumbnail
         if: github.event.inputs.upload_to_telegram == 'true'
         run: |
-          cp webroot/icon.png icon_thumb.jpg
-          convert icon_thumb.jpg -resize 320x320 -quality 80 icon_thumb.jpg
+          # Flatten the icon's transparent rounded corners onto the tile's dark colour and
+          # crop to an edge-to-edge square — JPEG has no alpha, so without this the margin
+          # would render as a white border in the Telegram thumbnail.
+          convert webroot/icon.png -background '#12181E' -alpha remove -alpha off \
+            -resize 320x320^ -gravity center -extent 320x320 -strip -quality 90 icon_thumb.jpg
           if [ ! -f "icon_thumb.jpg" ]; then
             echo "Error: Thumbnail creation failed!"
             ls -la
