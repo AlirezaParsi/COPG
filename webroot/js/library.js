@@ -291,23 +291,27 @@ function buildControls() {
       ${SVG_SORT}<span class="lib-sort__label"></span>
     </button>`;
 
-  const devSearch = document.querySelector('#libDevices .lib-searchrow');
-  if (devSearch && !document.querySelector('#libDevices .lib-controls')) {
-    devSearch.insertAdjacentHTML('afterend', `<div class="lib-controls">${sortPill('devices')}</div>`);
-  }
-  const pkgSearch = document.querySelector('#libPackages .lib-searchrow');
-  if (pkgSearch && !document.querySelector('#libPackages .lib-controls')) {
-    pkgSearch.insertAdjacentHTML('afterend', `
-      <div class="lib-controls">
-        ${sortPill('packages')}
+  // Wrap the search row + sort/filter controls in one sticky header so BOTH stay
+  // pinned while the list scrolls (the wrapper carries the solid background).
+  const wrapHead = (panelSel, ctx, filtersHTML = '') => {
+    const search = document.querySelector(`${panelSel} .lib-searchrow`);
+    if (!search || document.querySelector(`${panelSel} .lib-controls`)) return;
+    search.insertAdjacentHTML('afterend', `<div class="lib-controls">${sortPill(ctx)}${filtersHTML}</div>`);
+    const controls = search.nextElementSibling;
+    const head = document.createElement('div');
+    head.className = 'lib-stickyhead';
+    search.parentNode.insertBefore(head, search);
+    head.appendChild(search);
+    head.appendChild(controls);
+  };
+  wrapHead('#libDevices', 'devices');
+  wrapHead('#libPackages', 'packages', `
         <div class="lib-filters">
           <button class="fchip active" data-filter="all" data-i18n="filter_all">All</button>
           <button class="fchip" data-filter="installed" data-i18n="filter_installed">Installed</button>
           <button class="fchip" data-filter="blocked" data-i18n="filter_blocked">Blocked</button>
           <button class="fchip" data-filter="cpu_only" data-i18n="filter_cpu_only">CPU</button>
-        </div>
-      </div>`);
-  }
+        </div>`);
 
   // scope to the Library panels only — the App Picker has its own .lib-sort (#apSort)
   $$('#pageLibrary .lib-sort').forEach(btn => btn.addEventListener('click', e => {
