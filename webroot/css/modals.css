@@ -56,7 +56,7 @@
 .sheet--form .form-body {
   overflow-y:auto; -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
-  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px);
+  padding-bottom:calc(var(--inset-bottom,0px) + 20px);
 }
 .sheet--form .form-body::-webkit-scrollbar { display:none; }
 
@@ -305,7 +305,7 @@
 .picker-body { flex:1; position:relative; min-height:0; }
 .picker-list {
   position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  padding:0 8px calc(env(safe-area-inset-bottom,0px) + 16px);
+  padding:0 8px calc(var(--inset-bottom,0px) + 16px);
   scrollbar-width:none;
 }
 .picker-list::-webkit-scrollbar { display:none; }

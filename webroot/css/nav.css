@@ -7,7 +7,7 @@
   display:flex;align-items:flex-end;justify-content:center;
   padding-top:0;
   /* Float the dock up off the gesture bar / screen edge */
-  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+  padding-bottom:calc(var(--inset-bottom,0px) + 14px);
   pointer-events:none;
 }
 .bottom-nav__dock { pointer-events:auto; }

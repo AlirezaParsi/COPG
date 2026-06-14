@@ -60,6 +60,7 @@ I18N.register('es', {
   /* Settings rows */
   set_theme:        'Tema',
   set_language:     'Idioma',
+  set_fullscreen:   'Pantalla completa',
   set_debug:        'Registros de depuración',
 
   /* Theme hints */
@@ -94,6 +95,8 @@ I18N.register('es', {
   toast_console:   'Consola — próximamente',
   toast_debug_on:  'Registros de depuración activados',
   toast_debug_off: 'Registros de depuración desactivados',
+  toast_fullscreen_on:  'Pantalla completa activada — barra de estado oculta',
+  toast_fullscreen_off: 'Pantalla completa desactivada — barra de estado visible',
   status_connected: 'Conectado',
   status_offline:   'Sin conexión',
 

@@ -19,6 +19,27 @@ if (debugToggle) {
   });
 }
 
+/* ─── Fullscreen (immersive) toggle ───
+   ON = fullscreen (status bar hidden), OFF = status bar shown. Default ON (like
+   ReZygisk's WebUI). Persisted as `copg-fullscreen`; applied via the KSU bridge
+   (`COPG.setFullscreen` → `ksu.fullScreen`) both now (parse time) and on change.
+   No-op in browser preview (no bridge). */
+const fsToggle = $('#fullscreenToggle');
+
+if (fsToggle) {
+  let on = true; // default fullscreen ON
+  try { const v = localStorage.getItem('copg-fullscreen'); if (v !== null) on = v === '1'; } catch(_) {}
+  fsToggle.checked = on;
+  State.fullscreen = on;
+  try { COPG.setFullscreen(on); } catch(_) {}   // apply persisted pref at startup
+  fsToggle.addEventListener('change', () => {
+    State.fullscreen = fsToggle.checked;
+    try { COPG.setFullscreen(fsToggle.checked); } catch(_) {}
+    try { localStorage.setItem('copg-fullscreen', fsToggle.checked ? '1' : '0'); } catch(_) {}
+    showToast(I18N.t(fsToggle.checked ? 'toast_fullscreen_on' : 'toast_fullscreen_off'));
+  });
+}
+
 /* ─── About card expand/collapse ─── */
 const aboutCard = $('#aboutCard');
 aboutCard?.addEventListener('click', () => aboutCard.classList.toggle('expanded'));

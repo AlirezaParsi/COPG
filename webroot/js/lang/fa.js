@@ -60,6 +60,7 @@ I18N.register('fa', {
   /* Settings rows */
   set_theme:        'پوسته',
   set_language:     'زبان',
+  set_fullscreen:   'تمام‌صفحه',
   set_debug:        'گزارش‌های اشکال‌زدایی',
 
   /* Theme hints (settings row) */
@@ -94,6 +95,8 @@ I18N.register('fa', {
   toast_console:   'کنسول — به‌زودی',
   toast_debug_on:  'گزارش‌های اشکال‌زدایی فعال شد',
   toast_debug_off: 'گزارش‌های اشکال‌زدایی غیرفعال شد',
+  toast_fullscreen_on:  'تمام‌صفحه روشن — نوار وضعیت پنهان شد',
+  toast_fullscreen_off: 'تمام‌صفحه خاموش — نوار وضعیت نمایش داده شد',
   status_connected: 'متصل',
   status_offline:   'آفلاین',
 

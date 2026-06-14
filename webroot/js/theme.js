@@ -12,6 +12,13 @@ function applyTheme(theme) {
   } else {
     html.setAttribute('data-theme', theme);
   }
+  // Keep the status-bar tint (theme-color meta) in sync with the resolved base
+  // colour, so the system bar matches instead of showing a black band.
+  try {
+    const base = getComputedStyle(html).getPropertyValue('--bg-base').trim();
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && base) meta.setAttribute('content', base);
+  } catch(_) {}
   // Update sheet options
   $$('.sheet-option[data-theme-option]').forEach(o => o.classList.toggle('selected', o.dataset.themeOption === theme));
   // Update hint on settings row (localized)

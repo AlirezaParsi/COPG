@@ -985,6 +985,17 @@
   }
 
   /* ─── Public API ─── */
+  /* Immersive fullscreen toggle — KernelSU / ReZygisk WebUI bridge (`ksu.fullScreen`).
+     true = fullscreen (status bar hidden), false = status bar shown. No-op when the
+     bridge is absent (browser preview) or the host doesn't expose `fullScreen`. The
+     page already pads `env(safe-area-inset-top)` (base.css) so content stays clear of
+     the notch/clock while immersive. */
+  function setFullscreen(on) {
+    try {
+      if (typeof ksu !== 'undefined' && typeof ksu.fullScreen === 'function') ksu.fullScreen(!!on);
+    } catch (e) { dlog('fullScreen bridge failed: ' + e, 'warn'); }
+  }
+
   w.COPG = {
     MODULE_DIR, CONFIG_PATH, LIST_PATH, BACKUP_DIR,
     execCommand, hasBridge,
@@ -998,7 +1009,7 @@
     // backup / restore
     backupConfig, listBackups, restoreBackup, restoreFromText, inspectBackup, syncFromGitHub, saveLog,
     // system / device-environment info
-    getSystemInfo,
+    getSystemInfo, setFullscreen,
     // installed apps + icons (KSU API with pm fallback)
     getInstalledPackages, getSystemPackages, isInstalled, getAppLabel, listInstalledApps, enrichApps, fetchPlayIcon, fetchAppIcon,
     // helpers exposed for modals/UI

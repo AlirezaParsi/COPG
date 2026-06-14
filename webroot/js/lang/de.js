@@ -60,6 +60,7 @@ I18N.register('de', {
   /* Settings rows */
   set_theme:        'Design',
   set_language:     'Sprache',
+  set_fullscreen:   'Vollbild',
   set_debug:        'Debug-Protokolle',
 
   /* Theme hints */
@@ -94,6 +95,8 @@ I18N.register('de', {
   toast_console:   'Konsole — demnächst',
   toast_debug_on:  'Debug-Protokolle aktiviert',
   toast_debug_off: 'Debug-Protokolle deaktiviert',
+  toast_fullscreen_on:  'Vollbild an — Statusleiste ausgeblendet',
+  toast_fullscreen_off: 'Vollbild aus — Statusleiste sichtbar',
   status_connected: 'Verbunden',
   status_offline:   'Offline',
 

@@ -60,6 +60,7 @@ I18N.register('id', {
   /* Settings rows */
   set_theme:        'Tema',
   set_language:     'Bahasa',
+  set_fullscreen:   'Layar Penuh',
   set_debug:        'Log Debug',
 
   /* Theme hints */
@@ -94,6 +95,8 @@ I18N.register('id', {
   toast_console:   'Konsol — segera hadir',
   toast_debug_on:  'Log debug diaktifkan',
   toast_debug_off: 'Log debug dinonaktifkan',
+  toast_fullscreen_on:  'Layar penuh aktif — bilah status disembunyikan',
+  toast_fullscreen_off: 'Layar penuh nonaktif — bilah status ditampilkan',
   status_connected: 'Terhubung',
   status_offline:   'Luring',
 

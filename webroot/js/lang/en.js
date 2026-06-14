@@ -60,6 +60,7 @@ I18N.register('en', {
   /* Settings rows */
   set_theme:        'Theme',
   set_language:     'Language',
+  set_fullscreen:   'Fullscreen',
   set_debug:        'Debug Logs',
 
   /* Theme hints (settings row) */
@@ -94,6 +95,8 @@ I18N.register('en', {
   toast_console:   'Console — coming soon',
   toast_debug_on:  'Debug logs enabled',
   toast_debug_off: 'Debug logs disabled',
+  toast_fullscreen_on:  'Fullscreen on — status bar hidden',
+  toast_fullscreen_off: 'Fullscreen off — status bar shown',
   status_connected: 'Connected',
   status_offline:   'Offline',
 

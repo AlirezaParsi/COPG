@@ -60,6 +60,7 @@ I18N.register('ar', {
   /* Settings rows */
   set_theme:        'السمة',
   set_language:     'اللغة',
+  set_fullscreen:   'ملء الشاشة',
   set_debug:        'سجلات التصحيح',
 
   /* Theme hints */
@@ -94,6 +95,8 @@ I18N.register('ar', {
   toast_console:   'وحدة التحكم — قريباً',
   toast_debug_on:  'تم تفعيل سجلات التصحيح',
   toast_debug_off: 'تم تعطيل سجلات التصحيح',
+  toast_fullscreen_on:  'ملء الشاشة مُفعّل — شريط الحالة مخفي',
+  toast_fullscreen_off: 'ملء الشاشة مُعطّل — شريط الحالة ظاهر',
   status_connected: 'متصل',
   status_offline:   'غير متصل',
 

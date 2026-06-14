@@ -60,6 +60,7 @@ I18N.register('th', {
   /* Settings rows */
   set_theme:        'ธีม',
   set_language:     'ภาษา',
+  set_fullscreen:   'เต็มหน้าจอ',
   set_debug:        'ล็อกดีบัก',
 
   /* Theme hints */
@@ -94,6 +95,8 @@ I18N.register('th', {
   toast_console:   'คอนโซล — เร็ว ๆ นี้',
   toast_debug_on:  'เปิดล็อกดีบักแล้ว',
   toast_debug_off: 'ปิดล็อกดีบักแล้ว',
+  toast_fullscreen_on:  'เปิดเต็มหน้าจอ — ซ่อนแถบสถานะ',
+  toast_fullscreen_off: 'ปิดเต็มหน้าจอ — แสดงแถบสถานะ',
   status_connected: 'เชื่อมต่อแล้ว',
   status_offline:   'ออฟไลน์',
 
