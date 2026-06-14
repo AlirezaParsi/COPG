@@ -13,9 +13,12 @@ if (debugToggle) {
     State.debugLogs = debugToggle.checked;
     showToast(I18N.t(debugToggle.checked ? 'toast_debug_on' : 'toast_debug_off'));
     try { localStorage.setItem('copg-debug', debugToggle.checked ? '1' : '0'); } catch(_) {}
-    // This line is always shown (it's the user turning the feature on/off).
-    if (window.Log) Log[debugToggle.checked ? 'success' : 'warn'](
-      'Debug Logs ' + (debugToggle.checked ? 'enabled — UI activity will appear here.' : 'disabled.'));
+    // Always-visible confirmation (console.warn is ungated by the debug gate).
+    try {
+      console.warn(debugToggle.checked
+        ? '[debug] Debug Logs ON — UI activity is now logged here.'
+        : '[debug] Debug Logs OFF.');
+    } catch(_) {}
   });
 }
 
@@ -39,6 +42,32 @@ if (fsToggle) {
     showToast(I18N.t(fsToggle.checked ? 'toast_fullscreen_on' : 'toast_fullscreen_off'));
   });
 }
+
+/* ─── Toggle fix + always-on report ───
+   The switch (`label.toggle`) is a small tap target on the row's right edge, so
+   tapping the row's icon/label did nothing — that's why toggles felt dead. Make
+   the WHOLE `.setting-row--toggle` flip its checkbox (taps that land on the
+   switch are left to the native checkbox so we don't double-toggle).
+   `console.warn` is captured by the in-app Console UNGATED (visible even with
+   Debug Logs off), so these lines are an always-on debugging trail. */
+function toggleReport(msg) { try { console.warn('[toggle] ' + msg); } catch (_) {} }
+
+$$('.setting-row--toggle').forEach(row => {
+  row.addEventListener('click', e => {
+    if (e.target.closest('label.toggle')) return;   // tap on the switch → native checkbox handles it
+    const cb = row.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+    cb.checked = !cb.checked;                        // tap on the row text → flip it ourselves
+    cb.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+});
+
+// One ungated line per actual toggle change (visible even with Debug Logs off).
+document.addEventListener('change', e => {
+  const cb = e.target;
+  if (cb && cb.matches && cb.matches('.toggle input[type="checkbox"]'))
+    toggleReport((cb.id || '?') + ' = ' + cb.checked);
+}, true);
 
 /* ─── About card expand/collapse ─── */
 const aboutCard = $('#aboutCard');
