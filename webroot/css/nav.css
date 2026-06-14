@@ -43,7 +43,7 @@
 .nav-item.active { color:var(--accent-primary); }
 .nav-item.active .nav-item__label { color:var(--accent-primary); }
 .nav-item__pill {
-  position:absolute;bottom:5px;left:50%;
+  position:absolute;bottom:3px;left:50%;
   transform:translateX(-50%) scaleX(0);
   width:22px;height:3px;border-radius:2px;
   background:var(--accent-primary);
