@@ -1,154 +1,262 @@
 <div align="center">
-  
-<img src="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/banner.png" style="width: 500px; height: 200px; object-fit: fill;" />
+
+<img src="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/banner.png" width="560" alt="COPG banner" />
+
+# 🎮 COPG
+
+### Core Override &amp; Permission Guard
+
+**The most advanced device &amp; CPU spoofer for Android — bypass restrictions and unlock premium graphics, higher FPS and exclusive features on _any_ game or app.**
+
+<br>
+
+[![Version](https://img.shields.io/badge/version-5.0.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
+[![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
+[![License](https://img.shields.io/github/license/AlirezaParsi/COPG?style=for-the-badge&color=a78bfa)](LICENSE)
+
+<a href="#-installation"><img src="https://img.shields.io/badge/⬇_Install-818cf8?style=for-the-badge" alt="Install" /></a>
+<a href="#-webui"><img src="https://img.shields.io/badge/🖥_WebUI-1f2937?style=for-the-badge" alt="WebUI" /></a>
+<a href="#-faq"><img src="https://img.shields.io/badge/❓_FAQ-1f2937?style=for-the-badge" alt="FAQ" /></a>
+<a href="https://t.me/COPG_module"><img src="https://img.shields.io/badge/💬_Telegram-2CA5E0?style=for-the-badge" alt="Telegram" /></a>
+
 </div>
-<h1 align="center">🎮 COPG - Ultimate Device Spoofer for Android Games/Apps + CPU Spoofer</h1>
 
-[![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-brightgreen?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
-[![Android](https://img.shields.io/badge/Android-9.0%2B-blue?style=for-the-badge&logo=android)](https://www.android.com/)
-[![License](https://img.shields.io/github/license/AlirezaParsi/COPG?style=for-the-badge)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=orange)](https://github.com/AlirezaParsi/COPG/releases)
-![Built with](https://img.shields.io/badge/Made_with-❤-red?style=for-the-badge)
+---
 
-**The most advanced device spoofer for Android gaming - bypass restrictions and play any game on any device!**
+## ✨ Why COPG?
 
-## 🌟 COPG - Ultimate Device Spoofer for Games/Apps + CPU Spoofer 🌟
-**Unlock the full potential of your games and apps with COPG! Spoof your device to enjoy premium features, max performance, and exclusive benefits. 🚀**
-### 🎮 Maximize Your Gaming Experience
-- Call of Duty Mobile: 120 FPS (BR/MT)
-- PUBG/BGMI: 120 FPS + Haptic Feedback
-- Delta Force: 120 FPS/HD Graphics
-- Freefire / Freefire max 120 FPS
-- Fortnite 120 FPS
-- Farlight84 max graphic
-- +69 games supported!
-### 📱 Exclusive App Enhancements
-Google Photos: Unlimited backup + AI generator
-TikTok: Stream in stunning 1080p
-### 🔧 Flexible & Future-Proof
-Add new devices or games anytime
-Beautiful WebUI to manage your spoofed apps
-💡 Why Choose COPG?
-Transform your device into a powerhouse for gaming and apps. Easy to use, Added/Remove Games/Apps without Reboot, fully customizable, and packed with features!
+COPG is a **Zygisk module** that makes any game or app believe it is running on a different,
+fully‑featured flagship device — unlocking the high‑FPS modes, HD graphics and premium tiers that
+are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, a userspace
+**comfort‑tweak controller**, and a beautiful on‑device **WebUI** to manage everything — all
+**without rebooting**.
 
-## 🛠️ Installation Made Simple
+<table>
+<tr>
+<td width="50%" valign="top">
 
-### 📋 Requirements
-- Rooted Android device (9.0+)
-- One of these root solutions:
-  - ![Magisk](https://img.shields.io/badge/Magisk-v24%2B-00B39B?style=flat&logo=android) with [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext)/[Rezygisk](https://github.com/PerformanC/ReZygisk)/[NeoZygisk](https://github.com/JingMatrix/NeoZygisk)
-  - ![KernelSU](https://img.shields.io/badge/KernelSU-0.6.6%2B-7D4698?style=flat) with [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext)/[Rezygisk](https://github.com/PerformanC/ReZygisk)/[NeoZygisk](https://github.com/JingMatrix/NeoZygisk)
-  - ![APatch](https://img.shields.io/badge/APatch-0.10%2B-4285F4?style=flat) with [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext)/[Rezygisk](https://github.com/PerformanC/ReZygisk)/[NeoZygisk](https://github.com/JingMatrix/NeoZygisk)
-## 📃 Note
-- Standard/Native Zygisk isn't supported because its not safe.
-- WebUI-X is recommended.
+#### 🎯 Device Spoofing
+Per‑app device profiles (brand, model, fingerprint, SDK, **serial**) so each game sees the exact
+flagship it rewards.
 
-## Download Module
-> [!TIP]
-> - You can download the module from:\
+#### ⚙️ CPU Spoofing
+Spoof the CPU to flagship‑class silicon for apps that gate features on the chipset.
+
+</td>
+<td width="50%" valign="top">
+
+#### 🧩 GOT Hooking
+Optional advanced hook layer for the toughest detections.
+
+#### 🎛️ Per‑App Comfort Tweaks
+Auto **Do‑Not‑Disturb**, **disable auto‑brightness**, **keep screen on** and **stop logging** —
+applied only while a tagged game is active, then restored.
+
+</td>
+</tr>
+</table>
+
+> 🔁 **Add or remove games/apps without a reboot.** ✨ Fully customizable. 🌍 8‑language WebUI with
+> Light / Dark / AMOLED themes.
+
+---
+
+## 🚀 Maximize Your Gaming
+
+<div align="center">
+
+| Game | Unlock |
+|------|--------|
+| **Call of Duty Mobile** | 120 FPS (BR / MP) |
+| **PUBG Mobile / BGMI** | 90+ FPS · HDR · Haptic Feedback |
+| **Delta Force** | 120 FPS · HD Graphics |
+| **Free Fire / Free Fire MAX** | 144 FPS |
+| **Fortnite** | 120 FPS |
+| **Asphalt 9** | 120 FPS |
+| **Farlight 84** | Max Graphics |
+| _…and 69+ more_ | Premium tiers unlocked |
+
+</div>
+
+#### 📱 App Enhancements
+- **Google Photos** — unlimited backup + AI features
+- **TikTok** — stream in full 1080p
+
+---
+
+## 🖼️ Screenshots
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121040_KsuWebUI.png?raw=true" alt="Dashboard light" />
+      <br><sub><b>Dashboard</b> · Light</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121848_WebUI%20X.png?raw=true" alt="Dashboard AMOLED" />
+      <br><sub><b>Dashboard</b> · AMOLED</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121127_KsuWebUI.png?raw=true" alt="Library packages" />
+      <br><sub><b>Library</b> · Packages</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121204_KsuWebUI.png?raw=true" alt="Add package" />
+      <br><sub><b>Add Package</b> · Spoof + Tweaks</sub>
+    </td>
+  </tr>
+</table>
+</div>
+
+---
+
+## 📦 Installation
+
+### Requirements
+
+- A **rooted** Android device (**9.0+**)
+- One root solution **+ a Zygisk implementation**:
+
+| Root | Min&nbsp;version | Zygisk |
+|------|:------:|--------|
+| ![Magisk](https://img.shields.io/badge/Magisk-v24%2B-00B39B?style=flat&logo=android&logoColor=white) | 24 | [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) · [ReZygisk](https://github.com/PerformanC/ReZygisk) · [NeoZygisk](https://github.com/JingMatrix/NeoZygisk) |
+| ![KernelSU](https://img.shields.io/badge/KernelSU-0.6.6%2B-7D4698?style=flat) | 0.6.6 | [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) · [ReZygisk](https://github.com/PerformanC/ReZygisk) · [NeoZygisk](https://github.com/JingMatrix/NeoZygisk) |
+| ![APatch](https://img.shields.io/badge/APatch-0.10%2B-4285F4?style=flat) | 0.10 | [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) · [ReZygisk](https://github.com/PerformanC/ReZygisk) · [NeoZygisk](https://github.com/JingMatrix/NeoZygisk) |
+
+> [!IMPORTANT]
+> Standard / built‑in **Magisk Zygisk is _not_ supported** (not safe). Use one of the Zygisk
+> implementations above. **WebUI‑X is recommended** for the full WebUI experience.
+
+### Get the module
+
 [![MMRL](https://mmrl.dev/assets/badge.svg)](https://mmrl.dev/repository/zguectZGR/COPG)
-> - Or from [Releases](https://github.com/AlirezaParsi/COPG/releases) section.
 
-### ⚙️ Installation Steps
-1. Download the latest `COPG.zip` from [Releases](https://github.com/AlirezaParsi/COPG/releases)
-2. Install via your root manager:
-   - Magisk: Modules → Install from storage → Select ZIP
-   - KernelSU: Modules → Install → Select ZIP
-   - APatch: Modules → Install → Select ZIP
-3. Reboot your device
-4. Verify installation in your root manager (look for "✨ COPG spoof ✨")
+Install from **[MMRL](https://mmrl.dev/repository/zguectZGR/COPG)**, or grab the latest
+`COPG.zip` from **[Releases](https://github.com/AlirezaParsi/COPG/releases)**.
 
-### Customizing Spoof Profiles
-Edit `/data/adb/modules/COPG/config.json` with this format:
+### Steps
+
+1. Download the latest **`COPG.zip`** from [Releases](https://github.com/AlirezaParsi/COPG/releases).
+2. Install via your root manager → **Modules → Install from storage → select the ZIP**.
+3. **Reboot.**
+4. Verify it shows up in your root manager (look for **✨ COPG spoof ✨**).
+5. Open the module's **WebUI** to manage devices, games and tweaks.
+
+---
+
+## 🖥️ WebUI
+
+A no‑reboot, on‑device control panel built into the module — open it from your root manager
+(WebUI‑X recommended).
+
+- 📋 **Library** — manage device profiles &amp; per‑app spoof lists with search, sort &amp; filters
+- ➕ **Add Package** — pick any installed app, choose a device profile, toggle **CPU Spoofing /
+  GOT Hooking** and the **DND / Auto‑Brightness / Keep‑Screen‑On** tweaks
+- 📊 **Dashboard** — live system info: Android, ABI, Zygisk variant, root &amp; kernel
+- 💾 **Backup / Restore** &amp; **Sync from GitHub**
+- 🎨 **Light / Dark / AMOLED** themes · 🌍 **8 languages** (EN, FA, AR, DE, ES, ID, TH, ZH)
+
+<details>
+<summary><b>⚙️ Advanced — edit profiles by hand</b></summary>
+
+<br>
+
+The WebUI is the recommended way to manage profiles, but you can also edit
+`/data/adb/modules/COPG/COPG.json` directly:
 
 ```json
 {
-  "PACKAGES_REDMAGIC9": [
+  "PACKAGES_REDMAGIC_9_PRO": [
     "com.mobilelegends.mi",
-    "com.supercell.brawlstars"
+    "com.supercell.brawlstars:with_cpu"
   ],
-  "PACKAGES_REDMAGIC9_DEVICE": {
+  "PACKAGES_REDMAGIC_9_PRO_DEVICE": {
     "BRAND": "ZTE",
     "MODEL": "NX769J",
-    "FINGERPRINT": "ZTE/NX769J..."
+    "FINGERPRINT": "ZTE/NX769J/..."
   }
 }
 ```
+
+Package **tags** are colon suffixes — e.g. `:with_cpu` (CPU spoof), `:got` (GOT hooking),
+`:dnd` / `:dab` / `:kso` / `:nolog` (comfort tweaks).
+
+</details>
+
+---
+
 ## ❓ FAQ
-<details>
-<summary>🤔 What does COPG stand for?</summary>
-COPG stands for CO (from Call of Duty) and PG (from PUBG). The module was initially created for these two games. Although it now supports all games and applications, the original name was kept to preserve its historical background.
-</details>
 
 <details>
-<summary>📌 Will this get me banned?</summary>
-While COPG is designed to be undetectable, I cannot guarantee safety. Use at your own risk.
-</details>
-
-<details>
-<summary>⚡ Does it affect performance?</summary>
-Minimal impact! The optimized code works only on the launch time and has nothing to do with game performance.
-</details>
-
-<details>
-<summary>🔧 How to access WebUI?</summary>
-Use the WebUI X app:<br>
+<summary><b>🤔 What does COPG stand for?</b></summary>
 <br>
+Originally <b>CO</b> (Call of Duty) + <b>PG</b> (PUBG) — the two games it was first built for. It
+now supports every game and app, but the name is kept for its history. The full backronym is
+<b>Core Override &amp; Permission Guard</b>.
+</details>
+
+<details>
+<summary><b>📌 Will this get me banned?</b></summary>
+<br>
+COPG is designed to be undetectable, but safety can't be guaranteed. <b>Use at your own risk.</b>
+</details>
+
+<details>
+<summary><b>⚡ Does it affect performance?</b></summary>
+<br>
+Minimal. The spoof runs only at app launch and doesn't touch in‑game performance.
+</details>
+
+<details>
+<summary><b>🔧 How do I open the WebUI?</b></summary>
+<br>
+Use the <b>WebUI‑X</b> app:
+<br><br>
 <a href="https://github.com/MMRLApp/WebUI-X-Portable"><img src="https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white" alt="GitHub"></a>
 <a href="https://play.google.com/store/apps/details?id=com.dergoogler.mmrl.wx"><img src="https://img.shields.io/badge/Google_Play-414141?logo=google-play&logoColor=white" alt="Play Store"></a>
 </details>
 
-## Activity
-![Alt](https://repobeats.axiom.co/api/embed/83b280d0986b3c023ed5f1fdf3f00f77288e3da3.svg "Repobeats analytics image")
+---
 
-## Star History
+## 💬 Community
+
+<div align="center">
+
+[![Telegram Channel](https://img.shields.io/badge/Telegram_Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/COPG_module)
+[![Telegram Group](https://img.shields.io/badge/Telegram_Group-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/TheAOSP)
+
+</div>
+
+> 🌐 **Translations are community‑driven.** Only English &amp; Persian are maintained by the author —
+> PRs for the other languages are very welcome!
+
+---
+
+## 📈 Activity
+
+<div align="center">
+
+![Repobeats analytics](https://repobeats.axiom.co/api/embed/83b280d0986b3c023ed5f1fdf3f00f77288e3da3.svg "Repobeats analytics image")
 
 <a href="https://www.star-history.com/#AlirezaParsi/COPG&Date">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=AlirezaParsi/COPG&type=Date&theme=dark" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=AlirezaParsi/COPG&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=AlirezaParsi/COPG&type=Date" />
+   <img alt="Star History Chart" width="640" src="https://api.star-history.com/svg?repos=AlirezaParsi/COPG&type=Date" />
  </picture>
 </a>
 
-## 🖼 Screenshots 
-
-### 🌐 WebUI Interface
-<div align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-210930_WebUI%20X.png?raw=true" width="300" alt="Main Dashboard">
-        <br><em>Settings Panel</em>
-      </td>
-      <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-211818_WebUI%20X.png?raw=true" width="300" alt="Settings">
-        <br><em>Add new App/game</em>
-      </td>
-    </tr>
-    <tr>
-      <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-211418_WebUI%20X.png?raw=true" width="300" alt="Profiles">
-        <br><em>Device Profiles</em>
-      </td>
-      <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-211454_WebUI%20X.png?raw=true" width="300" alt="Advanced">
-        <br><em>Game list</em>
-      </td>
-    </tr>
-  </table>
 </div>
 
-### 🎮 Game Examples
+---
+
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/735aa872-fbf0-4cd1-8299-1989c08b9b80" width="180" hspace="10" alt="Delta Force">
-  <img src="https://github.com/user-attachments/assets/9a9fd8b2-7449-404f-888a-dedeefbe670d" width="180" hspace="10" alt="CODM">
-  <img src="https://github.com/user-attachments/assets/d9d3398f-5944-44e6-8df6-312e099c9738" width="180" hspace="10" alt="PUBG Mobile">
-  <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250914-131838_Free%20Fire%20MAX.png?raw=true" width="180" hspace="10" alt="FreeFire MAX">
 
----
-- [![Telegram Channel](https://img.shields.io/badge/Telegram_Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/COPG_module)
-- [![Telegram Group](https://img.shields.io/badge/Telegram_Group-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/TheAOSP)
----
+**If COPG leveled up your games, drop a ⭐ — it really helps!**
 
-<div align="center"> Made with ❤️ by Alireza Parsi | © 2025 COPG Project </div> 
+Made with ❤️ by **Alireza Parsi** · © 2026 COPG Project
+
+</div>
