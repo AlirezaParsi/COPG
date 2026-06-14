@@ -2,9 +2,13 @@
    library.css — Library page inner tabs, device & package lists
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
+/* Lift the Library content (tabs + sticky search) closer to the top — tighter
+   header gap here only, so Settings keeps its roomier header. */
+.page--library .page-header { margin-bottom:10px; }
+
 /* ── Inner tabs ── */
 .inner-tabs {
-  display:flex;gap:8px;margin-bottom:16px;
+  display:flex;gap:8px;margin-bottom:10px;
   background:var(--glass-bg);border:1px solid var(--glass-border);
   border-radius:var(--radius-lg);padding:5px;
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
@@ -137,11 +141,14 @@
    has its own solid surface so it reads cleanly when content scrolls beneath it.
    No backdrop-filter anywhere here → no Chromium sticky-ghost rectangle. */
 /* Sticky header wrapping the search row + sort/filter controls — both stay
-   pinned while the list scrolls. Solid page background hides scrolling content
-   behind it (no see-through gaps). No backdrop-filter → no sticky-ghost. */
+   pinned while the list scrolls. CRITICAL: nothing here may carry a full-bleed
+   background — any opaque/backdrop fill (sticky element OR its children) makes
+   Chromium WebView paint a lagging "ghost" rectangle on scroll. Everything stays
+   transparent; only the inset pills/chips are solid and float over the list as
+   it scrolls beneath — exactly the search row's original behaviour. */
 .lib-stickyhead {
   position:sticky; top:0; z-index:20;
-  background:var(--bg-base);
+  background:transparent;
 }
 .lib-searchrow {
   display:flex; align-items:center; gap:10px;
