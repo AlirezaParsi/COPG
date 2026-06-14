@@ -79,8 +79,12 @@ banner=banner.png
 EOF
 
 # ── build Zygisk companion (.so) ─────────────────────────────────────────────
+# -static-libstdc++ is required for the TERMUX build only: Termux's clang links the
+# .so against Termux's libc++_shared.so (a Termux-private path) which app processes
+# can't resolve → Zygisk dlopen fails. The CI uses the NDK (c++_shared resolves on
+# device) so it stays dynamic + smaller; this static build is just for local testing.
 log "building zygisk companion ($ABI.so)"
-clang++ -std=c++17 -shared -fPIC -Os -flto -ffunction-sections -fdata-sections \
+clang++ -std=c++17 -shared -fPIC -static-libstdc++ -Os -flto -ffunction-sections -fdata-sections \
   -Wl,--gc-sections -Wl,--exclude-libs,ALL \
   -I src/include src/spoof_module.cpp src/atexit.cpp -llog \
   -o "$STAGE/zygisk/$ABI.so"
