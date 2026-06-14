@@ -30,6 +30,12 @@
 *   Allowlist-based tag parsing — unknown or future tags are safely ignored everywhere in the module.
 *   Reorganized the whole project (`src/`, `module/`) with a single clean CI workflow and an on-device build script.
 
+### New Devices & Game Profiles
+*   **New devices:** **RedMagic 11 Pro**, **Sony Xperia 1 III**, and **Infinix GT 50 Pro** added to the spoof library.
+*   **PUBG Mobile:** unlocked **HDR + 90+ FPS**.
+*   **Free Fire / Free Fire MAX:** unlocked **144 FPS**.
+*   **Asphalt 9:** unlocked **120 FPS**.
+
 ### Note
 *   This is a massive overhaul and still a work in progress — more is on the way. Please report anything unexpected in the support group.
 
