@@ -940,48 +940,97 @@
     return { labels, system };
   }
 
-  /* Best-effort Play Store icon (bridge only). Returns data URI or null. */
-  async function fetchPlayIcon(pkg) {
+  /* ─── Icon URLs (NOT base64) ───
+     KsuWebUI's CSP blocks `data:` <img> but ALLOWS remote https <img>, so we let
+     the WebView download the icon itself (off the bridge = no UI jank). We only
+     use a bridge curl to SCRAPE the Play/F-Droid page for the icon URL (small
+     stdout) — then hand the raw URL to an <img src>. The big base64 transfer +
+     34KB localStorage write that lagged the UI are gone. */
+
+  /* Scrape the Play page → direct play-lh icon URL (=s128). null on miss. */
+  async function fetchPlayIconUrl(pkg) {
     if (!hasBridge()) return null;
     const p = shq(pkg);
     try {
       const found = await execCommand(
-        `curl -sL --max-time 8 'https://play.google.com/store/apps/details?id=${p}&hl=en' 2>/dev/null | grep -o 'https://play-lh.googleusercontent.com/[^"\\\\=]*' | head -1`
+        `curl -sL --compressed --max-time 10 'https://play.google.com/store/apps/details?id=${p}&hl=en' 2>/dev/null | grep -o 'https://play-lh.googleusercontent.com/[^"\\\\=]*' | head -1`
       );
       const url = (found || '').trim().split('\n')[0];
       if (!url || !url.startsWith('https://play-lh')) return null;
-      return await urlToDataUri(`${url}=s128`);
+      return `${url}=s128`;
     } catch (_) { return null; }
   }
 
-  /* F-Droid icon fallback (open repo, no Play presence needed). */
-  async function fetchFdroidIcon(pkg) {
+  /* F-Droid icon URL fallback (open repo, no Play presence needed). */
+  async function fetchFdroidIconUrl(pkg) {
     if (!hasBridge()) return null;
     const p = shq(pkg);
     try {
-      // F-Droid serves a per-package icon under the repo; resolve via the page.
       const found = await execCommand(
-        `curl -sL --max-time 8 'https://f-droid.org/en/packages/${p}/' 2>/dev/null | grep -o 'https://f-droid.org/repo/[^"]*\\.\\(png\\|webp\\)' | head -1`
+        `curl -sL --compressed --max-time 10 'https://f-droid.org/en/packages/${p}/' 2>/dev/null | grep -o 'https://f-droid.org/repo/[^"]*\\.\\(png\\|webp\\)' | head -1`
       );
       const url = (found || '').trim().split('\n')[0];
       if (!url || !url.startsWith('https://f-droid.org/repo/')) return null;
-      return await urlToDataUri(url);
+      return url;
     } catch (_) { return null; }
   }
 
-  /* curl a URL → base64 data URI (png). Returns null on any failure. */
-  async function urlToDataUri(url) {
+  /* Unified best-effort icon URL: Play first, then F-Droid. */
+  async function fetchAppIconUrl(pkg) {
+    return (await fetchPlayIconUrl(pkg)) || (await fetchFdroidIconUrl(pkg)) || null;
+  }
+
+  /* ─── Batch icon fetch to local files (device only) ───
+     The lag comes from ONE `ksu.exec` (ksud fork) per icon. Instead fire a SINGLE
+     detached background shell that downloads ALL missing icons to
+     webroot/icons/<pkg>.png, then exits — JS just renders local <img src> (off
+     the bridge). Returns fast (the worker is nohup-detached); the UI never waits.
+     Files inherit the icons dir's system_file context (+ explicit chmod/chcon),
+     so the WebView can read them and they survive offline. */
+  const ICON_DIR_ABS = '/data/adb/modules/COPG/webroot/icons';
+  const ICON_SCRIPT = '/data/adb/modules/COPG/icons_fetch.sh';
+  // utf8-safe base64 of an ASCII script (avoids all shell-quoting of the body)
+  function b64(s) { try { return btoa(unescape(encodeURIComponent(s))); } catch (_) { return btoa(s); } }
+
+  async function batchFetchIcons(pkgs) {
+    if (!hasBridge() || !pkgs || !pkgs.length) return false;
+    // package names are [A-Za-z0-9._]; filter keeps the shell for-loop injection-safe
+    const list = [...new Set(pkgs)].filter(p => /^[A-Za-z0-9._]+$/.test(p));
+    if (!list.length) return false;
+    const body = [
+      '#!/system/bin/sh',
+      'ICONS="' + ICON_DIR_ABS + '"',
+      'UA="Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile"',
+      'mkdir -p "$ICONS"',
+      'chcon u:object_r:system_file:s0 "$ICONS" 2>/dev/null',
+      'for p in ' + list.join(' ') + '; do',
+      '  f="$ICONS/$p.png"',
+      '  [ -s "$f" ] && continue',
+      // 1) Google Play — square play-lh icon (best quality when present)
+      '  u=$(curl -sL --compressed --max-time 10 "https://play.google.com/store/apps/details?id=$p&hl=en" 2>/dev/null | grep -o "https://play-lh.googleusercontent.com/[^\\"=]*" | head -1)',
+      '  [ -n "$u" ] && curl -sL --compressed --max-time 10 "${u}=s128" -o "$f" 2>/dev/null',
+      // 2) APKPure — package-keyed (-/<pkg> resolves the slug); the page\'s first
+      //    app-icon-img is the real square icon. Needs a browser UA (else 403).
+      '  if [ ! -s "$f" ]; then',
+      '    a=$(curl -sL --compressed --max-time 12 -A "$UA" "https://apkpure.net/-/$p" 2>/dev/null | grep -o "app-icon-img\\"[^>]*src=\\"https://image.winudf.com/[^\\"]*\\"" | head -1 | sed "s/.*src=\\"//; s/\\"$//; s/&amp;/\\&/g")',
+      '    [ -n "$a" ] && curl -sL --compressed --max-time 12 -A "$UA" "$a" -o "$f" 2>/dev/null',
+      '  fi',
+      // 3) F-Droid — open-source apps not on Play
+      '  if [ ! -s "$f" ]; then',
+      '    v=$(curl -sL --compressed --max-time 10 "https://f-droid.org/en/packages/$p/" 2>/dev/null | grep -o "https://f-droid.org/repo/[^\\"]*\\.\\(png\\|webp\\)" | head -1)',
+      '    [ -n "$v" ] && curl -sL --compressed --max-time 10 "$v" -o "$f" 2>/dev/null',
+      '  fi',
+      '  if [ -s "$f" ]; then chmod 644 "$f"; chcon u:object_r:system_file:s0 "$f" 2>/dev/null; else rm -f "$f"; fi',
+      'done',
+      'touch "$ICONS/.done"',
+      '',
+    ].join('\n');
     try {
-      const b64 = await execCommand(`curl -sL --max-time 8 '${shq(url)}' 2>/dev/null | base64 2>/dev/null | tr -d '\\n'`);
-      const data = (b64 || '').replace(/\s+/g, '');
-      if (data.length < 100) return null;
-      return 'data:image/png;base64,' + data;
-    } catch (_) { return null; }
-  }
-
-  /* Unified best-effort icon: Play first, then F-Droid. */
-  async function fetchAppIcon(pkg) {
-    return (await fetchPlayIcon(pkg)) || (await fetchFdroidIcon(pkg)) || null;
+      await execCommand(`echo '${b64(body)}' | base64 -d > ${ICON_SCRIPT}`);
+      // launch detached: the worker runs in the background, this returns at once
+      await execCommand(`sh -c 'nohup sh ${ICON_SCRIPT} >/dev/null 2>&1 &'`);
+      return true;
+    } catch (_) { return false; }
   }
 
   /* ─── Public API ─── */
@@ -1011,7 +1060,8 @@
     // system / device-environment info
     getSystemInfo, setFullscreen,
     // installed apps + icons (KSU API with pm fallback)
-    getInstalledPackages, getSystemPackages, isInstalled, getAppLabel, listInstalledApps, enrichApps, fetchPlayIcon, fetchAppIcon,
+    getInstalledPackages, getSystemPackages, isInstalled, getAppLabel, listInstalledApps, enrichApps,
+    fetchPlayIconUrl, fetchFdroidIconUrl, fetchAppIconUrl, batchFetchIcons,
     // helpers exposed for modals/UI
     clean, tagsOf, hasTag, deviceKeyFromName, pkgKeyOf,
     sdkFromAndroid, androidFromSdk,
