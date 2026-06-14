@@ -1,6 +1,6 @@
 <div align="center">
   
-<img src="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/banner.png" style="width: 500px; height: 200px; object-fit: fill;" />
+<img src="[https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/banner.png](https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/banner.png)" style="width: 500px; height: 200px; object-fit: fill;" />
 </div>
 <h1 align="center">🎮 COPG - Ultimate Device Spoofer for Android Games/Apps + CPU Spoofer</h1>
 
