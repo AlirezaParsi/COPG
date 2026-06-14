@@ -48,7 +48,13 @@
   }
 
   function safeName(pkg) { return String(pkg).replace(/[^A-Za-z0-9._-]/g, '_'); }
-  function localUrl(pkg, bust) { return 'icons/' + safeName(pkg) + '.png' + (bust ? ('?v=' + bust) : ''); }
+  // Set on refresh() so subsequent local-file <img> bypass the WebView image
+  // cache (a deleted file may otherwise serve a stale cached hit).
+  let BUST = 0;
+  function localUrl(pkg, bust) {
+    const v = bust || BUST;
+    return 'icons/' + safeName(pkg) + '.png' + (v ? ('?v=' + v) : '');
+  }
 
   /* Inline <svg> fallback — CSP-safe, always renders. */
   function paintSVG(el, pkg, label) { el.innerHTML = genSVGMarkup(pkg, label); }
@@ -156,5 +162,13 @@
     ensureObserver().observe(el);
   }
 
-  w.Icons = { load, genSVGMarkup };
+  /* Wipe cached files + in-memory state so every icon re-downloads fresh.
+     Caller repaints the library afterwards (re-runs Icons.load on new rows). */
+  async function refresh() {
+    WATCH.clear(); PENDING.clear(); clearTimeout(batchTimer);
+    BUST = Date.now();   // cache-bust all subsequent local-file loads
+    if (w.COPG && COPG.clearIconCache) { try { await COPG.clearIconCache(); } catch (_) {} }
+  }
+
+  w.Icons = { load, genSVGMarkup, refresh };
 })(window);

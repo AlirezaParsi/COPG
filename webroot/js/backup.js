@@ -44,6 +44,9 @@
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2" fill="currentColor" stroke="none"/></svg>`;
   const SVG_NAMES =
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-6.2-6.2a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l6.4 6.4a2 2 0 0 1 0 2.4z"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg>`;
+  /* image thumbnail + small refresh arc — "re-download app icons" (spins via .is-busy) */
+  const SVG_REFRESH_ICONS =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="12" height="12" rx="2"/><circle cx="6.8" cy="9.8" r="1.2"/><path d="M3 14.5 6.5 11l3 3 2-2 2.5 2.5"/><path d="M20.5 5.5a4.5 4.5 0 1 0 .4 4"/><polyline points="21 2 21 5.5 17.5 5.5"/></svg>`;
 
   document.body.insertAdjacentHTML('beforeend', `
     <div class="bottom-sheet sheet--backup" id="backupSheet" role="dialog" aria-modal="true" aria-label="Backup &amp; Restore">
@@ -60,6 +63,15 @@
           <span class="backup-action__text">
             <span class="backup-action__title" data-i18n="backup_sync">Sync from GitHub</span>
             <span class="backup-action__sub" data-i18n="backup_sync_sub">Fetch the latest config from the repo</span>
+          </span>
+          <span class="backup-action__chev">${SVG_CHEV}</span>
+        </button>
+
+        <button type="button" class="backup-action" id="backupRefreshIconsBtn">
+          <span class="backup-action__icon backup-action__icon--sync">${SVG_REFRESH_ICONS}</span>
+          <span class="backup-action__text">
+            <span class="backup-action__title" data-i18n="set_refresh_icons">Refresh App Icons</span>
+            <span class="backup-action__sub" data-i18n="set_refresh_icons_sub">Re-download package icons</span>
           </span>
           <span class="backup-action__chev">${SVG_CHEV}</span>
         </button>
@@ -164,6 +176,29 @@
     } catch (err) {
       showToast(I18N.t('toast_sync_fail'));
       log('Sync failed — ' + err, 'error');
+    } finally {
+      btn.classList.remove('is-busy');
+    }
+  }
+
+  /* ─── Refresh app icons ───
+     Wipe the webroot/icons cache + in-memory state, then repaint the Library so
+     every package icon re-downloads fresh (covers a game changing its icon). */
+  async function doRefreshIcons() {
+    const btn = $b('#backupRefreshIconsBtn');
+    if (btn.classList.contains('is-busy')) return;                 // guard double-tap
+    if (!COPG.hasBridge()) { showToast(I18N.t('toast_icons_refresh_preview')); log('Icon refresh needs the device bridge — unavailable in preview.', 'warn'); return; }
+    btn.classList.add('is-busy');
+    showToast(I18N.t('toast_icons_refreshing'));
+    log('Refresh: wiping cached icons + re-downloading…', 'info');
+    try {
+      if (w.Icons && Icons.refresh) await Icons.refresh();
+      repaintLibrary();                                            // re-runs Icons.load on new rows
+      showToast(I18N.t('toast_icons_refreshed'));
+      log('App icons refreshed.', 'success');
+    } catch (err) {
+      showToast(I18N.t('toast_restore_fail'));
+      log('Icon refresh failed — ' + err, 'error');
     } finally {
       btn.classList.remove('is-busy');
     }
@@ -310,6 +345,7 @@
   $b('#backupExportBtn').addEventListener('click', e => { spawnRipple(e, e.currentTarget); doExport(); });
   $b('#backupImportBtn').addEventListener('click', e => { spawnRipple(e, e.currentTarget); doImport(); });
   $b('#backupSyncBtn').addEventListener('click',   e => { spawnRipple(e, e.currentTarget); doSync(); });
+  $b('#backupRefreshIconsBtn').addEventListener('click', e => { spawnRipple(e, e.currentTarget); doRefreshIcons(); });
   $b('#libBackupBtn')?.addEventListener('click', e => { spawnRipple(e, e.currentTarget); open(); });
 
   function open() {

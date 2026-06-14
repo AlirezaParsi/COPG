@@ -62,6 +62,8 @@ I18N.register('en', {
   set_language:     'Language',
   set_fullscreen:   'Fullscreen',
   set_debug:        'Debug Logs',
+  set_refresh_icons:     'Refresh App Icons',
+  set_refresh_icons_sub: 'Re-download package icons',
 
   /* Theme hints (settings row) */
   theme_auto:   'Auto',
@@ -97,6 +99,9 @@ I18N.register('en', {
   toast_debug_off: 'Debug logs disabled',
   toast_fullscreen_on:  'Fullscreen on — status bar hidden',
   toast_fullscreen_off: 'Fullscreen off — status bar shown',
+  toast_icons_refreshing:     'Refreshing app icons…',
+  toast_icons_refreshed:      'App icons refreshed',
+  toast_icons_refresh_preview:'Icon refresh only works on the device',
   status_connected: 'Connected',
   status_offline:   'Offline',
 

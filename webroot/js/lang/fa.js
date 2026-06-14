@@ -62,6 +62,8 @@ I18N.register('fa', {
   set_language:     'زبان',
   set_fullscreen:   'تمام‌صفحه',
   set_debug:        'گزارش‌های اشکال‌زدایی',
+  set_refresh_icons:     'بازخوانی آیکون برنامه‌ها',
+  set_refresh_icons_sub: 'دانلود دوبارهٔ آیکون بسته‌ها',
 
   /* Theme hints (settings row) */
   theme_auto:   'خودکار',
@@ -97,6 +99,9 @@ I18N.register('fa', {
   toast_debug_off: 'گزارش‌های اشکال‌زدایی غیرفعال شد',
   toast_fullscreen_on:  'تمام‌صفحه روشن — نوار وضعیت پنهان شد',
   toast_fullscreen_off: 'تمام‌صفحه خاموش — نوار وضعیت نمایش داده شد',
+  toast_icons_refreshing:      'در حال بازخوانی آیکون‌ها…',
+  toast_icons_refreshed:       'آیکون برنامه‌ها بازخوانی شد',
+  toast_icons_refresh_preview: 'بازخوانی آیکون فقط روی دستگاه کار می‌کند',
   status_connected: 'متصل',
   status_offline:   'آفلاین',
 

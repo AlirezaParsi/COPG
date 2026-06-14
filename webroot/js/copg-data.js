@@ -1033,6 +1033,14 @@
     } catch (_) { return false; }
   }
 
+  /* Wipe every cached icon file so they re-download fresh (e.g. a game changed
+     its icon). The UI then re-renders + re-batches the missing ones. Device only. */
+  async function clearIconCache() {
+    if (!hasBridge()) return false;
+    try { await execCommand(`rm -f ${ICON_DIR_ABS}/*.png ${ICON_DIR_ABS}/.done`); return true; }
+    catch (_) { return false; }
+  }
+
   /* ─── Public API ─── */
   /* Immersive fullscreen toggle — KernelSU / ReZygisk WebUI bridge (`ksu.fullScreen`).
      true = fullscreen (status bar hidden), false = status bar shown. No-op when the
@@ -1061,7 +1069,7 @@
     getSystemInfo, setFullscreen,
     // installed apps + icons (KSU API with pm fallback)
     getInstalledPackages, getSystemPackages, isInstalled, getAppLabel, listInstalledApps, enrichApps,
-    fetchPlayIconUrl, fetchFdroidIconUrl, fetchAppIconUrl, batchFetchIcons,
+    fetchPlayIconUrl, fetchFdroidIconUrl, fetchAppIconUrl, batchFetchIcons, clearIconCache,
     // helpers exposed for modals/UI
     clean, tagsOf, hasTag, deviceKeyFromName, pkgKeyOf,
     sdkFromAndroid, androidFromSdk,
