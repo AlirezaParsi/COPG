@@ -4,6 +4,21 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v5.1.0
+### Faster, Smarter App Icons
+*   **No more lag.** Package icons no longer hammer the root bridge one-by-one — a single background task fetches everything, so the Library stays smooth while icons fill in.
+*   **Three sources:** Google Play → **APKPure** → F-Droid, so games missing from the Play Store (region-locked and the like) still get a real icon.
+*   **Works offline.** Once fetched, icons are cached on-device and load instantly with no network.
+*   **Refresh App Icons:** a new action in **Backup & Sync** wipes the icon cache and re-downloads everything — handy when a game changes its icon.
+
+### WebUI Polish
+*   **Fullscreen toggle:** an immersive mode that hides the status bar, in Settings.
+*   **Device Profile picker:** choosing a device for a package is now a searchable, sortable list instead of a plain dropdown.
+*   Fixed the black band under the status bar / notch in fullscreen, plus navigation-bar and sort/filter spacing touch-ups.
+
+### Game List
+*   Refreshed the bundled device and game profiles (`COPG.json` / `list.json`).
+
 ## v5.0.0
 ### A Complete Reimagining
 *   **Brand-New WebUI:** The entire interface was rebuilt from the ground up with a modern, app-like design — replacing the old single-file UI with a fast, modular one.
