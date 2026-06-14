@@ -19,6 +19,7 @@
 *   **Retired the `blocked` and `notweak` tags.** They are no longer needed; a single clear toggle replaces them.
 *   **New — GOT Hooking:** an advanced in-memory spoof method for stubborn apps that ignore the normal spoof. Off by default and gated behind a clear risk warning — it can be detected and may even get a game account banned, so only enable it if you know you need it.
 *   Plain-language ℹ️ explanations sit next to every toggle, so you always know what each one does.
+*   Added support of x84_64 and x86 devices/emulators.
 
 ### Per-App Game Tweaks (New)
 *   Choose comfort tweaks **per game** — applied only while you are playing and automatically restored when you leave:
