@@ -62,6 +62,8 @@ I18N.register('es', {
   set_language:     'Idioma',
   set_fullscreen:   'Pantalla completa',
   set_debug:        'Registros de depuración',
+  set_refresh_icons:     'Actualizar iconos de apps',
+  set_refresh_icons_sub: 'Volver a descargar iconos de paquetes',
 
   /* Theme hints */
   theme_auto:   'Auto',
@@ -97,6 +99,9 @@ I18N.register('es', {
   toast_debug_off: 'Registros de depuración desactivados',
   toast_fullscreen_on:  'Pantalla completa activada — barra de estado oculta',
   toast_fullscreen_off: 'Pantalla completa desactivada — barra de estado visible',
+  toast_icons_refreshing:      'Actualizando iconos de apps…',
+  toast_icons_refreshed:       'Iconos de apps actualizados',
+  toast_icons_refresh_preview: 'La actualización de iconos solo funciona en el dispositivo',
   status_connected: 'Conectado',
   status_offline:   'Sin conexión',
 

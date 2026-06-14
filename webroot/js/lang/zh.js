@@ -62,6 +62,8 @@ I18N.register('zh', {
   set_language:     '语言',
   set_fullscreen:   '全屏',
   set_debug:        '调试日志',
+  set_refresh_icons:     '刷新应用图标',
+  set_refresh_icons_sub: '重新下载应用包图标',
 
   /* Theme hints */
   theme_auto:   '自动',
@@ -97,6 +99,9 @@ I18N.register('zh', {
   toast_debug_off: '已禁用调试日志',
   toast_fullscreen_on:  '全屏已开启 — 状态栏已隐藏',
   toast_fullscreen_off: '全屏已关闭 — 状态栏已显示',
+  toast_icons_refreshing:      '正在刷新应用图标…',
+  toast_icons_refreshed:       '应用图标已刷新',
+  toast_icons_refresh_preview: '图标刷新仅在设备上可用',
   status_connected: '已连接',
   status_offline:   '离线',
 

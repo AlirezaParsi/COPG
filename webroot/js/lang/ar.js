@@ -62,6 +62,8 @@ I18N.register('ar', {
   set_language:     'اللغة',
   set_fullscreen:   'ملء الشاشة',
   set_debug:        'سجلات التصحيح',
+  set_refresh_icons:     'تحديث أيقونات التطبيقات',
+  set_refresh_icons_sub: 'إعادة تنزيل أيقونات الحزم',
 
   /* Theme hints */
   theme_auto:   'تلقائي',
@@ -97,6 +99,9 @@ I18N.register('ar', {
   toast_debug_off: 'تم تعطيل سجلات التصحيح',
   toast_fullscreen_on:  'ملء الشاشة مُفعّل — شريط الحالة مخفي',
   toast_fullscreen_off: 'ملء الشاشة مُعطّل — شريط الحالة ظاهر',
+  toast_icons_refreshing:      'جارٍ تحديث أيقونات التطبيقات…',
+  toast_icons_refreshed:       'تم تحديث أيقونات التطبيقات',
+  toast_icons_refresh_preview: 'تحديث الأيقونات يعمل على الجهاز فقط',
   status_connected: 'متصل',
   status_offline:   'غير متصل',
 

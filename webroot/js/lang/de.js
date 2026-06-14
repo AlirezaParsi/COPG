@@ -62,6 +62,8 @@ I18N.register('de', {
   set_language:     'Sprache',
   set_fullscreen:   'Vollbild',
   set_debug:        'Debug-Protokolle',
+  set_refresh_icons:     'App-Icons aktualisieren',
+  set_refresh_icons_sub: 'Paket-Icons neu herunterladen',
 
   /* Theme hints */
   theme_auto:   'Auto',
@@ -97,6 +99,9 @@ I18N.register('de', {
   toast_debug_off: 'Debug-Protokolle deaktiviert',
   toast_fullscreen_on:  'Vollbild an — Statusleiste ausgeblendet',
   toast_fullscreen_off: 'Vollbild aus — Statusleiste sichtbar',
+  toast_icons_refreshing:      'App-Icons werden aktualisiert…',
+  toast_icons_refreshed:       'App-Icons aktualisiert',
+  toast_icons_refresh_preview: 'Icon-Aktualisierung funktioniert nur auf dem Gerät',
   status_connected: 'Verbunden',
   status_offline:   'Offline',
 

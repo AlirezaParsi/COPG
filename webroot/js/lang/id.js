@@ -62,6 +62,8 @@ I18N.register('id', {
   set_language:     'Bahasa',
   set_fullscreen:   'Layar Penuh',
   set_debug:        'Log Debug',
+  set_refresh_icons:     'Segarkan Ikon Aplikasi',
+  set_refresh_icons_sub: 'Unduh ulang ikon paket',
 
   /* Theme hints */
   theme_auto:   'Otomatis',
@@ -97,6 +99,9 @@ I18N.register('id', {
   toast_debug_off: 'Log debug dinonaktifkan',
   toast_fullscreen_on:  'Layar penuh aktif — bilah status disembunyikan',
   toast_fullscreen_off: 'Layar penuh nonaktif — bilah status ditampilkan',
+  toast_icons_refreshing:      'Menyegarkan ikon aplikasi…',
+  toast_icons_refreshed:       'Ikon aplikasi disegarkan',
+  toast_icons_refresh_preview: 'Penyegaran ikon hanya berfungsi di perangkat',
   status_connected: 'Terhubung',
   status_offline:   'Luring',
 

@@ -62,6 +62,8 @@ I18N.register('th', {
   set_language:     'ภาษา',
   set_fullscreen:   'เต็มหน้าจอ',
   set_debug:        'ล็อกดีบัก',
+  set_refresh_icons:     'รีเฟรชไอคอนแอป',
+  set_refresh_icons_sub: 'ดาวน์โหลดไอคอนแพ็กเกจใหม่',
 
   /* Theme hints */
   theme_auto:   'อัตโนมัติ',
@@ -97,6 +99,9 @@ I18N.register('th', {
   toast_debug_off: 'ปิดล็อกดีบักแล้ว',
   toast_fullscreen_on:  'เปิดเต็มหน้าจอ — ซ่อนแถบสถานะ',
   toast_fullscreen_off: 'ปิดเต็มหน้าจอ — แสดงแถบสถานะ',
+  toast_icons_refreshing:      'กำลังรีเฟรชไอคอนแอป…',
+  toast_icons_refreshed:       'รีเฟรชไอคอนแอปแล้ว',
+  toast_icons_refresh_preview: 'การรีเฟรชไอคอนใช้ได้เฉพาะบนอุปกรณ์',
   status_connected: 'เชื่อมต่อแล้ว',
   status_offline:   'ออฟไลน์',
 
