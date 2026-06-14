@@ -4,9 +4,7 @@
 
 # 🎮 COPG
 
-### Core Override &amp; Permission Guard
-
-**The most advanced device &amp; CPU spoofer for Android — bypass restrictions and unlock premium graphics, higher FPS and exclusive features on _any_ game or app.**
+**The most advanced device &amp; CPU spoofer for Android — bypass restrictions and unlock premium graphics, higher FPS and exclusive features on most games and apps.**
 
 <br>
 
@@ -27,7 +25,7 @@
 
 ## ✨ Why COPG?
 
-COPG is a **Zygisk module** that makes any game or app believe it is running on a different,
+COPG is a **Zygisk module** that makes most games and apps believe they are running on a different,
 fully‑featured flagship device — unlocking the high‑FPS modes, HD graphics and premium tiers that
 are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, a userspace
 **comfort‑tweak controller**, and a beautiful on‑device **WebUI** to manage everything — all
@@ -48,7 +46,7 @@ Spoof the CPU to flagship‑class silicon for apps that gate features on the chi
 <td width="50%" valign="top">
 
 #### 🧩 GOT Hooking
-Optional advanced hook layer for the toughest detections.
+An extra spoofing method (GOT/PLT hooks) for apps that need a deeper layer than the default.
 
 #### 🎛️ Per‑App Comfort Tweaks
 Auto **Do‑Not‑Disturb**, **disable auto‑brightness**, **keep screen on** and **stop logging** —
@@ -58,8 +56,8 @@ applied only while a tagged game is active, then restored.
 </tr>
 </table>
 
-> 🔁 **Add or remove games/apps without a reboot.** ✨ Fully customizable. 🌍 8‑language WebUI with
-> Light / Dark / AMOLED themes.
+> 🔁 **Add or remove devices, games &amp; apps without a reboot.** ✨ Fully customizable. 🌍 8‑language
+> WebUI with Light / Dark / AMOLED themes.
 
 ---
 
@@ -70,7 +68,7 @@ applied only while a tagged game is active, then restored.
 | Game | Unlock |
 |------|--------|
 | **Call of Duty Mobile** | 120 FPS (BR / MP) |
-| **PUBG Mobile / BGMI** | 90+ FPS · HDR · Haptic Feedback |
+| **PUBG Mobile / BGMI** | 120 FPS · Haptic Feedback |
 | **Delta Force** | 120 FPS · HD Graphics |
 | **Free Fire / Free Fire MAX** | 144 FPS |
 | **Fortnite** | 120 FPS |
@@ -96,8 +94,8 @@ applied only while a tagged game is active, then restored.
       <br><sub><b>Dashboard</b> · Light</sub>
     </td>
     <td align="center" width="25%">
-      <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121848_WebUI%20X.png?raw=true" alt="Dashboard AMOLED" />
-      <br><sub><b>Dashboard</b> · AMOLED</sub>
+      <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121848_WebUI%20X.png?raw=true" alt="Dashboard dark" />
+      <br><sub><b>Dashboard</b> · Dark</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20260614-121127_KsuWebUI.png?raw=true" alt="Library packages" />
@@ -128,7 +126,7 @@ applied only while a tagged game is active, then restored.
 
 > [!IMPORTANT]
 > Standard / built‑in **Magisk Zygisk is _not_ supported** (not safe). Use one of the Zygisk
-> implementations above. **WebUI‑X is recommended** for the full WebUI experience.
+> implementations above.
 
 ### Get the module
 
@@ -149,10 +147,11 @@ Install from **[MMRL](https://mmrl.dev/repository/zguectZGR/COPG)**, or grab the
 
 ## 🖥️ WebUI
 
-A no‑reboot, on‑device control panel built into the module — open it from your root manager
-(WebUI‑X recommended).
+A no‑reboot, on‑device control panel built into the module. On **KernelSU** and **APatch** it opens
+straight from the manager. On **Magisk**, install the **KSU WebUI** app and open COPG from there.
 
-- 📋 **Library** — manage device profiles &amp; per‑app spoof lists with search, sort &amp; filters
+- 📋 **Library** — add &amp; manage **device profiles** and **per‑app spoof lists** with search,
+  sort &amp; filters
 - ➕ **Add Package** — pick any installed app, choose a device profile, toggle **CPU Spoofing /
   GOT Hooking** and the **DND / Auto‑Brightness / Keep‑Screen‑On** tweaks
 - 📊 **Dashboard** — live system info: Android, ABI, Zygisk variant, root &amp; kernel
@@ -194,8 +193,7 @@ Package **tags** are colon suffixes — e.g. `:with_cpu` (CPU spoof), `:got` (GO
 <summary><b>🤔 What does COPG stand for?</b></summary>
 <br>
 Originally <b>CO</b> (Call of Duty) + <b>PG</b> (PUBG) — the two games it was first built for. It
-now supports every game and app, but the name is kept for its history. The full backronym is
-<b>Core Override &amp; Permission Guard</b>.
+now supports most games and apps, but the name is kept for its history.
 </details>
 
 <details>
@@ -213,10 +211,8 @@ Minimal. The spoof runs only at app launch and doesn't touch in‑game performan
 <details>
 <summary><b>🔧 How do I open the WebUI?</b></summary>
 <br>
-Use the <b>WebUI‑X</b> app:
-<br><br>
-<a href="https://github.com/MMRLApp/WebUI-X-Portable"><img src="https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white" alt="GitHub"></a>
-<a href="https://play.google.com/store/apps/details?id=com.dergoogler.mmrl.wx"><img src="https://img.shields.io/badge/Google_Play-414141?logo=google-play&logoColor=white" alt="Play Store"></a>
+On <b>KernelSU</b> and <b>APatch</b>, open it straight from the manager. On <b>Magisk</b>, install
+the <b>KSU WebUI</b> app and open COPG from there.
 </details>
 
 ---
