@@ -118,21 +118,21 @@ Use the WebUI X app:<br>
   <table>
     <tr>
       <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/JSON/screenshots/Screenshot_20250913-210930_WebUI%20X.png?raw=true" width="300" alt="Main Dashboard">
+        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-210930_WebUI%20X.png?raw=true" width="300" alt="Main Dashboard">
         <br><em>Settings Panel</em>
       </td>
       <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/JSON/screenshots/Screenshot_20250913-211818_WebUI%20X.png?raw=true" width="300" alt="Settings">
+        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-211818_WebUI%20X.png?raw=true" width="300" alt="Settings">
         <br><em>Add new App/game</em>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/JSON/screenshots/Screenshot_20250913-211418_WebUI%20X.png?raw=true" width="300" alt="Profiles">
+        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-211418_WebUI%20X.png?raw=true" width="300" alt="Profiles">
         <br><em>Device Profiles</em>
       </td>
       <td align="center">
-        <img src="https://github.com/AlirezaParsi/COPG/blob/JSON/screenshots/Screenshot_20250913-211454_WebUI%20X.png?raw=true" width="300" alt="Advanced">
+        <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250913-211454_WebUI%20X.png?raw=true" width="300" alt="Advanced">
         <br><em>Game list</em>
       </td>
     </tr>
@@ -144,7 +144,7 @@ Use the WebUI X app:<br>
   <img src="https://github.com/user-attachments/assets/735aa872-fbf0-4cd1-8299-1989c08b9b80" width="180" hspace="10" alt="Delta Force">
   <img src="https://github.com/user-attachments/assets/9a9fd8b2-7449-404f-888a-dedeefbe670d" width="180" hspace="10" alt="CODM">
   <img src="https://github.com/user-attachments/assets/d9d3398f-5944-44e6-8df6-312e099c9738" width="180" hspace="10" alt="PUBG Mobile">
-  <img src="https://github.com/AlirezaParsi/COPG/blob/JSON/screenshots/Screenshot_20250914-131838_Free%20Fire%20MAX.png?raw=true" width="180" hspace="10" alt="FreeFire MAX">
+  <img src="https://github.com/AlirezaParsi/COPG/blob/screenshots/Screenshot_20250914-131838_Free%20Fire%20MAX.png?raw=true" width="180" hspace="10" alt="FreeFire MAX">
 
 ---
 - [![Telegram Channel](https://img.shields.io/badge/Telegram_Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/COPG_module)

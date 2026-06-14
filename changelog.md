@@ -4,6 +4,44 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v5.0.0
+### A Complete Reimagining
+*   **Brand-New WebUI:** The entire interface was rebuilt from the ground up with a modern, app-like design — replacing the old single-file UI with a fast, modular one.
+*   **Library:** Devices and packages live in one place now, with search, sorting, filters, swipe-between-tabs, and live **Installed** badges.
+*   **App Picker:** Add games straight from your installed apps, complete with real names and icons.
+*   **Backup & Sync:** Export and restore your config, **Sync from GitHub** to pull the latest game list, and export logs — all saved to `Download/COPG`.
+*   **Built-In Console:** Run shell commands, tail logcat, and save logs without ever leaving the app.
+*   **Theming & Language:** Dark / Light / AMOLED / Auto themes, full English **and** Persian (RTL) with one-tap switching, plus haptic feedback.
+
+### Simpler, Safer Spoofing
+*   **CPU spoof is now blocked by default.** Every device package is safe out of the box — flip on **With CPU Spoofing** only for the games that need the chipset faked.
+*   **Retired the `blocked` and `notweak` tags.** They are no longer needed; a single clear toggle replaces them.
+*   **New — GOT Hooking:** an advanced in-memory spoof method for stubborn apps that ignore the normal spoof. Off by default and gated behind a clear risk warning — it can be detected and may even get a game account banned, so only enable it if you know you need it.
+*   Plain-language ℹ️ explanations sit next to every toggle, so you always know what each one does.
+
+### Per-App Game Tweaks (New)
+*   Choose comfort tweaks **per game** — applied only while you are playing and automatically restored when you leave:
+    *   **Do Not Disturb**, **Disable Auto-Brightness**, **Keep Screen On**, **Disable Logging**.
+*   Smarter switching: hopping between games applies only the tweaks each one asks for — no more notification floods at the wrong moment.
+*   Works for both device-spoof and CPU-spoof packages.
+
+### Improvements
+*   Rewrote the tweak controller to apply tweaks **per package** with precise apply/restore, dropping the old global toggle file.
+*   Allowlist-based tag parsing — unknown or future tags are safely ignored everywhere in the module.
+*   Reorganized the whole project (`src/`, `module/`) with a single clean CI workflow and an on-device build script.
+
+### New Devices & Game Profiles
+*   **New device:** **Infinix GT 50 Pro** added to the spoof library.
+*   **Device refresh:** **RedMagic 10 Pro → RedMagic 11 Pro**, and **HONOR Magic V2 RSR → Sony Xperia 1 III** (old profiles removed, replaced with newer hardware).
+*   **PUBG Mobile:** unlocked **HDR + 90+ FPS**.
+*   **Free Fire / Free Fire MAX:** unlocked **144 FPS**.
+*   **Asphalt 9:** unlocked **120 FPS**.
+
+### Note
+*   This is a massive overhaul and still a work in progress — more is on the way. Please report anything unexpected in the support group.
+
+### Summary
+v5.0.0 is the biggest release yet: a ground-up WebUI rewrite, a simpler and safer spoofing model (block-by-default CPU), brand-new per-app game tweaks, and a cleaner, faster foundation under the hood.
 ## v4.7.3
 - fix version code
 ## v4.7.2

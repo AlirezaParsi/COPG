@@ -1,0 +1,3 @@
+# local build staging produced by build.sh
+.build/
+*.zip

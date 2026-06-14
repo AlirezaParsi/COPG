@@ -1,880 +1,463 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#60A5FA" id="theme-color">
-    <title>COPG Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <title>COPG — Module Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-    <template id="device-card-template">
-        <div class="device-card" data-key="[KEY]" style="animation-delay: [DELAY]s">
-            <div class="device-header">
-                <h4 class="device-name">[DEVICE_NAME]</h4>
-                <div class="device-actions">
-                    <button class="edit-btn" data-device="[KEY]" title="Edit">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="delete-btn" data-device="[KEY]" title="Delete">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="device-details">
-                Model: [MODEL]<br>
-                Games associated: [GAME_COUNT]
-            </div>
-        </div>
-    </template>
 
-    <template id="game-card-template">
-        <div class="game-card" data-package="[GAME_PACKAGE]" data-device="[DEVICE_KEY]" style="animation-delay: [DELAY]s">
-            <div class="game-header">
-                <div class="game-name-container">
-                    <h4 class="game-name">[GAME_NAME]</h4>
-                    <span class="game-package">[CLEAN_PACKAGE_NAME]</span>
-                </div>
-                <div class="game-actions">
-                    <button class="edit-btn" data-game="[GAME_PACKAGE]" data-device="[DEVICE_KEY]" title="Edit">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="delete-btn" data-game="[GAME_PACKAGE]" data-device="[DEVICE_KEY]" title="Delete">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="game-details">
-                <span class="game-info">[DEVICE_NAME]</span>
-                <div class="badge-group">
-                    [HAS_NO_TWEAK_BADGE]
-                    [WITH_CPU_BADGE]
-                    [BLOCKED_BADGE]
-                    [INSTALLED_BADGE]
-                </div>
-            </div>
-        </div>
-    </template>
+  <!-- ───────── PAGES ───────── -->
+  <main class="pages-wrap">
 
-    <template id="cpu-spoof-card-template">
-        <div class="game-card cpu-spoof-card" data-package="[PACKAGE_NAME]" data-type="[TYPE]" style="animation-delay: [DELAY]s">
-            <div class="game-header">
-                <div class="game-name-container">
-                    <h4 class="game-name">[GAME_NAME]</h4>
-                    <span class="game-package">[CLEAN_PACKAGE_NAME]</span>
-                </div>
-                <div class="game-actions">
-                    <button class="info-btn" title="CPU Spoof Configuration">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 16v-4"></path>
-                            <path d="M12 8h.01"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="game-details">
-                <span class="game-info">[TYPE_LABEL]</span>
-                <div class="badge-group">
-                    [TYPE_BADGE]
-                    [INSTALLED_BADGE]
-                </div>
-            </div>
-        </div>
-    </template>
+    <!-- ═══════ HOME ═══════ -->
+    <section class="page page--home active" id="pageHome">
+      <div class="scroll-area">
 
-    <template id="picker-device-card-template">
-        <div class="picker-device-card" data-key="[KEY]">
-            <h4>[DEVICE_NAME]</h4>
-            <p>[BRAND] [MODEL]</p>
-        </div>
-    </template>
-
-    <template id="package-picker-card-template">
-        <div class="app-card" data-package="[PACKAGE]">
-            <div class="app-icon-container" data-pkg="[PACKAGE]">
-                <div class="app-icon-placeholder"></div>
+        <!-- Hero Banner (no top bar — version lives here) -->
+        <div class="hero" id="hero">
+          <div class="hero__bg-mesh"></div>
+          <div class="hero__orb hero__orb--1"></div>
+          <div class="hero__orb hero__orb--2"></div>
+          <div class="hero__content">
+            <div class="hero__module-id">
+              <!-- Zygisk bolt -->
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span data-i18n="hero_module_id">Zygisk Module</span>
             </div>
-            <div class="app-info">
-                <div class="app-name">[APP_LABEL]</div>
-                <div class="app-package">[PACKAGE]</div>
+            <div class="hero__title-row">
+              <h1 class="hero__name">COPG</h1>
+              <span class="hero__version-badge" id="heroVer">—</span>
             </div>
-        </div>
-    </template>
-
-    <template id="directory-card-template">
-        <div class="app-card directory-card" data-path="[PATH]">
-            <div class="app-icon-container">
-                <div class="app-icon-placeholder folder-icon"></div>
+            <p class="hero__sub" data-i18n="hero_sub">Advanced Device &amp; App Spoofing</p>
+            <div class="hero__badges">
+              <span class="badge badge--active" id="heroBadge">
+                <span class="badge__dot"></span>Active
+              </span>
+              <span class="badge badge--env" id="envBadge">KernelSU</span>
             </div>
-            <div class="app-info">
-                <div class="app-name">[DIR_NAME]</div>
-            </div>
-        </div>
-    </template>
-
-    <template id="file-card-template">
-        <div class="app-card" data-file="[FILE_NAME]" data-path="[FILE_PATH]">
-            <div class="app-icon-container">
-                <div class="app-icon-placeholder file-icon"></div>
-            </div>
-            <div class="app-info">
-                <div class="app-name">[FILE_NAME]</div>
-            </div>
-        </div>
-    </template>
-
-    <template id="sort-dropdown-template">
-        <div class="sort-dropdown">
-            <div class="sort-option" data-sort="default">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M8 6h13"></path>
-                    <path d="M8 12h13"></path>
-                    <path d="M8 18h13"></path>
-                    <path d="M3 6h.01"></path>
-                    <path d="M3 12h.01"></path>
-                    <path d="M3 18h.01"></path>
-                </svg>
-                <span>Default</span>
-            </div>
-            <div class="sort-option" data-sort="asc">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18"></path>
-                    <path d="M6 12h15"></path>
-                    <path d="M9 18h12"></path>
-                </svg>
-                <span>A → Z</span>
-            </div>
-            <div class="sort-option" data-sort="desc">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 18h18"></path>
-                    <path d="M6 12h15"></path>
-                    <path d="M9 6h12"></path>
-                </svg>
-                <span>Z → A</span>
-            </div>
-            <div class="sort-separator"></div>
-            <div class="sort-option" data-filter="blocklist">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M18 6L6 18"></path>
-                </svg>
-                <span>Blocklist Only</span>
-                <span class="filter-badge" id="blocklist-count">0</span>
-            </div>
-            <div class="sort-option" data-filter="cpu_only">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0m-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
-                </svg>
-                <span>CPU Only</span>
-                <span class="filter-badge" id="cpu-only-count">0</span>
-            </div>
-            <div class="sort-option" data-filter="installed">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <span>Installed Only</span>
-                <span class="filter-badge" id="installed-count">0</span>
-            </div>
-            <div class="sort-option" data-filter="no_tweaks">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                </svg>
-                <span>No Tweaks Only</span>
-                <span class="filter-badge" id="no-tweaks-count">0</span>
-            </div>
-            <div class="sort-option" data-filter="clear" id="clear-filter-btn" style="display: none;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"></path>
-                </svg>
-                <span>Clear Filter</span>
-            </div>
-        </div>
-    </template>
-
-    <div class="container">
-        <div class="header">
-            <h1 class="header-title">COPG Manager <span class="version" id="version-text">v0.0</span></h1>
-            <div class="header-actions">
-                <button id="donate-toggle" class="theme-btn" title="Support Developer">
-                    <span class="donate-icon">🎁</span>
-                </button>
-                <button id="theme-toggle" class="theme-btn" title="Toggle Theme">
-                    <span id="theme-icon">☀️</span>
-                </button>
-            </div>
+          </div>
+          <div class="hero__glass-sheen"></div>
         </div>
 
-        <div id="info-popup" class="popup">
-            <div class="popup-content info-popup-content">
-                <div class="modal-header">
-                    <h3>COPG Module Info</h3>
-                </div>
-                <div class="tab-nav info-tab-nav">
-                    <button class="tab-btn active" data-tab="info-about">About</button>
-                    <button class="tab-btn" data-tab="info-readme">Readme</button>
-                    <button class="tab-btn" data-tab="info-license">License</button>
-                    <button class="tab-btn" data-tab="info-changelog">Changelog</button>
-                </div>
-                <div class="info-tab-container">
-                    <div id="info-about" class="info-tab-content active">
-                        <div class="about-grid">
-                            <div class="about-card">
-                                <div class="about-card-icon developer-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </div>
-                                <div class="about-card-content">
-                                    <h4>Developer</h4>
-                                    <p class="info-link" onclick="openLink('https://github.com/AlirezaParsi')">
-                                        <span class="link-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M9 19C4 20.5 4 16.5 2 16M16 22V18.13C16.04 17.65 15.94 17.17 15.71 16.75C15.48 16.33 15.13 16 14.69 15.78C17.05 15.55 19.45 14.82 19.45 10.89C19.44 9.55 18.91 8.28 18 7.4C18.38 6.29 18.38 5.11 18 4C18 4 16.91 3.65 15 5.2C13.44 4.82 11.78 4.82 10.22 5.2C8.29 3.65 7.2 4 7.2 4C6.82 5.11 6.82 6.29 7.2 7.4C6.27 8.28 5.74 9.55 5.75 10.89C5.75 14.82 8.15 15.55 10.51 15.81C10.07 16.04 9.72 16.37 9.5 16.8C9.28 17.23 9.18 17.72 9.22 18.21V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </span>
-                                        @AlirezaParsi
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="about-card">
-                                <div class="about-card-icon project-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </div>
-                                <div class="about-card-content">
-                                    <h4>Project</h4>
-                                    <p class="info-link" onclick="openLink('https://github.com/AlirezaParsi/COPG')">
-                                        <span class="link-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M18 13V19C18 19.5304 17.7893 20.0391 17.4142 20.4142C17.0391 20.7893 16.5304 21 16 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V8C3 7.46957 3.21071 6.96086 3.58579 6.58579C3.96086 6.21071 4.46957 6 5 6H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M15 3H21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </span>
-                                        GitHub Repository
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="about-card">
-                                <div class="about-card-icon community-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </div>
-                                <div class="about-card-content">
-                                    <h4>Community</h4>
-                                    <div class="community-links">
-                                        <p class="info-link" onclick="openLink('https://t.me/COPG_Module')">
-                                            <span class="link-icon">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M21 5L2 12.5L9 13.5M21 5L18.5 21L9 13.5M21 5L9 13.5M9 13.5V19L12.5 15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                            </span>
-                                            Telegram Channel
-                                        </p>
-                                        <p class="info-link" onclick="openLink('https://t.me/AlirezaParsi')">
-                                            <span class="link-icon">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                            </span>
-                                            Contact Developer
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="info-license" class="info-tab-content">
-                        <div class="markdown-container" id="license-content">Loading...</div>
-                    </div>
-                    <div id="info-readme" class="info-tab-content">
-                        <div class="markdown-container" id="readme-content">Loading...</div>
-                    </div>
-                    <div id="info-changelog" class="info-tab-content">
-                        <div class="markdown-container" id="changelog-content">Loading...</div>
-                    </div>
-                </div>
-                <div class="popup-footer">
-                    <button class="cancel-btn close-info-btn">Close</button>
-                </div>
+        <!-- Quick Stats — Devices + Packages -->
+        <div class="section-label" data-i18n="label_quick_stats">Quick Stats</div>
+        <div class="stats-grid">
+          <div class="stat-card" data-card="devices">
+            <div class="stat-card__icon">
+              <!-- Phone icon -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <rect x="5" y="2" width="14" height="20" rx="2"/>
+                <circle cx="12" cy="17" r="1" fill="currentColor"/>
+              </svg>
             </div>
-        </div>
-
-        <div id="donate-popup" class="popup">
-            <div class="popup-content">
-                <div class="modal-header">
-                    <h3>Support Developer</h3>
-                </div>
-                <div class="popup-body">
-                    <div class="donate-message">
-                        <p>If you find this app helpful, consider supporting the developer:</p>
-                    </div>
-                    <div class="donate-options">
-                        <div class="donate-option">
-                            <div class="crypto-icon usdt-icon">
-                                <svg width="20" height="20" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                                    <g fill="none" fill-rule="evenodd">
-                                        <circle cx="16" cy="16" r="16" fill="#26A17B"/>
-                                        <path fill="#FFF" d="M17.922 17.383v-.002c-.11.008-.677.042-1.942.042-1.01 0-1.721-.03-1.971-.042v.003c-3.888-.171-6.79-.848-6.79-1.658 0-.809 2.902-1.486 6.79-1.66v2.644c.254.018.982.061 1.988.061 1.207 0 1.812-.05 1.925-.06v-2.643c3.88.173 6.775.85 6.775 1.658 0 .81-2.895 1.485-6.775 1.657m0-3.59v-2.366h5.414V7.819H8.595v3.608h5.414v2.365c-4.4.202-7.709 1.074-7.709 2.118 0 1.044 3.309 1.915 7.709 2.118v7.582h3.913v-7.584c4.393-.202 7.694-1.073 7.694-2.116 0-1.043-3.301-1.914-7.694-2.117"/>
-                                    </g>
-                                </svg>
-                            </div>
-                            <div class="donate-info">
-                                <h4>USDT (TRC-20)/TRON (TRX)</h4>
-                                <p class="donate-address">TMMDAyJ9Fs3yQpidd2Q4eYLTMkM1hsrauV</p>
-                            </div>
-                            <button class="copy-btn" data-address="TMMDAyJ9Fs3yQpidd2Q4eYLTMkM1hsrauV">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <div class="donate-option">
-                            <div class="crypto-icon ton-icon">
-                                <svg width="20" height="20" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M28,56c15.5,0,28-12.5,28-28S43.5,0,28,0S0,12.5,0,28S12.5,56,28,56z" fill="#0098EA"/>
-                                    <path d="M37.6,15.6H18.4c-3.5,0-5.7,3.8-4,6.9l11.8,20.5c0.8,1.3,2.7,1.3,3.5,0l11.8-20.5 C43.3,19.4,41.1,15.6,37.6,15.6L37.6,15.6z M26.3,36.8l-2.6-5l-6.2-11.1c-0.4-0.7,0.1-1.6,1-1.6h7.8L26.3,36.8L26.3,36.8z M38.5,20.7l-6.2,11.1l-2.6,5V19.1h7.8C38.4,19.1,38.9,20,38.5,20.7z" fill="#FFFFFF"/>
-                                </svg>
-                            </div>
-                            <div class="donate-info">
-                                <h4>TON (TON)</h4>
-                                <p class="donate-address">UQDpCIV5E8O2uHg8TPr6PUf36BEDOAu42lr9YzJw2j7HONat</p>
-                            </div>
-                            <button class="copy-btn" data-address="UQDpCIV5E8O2uHg8TPr6PUf36BEDOAu42lr9YzJw2j7HONat">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <div class="donate-option">
-                            <div class="crypto-icon telegram-icon">
-                                <svg width="20" height="20" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <g>
-                                        <path d="M128,0 C57.307,0 0,57.307 0,128 L0,128 C0,198.693 57.307,256 128,256 L128,256 C198.693,256 256,198.693 256,128 L256,128 C256,57.307 198.693,0 128,0 L128,0 Z" fill="#40B3E0"></path>
-                                        <path d="M190.2826,73.6308 L167.4206,188.8978 C167.4206,188.8978 164.2236,196.8918 155.4306,193.0548 L102.6726,152.6068 L83.4886,143.3348 L51.1946,132.4628 C51.1946,132.4628 46.2386,130.7048 45.7586,126.8678 C45.2796,123.0308 51.3546,120.9528 51.3546,120.9528 L179.7306,70.5928 C179.7306,70.5928 190.2826,65.9568 190.2826,73.6308" fill="#FFFFFF"></path>
-                                        <path d="M98.6178,187.6035 C98.6178,187.6035 97.0778,187.4595 95.1588,181.3835 C93.2408,175.3085 83.4888,143.3345 83.4888,143.3345 L161.0258,94.0945 C161.0258,94.0945 165.5028,91.3765 165.3428,94.0945 C165.3428,94.0945 166.1418,94.5735 163.7438,96.8115 C161.3458,99.0505 102.8328,151.6475 102.8328,151.6475" fill="#D2E5F1"></path>
-                                        <path d="M122.9015,168.1154 L102.0335,187.1414 C102.0335,187.1414 100.4025,188.3794 98.6175,187.6034 L102.6135,152.2624" fill="#B5CFE4"></path>
-                                    </g>
-                                </svg>
-                            </div>
-                            <div class="donate-info">
-                                <h4>Telegram Gifts</h4>
-                                <p class="donate-address">@AlirezaParsi</p>
-                            </div>
-                            <button class="copy-btn" data-address="@AlirezaParsi">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="popup-footer">
-                    <button class="action-btn close-donate-btn">Close</button>
-                </div>
+            <div class="stat-card__body">
+              <div class="stat-card__label" data-i18n="stat_devices">Devices</div>
+              <div class="stat-card__value" id="statDevices">—</div>
             </div>
-        </div>
+            <div class="stat-card__glow"></div>
+          </div>
 
-        <div class="tab-nav">
-            <button id="tab-settings" class="tab-btn active">Settings</button>
-            <button id="tab-devices" class="tab-btn">Devices</button>
-            <button id="tab-games" class="tab-btn">Games</button>
-        </div>
-
-        <div class="tab-container" id="tab-container">
-            <div id="settings-tab" class="tab-content active">
-                <div class="card">
-                    <div class="scroll-container">
-                        <div class="list-wrapper">
-                            <div class="toggle-group">
-                                <span class="toggle-label">Disable Auto-Brightness</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-auto-brightness">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="toggle-group">
-                                <span class="toggle-label">Enable Do Not Disturb</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-dnd">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="toggle-group">
-                                <span class="toggle-label">Disable Logging</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-logging">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="toggle-group">
-                                <span class="toggle-label">Keep Screen On</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-keep-screen-on">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="button-group">
-                        <button id="update-config" class="action-btn">Update Game List</button>
-                        <button id="backup-manager" class="action-btn">Backup/Restore</button>
-                    </div>
-                </div>
-                <div class="log-section" id="settings-log-section">
-                    <div class="log-header" id="log-header">
-                        <div class="log-title">
-                            <h2>Logs</h2>
-                            <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </div>
-                        <div class="log-actions">
-                            <span class="copy-text" id="copy-log">Copy</span>
-                            <span class="clear-text" id="clear-log">Clear</span>
-                            <span class="logcat-text" id="start-logcat">Start Logcat</span>
-                            <span class="logcat-text" id="stop-logcat" style="display: none;">Stop Logcat</span>
-                        </div>
-                    </div>
-                    <div class="log-content" id="log-content">
-                        <div id="output"></div>
-                    </div>
-                </div>
+          <div class="stat-card" data-card="packages">
+            <div class="stat-card__icon">
+              <!-- Package icon -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
             </div>
-
-            <div id="devices-tab" class="tab-content">
-    <div class="search-container">
-        <div class="search-input-wrapper">
-            <input type="text" id="device-search" placeholder="Search devices...">
-            <button id="device-sort-btn" class="sort-btn" title="Sort devices">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18"></path>
-                    <path d="M8 12h8"></path>
-                    <path d="M13 18h3"></path>
-                </svg>
-            </button>
+            <div class="stat-card__body">
+              <div class="stat-card__label" data-i18n="stat_packages">Packages</div>
+              <div class="stat-card__value" id="statPackages">—</div>
+            </div>
+            <div class="stat-card__glow"></div>
+          </div>
         </div>
-        <button id="add-device" class="add-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14m-7-7h14"></path>
+
+        <!-- System Info -->
+        <div class="section-label" data-i18n="label_system">System</div>
+        <div class="glass-card sys-card">
+
+          <!-- Android — robot head SVG -->
+          <div class="sys-row">
+            <span class="sys-row__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <!-- antennas -->
+                <line x1="8" y1="4.2" x2="6.4" y2="2"/>
+                <line x1="16" y1="4.2" x2="17.6" y2="2"/>
+                <!-- dome head: flat base, semicircle top -->
+                <path d="M4 15a8 8 0 0 1 16 0z"/>
+                <!-- eyes -->
+                <circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/>
+                <circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/>
+              </svg>
+            </span>
+            <span class="sys-row__label" data-i18n="sys_android">Android Version</span>
+            <span class="sys-row__value" id="androidVer">—</span>
+          </div>
+          <div class="sys-divider"></div>
+
+          <!-- ABI — chip/cpu -->
+          <div class="sys-row">
+            <span class="sys-row__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+                <path d="M9 6V3M12 6V3M15 6V3M9 21v-3M12 21v-3M15 21v-3M6 9H3M6 12H3M6 15H3M21 9h-3M21 12h-3M21 15h-3"/>
+              </svg>
+            </span>
+            <span class="sys-row__label" data-i18n="sys_abi">ABI</span>
+            <span class="sys-row__value" id="abiVal">—</span>
+          </div>
+          <div class="sys-divider"></div>
+
+          <!-- Zygisk — bolt -->
+          <div class="sys-row">
+            <span class="sys-row__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </span>
+            <span class="sys-row__label" data-i18n="sys_zygisk">Zygisk Variant</span>
+            <span class="sys-row__value" id="zygiskVal">—</span>
+          </div>
+          <div class="sys-divider"></div>
+
+          <!-- Root solution + version — shield -->
+          <div class="sys-row">
+            <span class="sys-row__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/>
+                <path d="M9.5 12l1.8 1.8L15 10"/>
+              </svg>
+            </span>
+            <span class="sys-row__label" data-i18n="sys_root_version">Root Version</span>
+            <span class="sys-row__value" id="rootVerVal">—</span>
+          </div>
+          <div class="sys-divider"></div>
+
+          <!-- Kernel — processing core / die with pins -->
+          <div class="sys-row">
+            <span class="sys-row__icon">
+              <!-- Kernel — processing core / die with pins -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4.5" y="4.5" width="15" height="15" rx="4"/>
+                <rect x="9" y="9" width="6" height="6" rx="1.6"/>
+                <path d="M12 1.8v2.7M12 19.5v2.7M1.8 12h2.7M19.5 12h2.7"/>
+              </svg>
+            </span>
+            <span class="sys-row__label" data-i18n="sys_kernel">Kernel Version</span>
+            <span class="sys-row__value sys-row__value--mono" id="kernelVal">—</span>
+          </div>
+        </div>
+
+        <!-- Console -->
+        <div class="section-label" data-i18n="label_tools">Tools</div>
+        <div class="glass-card console-card" id="consoleCard" role="button" tabindex="0" aria-label="Open Console">
+          <div class="console-card__inner">
+            <div class="console-card__icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="4 17 10 11 4 5"/>
+                <line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+            </div>
+            <span class="console-card__label" data-i18n="console_open">Open Console</span>
+            <svg class="console-card__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="9 18 15 12 9 6"/>
             </svg>
-            Add Device
-        </button>
-    </div>
-    <div class="scroll-container">
-        <div class="list-wrapper">
-            <div id="device-list" class="device-list"></div>
+          </div>
+          <div class="console-card__scanline"></div>
         </div>
-    </div>
-</div>
 
-<div id="games-tab" class="tab-content">
-    <div class="search-container">
-        <div class="search-input-wrapper">
-            <input type="text" id="game-search" placeholder="Search games...">
-            <button id="game-sort-btn" class="sort-btn" title="Sort games">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18"></path>
-                    <path d="M8 12h8"></path>
-                    <path d="M13 18h3"></path>
-                </svg>
-            </button>
-        </div>
-        <button id="add-game" class="add-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14m-7-7h14"></path>
+        <div class="scroll-bottom-pad"></div>
+      </div>
+    </section>
+
+    <!-- ═══════ LIBRARY ═══════ -->
+    <section class="page page--library" id="pageLibrary">
+      <div class="scroll-area">
+        <div class="page-header">
+          <h2 class="page-header__title" data-i18n="page_library">Library</h2>
+          <button class="page-header__action" id="libBackupBtn" type="button" data-i18n-attr="aria-label:lib_backup" aria-label="Backup &amp; Restore">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 18h9a4 4 0 0 0 .5-7.97 6 6 0 0 0-11.3-1.2A3.5 3.5 0 0 0 6 18"/>
+              <line x1="9.6" y1="15" x2="9.6" y2="9.8"/><polyline points="7.9 11.4 9.6 9.6 11.3 11.4"/>
+              <line x1="14.4" y1="9.4" x2="14.4" y2="14.6"/><polyline points="12.7 13 14.4 14.8 16.1 13"/>
             </svg>
-            Add Game
-        </button>
-    </div>
-    <div class="scroll-container">
-        <div class="list-wrapper">
-            <div id="game-list" class="game-list"></div>
+          </button>
         </div>
-    </div>
-</div>
 
-    <div id="device-modal" class="modal">
-        <div class="modal-content device-form-content">
-            <div class="modal-header">
-                <h3 id="device-modal-title">Add New Device Profile</h3>
-            </div>
-            <form id="device-form">
-                <div class="scroll-container">
-                    <div class="form-group">
-                        <label for="device-name">
-                            Device Name<span class="required-badge">required</span>
-                        </label>
-                        <input type="text" id="device-name" placeholder="e.g., Galaxy S23" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="device-brand">
-                            Brand<span class="required-badge">required</span>
-                        </label>
-                        <input type="text" id="device-brand" placeholder="e.g., Samsung">
-                    </div>
-                    <div class="form-group">
-                        <label for="device-model">
-                            Model<span class="required-badge">required</span>
-                        </label>
-                        <input type="text" id="device-model" placeholder="e.g., SM-S918B">
-                    </div>
-                    <div class="form-group">
-                        <label for="device-manufacturer">
-                            Manufacturer<span class="required-badge">required</span>
-                        </label>
-                        <input type="text" id="device-manufacturer" placeholder="e.g., Samsung">
-                    </div>
-                    <div class="form-group">
-                        <label for="device-fingerprint">
-                            Fingerprint<span class="required-badge">required</span>
-                        </label>
-                        <input type="text" id="device-fingerprint" placeholder="e.g., samsung/m23xqns/samsung:14/UP1A.231005.007/G990BXXU7EWD5:user/release-keys">
-                    </div>
-                    <div class="form-group">
-                        <label for="device-android-version">
-                            Android Version<span class="optional-badge">optional</span>
-                        </label>
-                        <input type="text" id="device-android-version" placeholder="e.g., 14">
-                    </div>
-                    <div class="form-group">
-                        <label for="device-sdk-int">
-                            SDK Version<span class="optional-badge">optional</span>
-                        </label>
-                        <input type="text" id="device-sdk-int" placeholder="e.g., 34">
-                    </div>
-                </div>
-                <div class="form-buttons">
-                    <button type="button" class="cancel-btn">Cancel</button>
-                    <button type="submit" class="action-btn">Save</button>
-                </div>
-            </form>
+        <!-- Preview banner (shown only in browser preview without ksu bridge) -->
+        <div class="preview-banner" id="previewBanner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span data-i18n="preview_unsaved">Preview mode — changes are not saved to the device.</span>
         </div>
-    </div>
 
-    <div id="game-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="game-modal-title">Add New Game</h3>
-            </div>
-            <form id="game-form">
-                <div class="form-group">
-                    <label for="game-name">Game Name</label>
-                    <input type="text" id="game-name" placeholder="e.g., PUBG Mobile">
-                </div>
-                <div class="form-group">
-                    <label for="game-package">Package Name</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="game-package" placeholder="e.g., com.example.game" required>
-                        <button type="button" id="package-picker-btn" class="action-btn package-picker-btn">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 5h4v4H5V5zm10 0h4v4h-4V5zM5 15h4v4H5v-4zm10 0h4v4h-4v-4z"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="game-type">Spoofing Type</label>
-                    <div class="type-select-wrapper">
-                        <input type="text" id="game-type" placeholder="Select spoofing type..." readonly required>
-                        <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </div>
-                </div>
-                
-                <div class="form-group device-select-group" id="device-select-group">
-                    <label for="game-device">Device Profile</label>
-                    <div class="device-select-wrapper">
-                        <input type="text" id="game-device" placeholder="Select a device..." readonly>
-                        <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </div>
-                </div>
-                
-                <div class="form-group disable-tweaks-group" id="disable-tweaks-container">
-                    <div class="toggle-wrapper">
-                        <label class="toggle-label" for="disable-tweaks-toggle">
-                            <span>Disable Tweaks</span>
-                            <span class="badge-container">
-                                <span class="no-tweaks-badge modal-badge">No Tweaks</span>
-                            </span>
-                        </label>
-                        <label class="switch small-switch">
-                            <input type="checkbox" id="disable-tweaks-toggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
+        <div class="inner-tabs" id="innerTabs">
+          <button class="inner-tab active" data-lib-tab="devices">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/>
+              <circle cx="12" cy="17" r="1" fill="currentColor"/>
+            </svg>
+            <span data-i18n="tab_devices">Devices</span>
+            <span class="inner-tab__count" id="devTabCount">0</span>
+          </button>
+          <button class="inner-tab" data-lib-tab="packages">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <span data-i18n="tab_packages">Packages</span>
+            <span class="inner-tab__count" id="pkgTabCount">0</span>
+          </button>
+        </div>
 
-                <div class="form-buttons">
-                    <button type="button" class="cancel-btn">Cancel</button>
-                    <button type="submit" class="action-btn">Save</button>
-                </div>
-            </form>
+        <div class="lib-panel active" id="libDevices">
+          <div class="lib-searchrow">
+            <div class="lib-search">
+              <svg class="lib-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="search" class="lib-search__input" id="deviceSearch" autocomplete="off" data-i18n-attr="placeholder:search_devices" placeholder="Search devices…" />
+            </div>
+            <button class="add-pill" id="addDeviceBtn" type="button" data-i18n-attr="aria-label:add_device" aria-label="Add Device">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span class="add-pill__label" data-i18n="add_short">Add</span>
+            </button>
+          </div>
+          <div class="device-list" id="deviceList"></div>
         </div>
-    </div>
+        <div class="lib-panel" id="libPackages">
+          <div class="lib-searchrow">
+            <div class="lib-search">
+              <svg class="lib-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="search" class="lib-search__input" id="packageSearch" autocomplete="off" data-i18n-attr="placeholder:search_packages" placeholder="Search packages…" />
+            </div>
+            <button class="add-pill" id="addPackageBtn" type="button" data-i18n-attr="aria-label:add_package" aria-label="Add Package">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span class="add-pill__label" data-i18n="add_short">Add</span>
+            </button>
+          </div>
+          <div class="package-list" id="packageList"></div>
+        </div>
 
-    <div id="game-type-picker-popup" class="popup">
-        <div class="popup-content device-picker-content">
-            <div class="modal-header">
-                <h3>Select Spoofing Type</h3>
-            </div>
-            <div class="search-container">
-                <input type="text" id="game-type-picker-search" placeholder="Search types...">
-            </div>
-            <div class="scroll-container">
-                <div class="list-wrapper">
-                    <div id="game-type-picker-list" class="device-picker">
-                        <div class="type-picker-card" data-type="device">
-                            <div class="type-icon device-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-                                    <path d="M12 18h.01"></path>
-                                </svg>
-                            </div>
-                            <div class="type-info">
-                                <h4>Device Spoof + Extra</h4>
-                                <p>Spoof device + Extra Abilities</p>
-                            </div>
-                        </div>
-                        
-                        <div class="type-picker-card" data-type="cpu_only">
-                            <div class="type-icon cpu-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0m-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
-                                </svg>
-                            </div>
-                            <div class="type-info">
-                                <h4>CPU Spoof Only</h4>
-                                <p>Only spoof CPU model</p>
-                            </div>
-                        </div>
-                        
-                        <div class="type-picker-card" data-type="blocked">
-                            <div class="type-icon blocked-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <path d="M18 6L6 18"></path>
-                                </svg>
-                            </div>
-                            <div class="type-info">
-                                <h4>Block Spoofing</h4>
-                                <p>Block/Hide all spoofing Traces for this package</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="popup-buttons">
-                <button class="cancel-btn">Cancel</button>
-            </div>
-        </div>
-    </div>
+        <div class="scroll-bottom-pad"></div>
+      </div>
+    </section>
 
-    <div id="update-confirm-popup" class="popup">
-        <div class="popup-content">
-            <div class="popup-icon-container">
-                <div class="popup-icon update-icon"></div>
-                <h3>Confirm Update</h3>
-            </div>
-            <p>Are you sure you want to update and reset the game list? This may take a few seconds.</p>
-            <div class="popup-buttons">
-                <button id="update-no" class="cancel-btn">No</button>
-                <button id="update-yes" class="action-btn">Yes</button>
-            </div>
+    <!-- ═══════ SETTINGS ═══════ -->
+    <section class="page page--settings" id="pageSettings">
+      <div class="scroll-area">
+        <div class="page-header">
+          <h2 class="page-header__title" data-i18n="page_settings">Settings</h2>
         </div>
-    </div>
 
-    <div id="device-picker-popup" class="popup">
-        <div class="popup-content device-picker-content">
-            <h3>Select Device Profile</h3>
-            <div class="search-container">
-                <input type="text" id="device-picker-search" placeholder="Search devices...">
-            </div>
-            <div class="scroll-container">
-                <div class="list-wrapper">
-                    <div id="device-picker-list" class="device-picker"></div>
-                </div>
-            </div>
-            <div class="popup-buttons">
-                <button class="cancel-btn">Cancel</button>
-            </div>
+        <!-- Appearance -->
+        <div class="section-label" data-i18n="label_appearance">Appearance</div>
+        <div class="glass-card settings-card">
+          <!-- Theme row → opens sheet -->
+          <div class="setting-row" id="themeSettingRow" role="button" tabindex="0" aria-label="Choose theme">
+            <span class="setting-row__icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </span>
+            <span class="setting-row__label" data-i18n="set_theme">Theme</span>
+            <span class="setting-row__value-hint" id="themeRowHint">Dark</span>
+            <svg class="setting-row__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="sys-divider"></div>
+          <!-- Language row → opens sheet -->
+          <div class="setting-row" id="langSettingRow" role="button" tabindex="0" aria-label="Choose language">
+            <span class="setting-row__icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>
+            </span>
+            <span class="setting-row__label" data-i18n="set_language">Language</span>
+            <span class="setting-row__value-hint" id="langRowHint">English</span>
+            <svg class="setting-row__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
         </div>
-    </div>
 
-    <div id="package-picker-popup" class="popup">
-        <div class="popup-content device-picker-content">
-            <div class="modal-header">
-                <h3>Select Application</h3>
-            </div>
-            <div class="search-container" onclick="document.getElementById('package-picker-search').removeAttribute('readonly')">
-                <input type="text" id="package-picker-search" placeholder="Search apps...">
-            </div>
-            <div class="scroll-container">
-                <div class="list-wrapper">
-                    <div id="package-picker-list" class="device-picker"></div>
-                </div>
-            </div>
-            <div class="popup-buttons">
-                <button class="cancel-btn">Cancel</button>
-            </div>
+        <!-- Developer -->
+        <div class="section-label" data-i18n="label_developer">Developer</div>
+        <div class="glass-card settings-card">
+          <div class="setting-row setting-row--toggle">
+            <span class="setting-row__icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </span>
+            <span class="setting-row__label" data-i18n="set_debug">Debug Logs</span>
+            <label class="toggle" aria-label="Enable debug logs">
+              <input type="checkbox" id="debugToggle"/>
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+            </label>
+          </div>
         </div>
-    </div>
 
-    <div id="error-popup" class="popup">
-        <div class="popup-content">
-            <h3>Error</h3>
-            <p id="error-message">Please fill out the required fields.</p>
-            <div class="popup-buttons">
-                <button id="error-ok" class="action-btn">OK</button>
+        <!-- About (module info) -->
+        <div class="section-label" data-i18n="label_about">About</div>
+        <div class="glass-card about-card" id="aboutCard" role="button" tabindex="0" aria-expanded="false" aria-label="Module info">
+          <div class="about-header">
+            <div class="about-header__icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg>
             </div>
+            <div class="about-header__info">
+              <div class="about-header__name" data-i18n="about_module">COPG Module</div>
+              <div class="about-header__ver" id="aboutVersion">—</div>
+            </div>
+            <svg class="about-header__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div class="about-body">
+            <div class="sys-divider" style="margin:0 16px 0;"></div>
+            <div class="about-row">
+              <span class="about-row__label" data-i18n="about_version">Version</span>
+              <span class="about-row__value about-row__value--accent" id="aboutVersion2">—</span>
+            </div>
+            <div class="sys-divider"></div>
+            <div class="about-row">
+              <span class="about-row__label" data-i18n="about_vcode">Version Code</span>
+              <span class="about-row__value" id="aboutVersionCode">—</span>
+            </div>
+            <div class="sys-divider"></div>
+            <div class="about-row">
+              <span class="about-row__label" data-i18n="about_author">Author</span>
+              <span class="about-row__value" id="aboutAuthor">—</span>
+            </div>
+            <div class="about-desc" data-i18n="about_desc">
+              A Zygisk module that spoofs your device — and optionally its CPU — per game or app.
+            </div>
+            <div class="sys-divider"></div>
+            <div class="about-row">
+              <span class="about-row__label" data-i18n="about_license">License</span>
+              <span class="about-row__value">Apache License 2.0</span>
+            </div>
+          </div>
         </div>
-    </div>
 
-    <div id="snackbar" class="snackbar">
-        <span id="snackbar-message"></span>
-        <button id="snackbar-undo" class="snackbar-btn">Undo</button>
-    </div>
-    
-    <div id="no-tweaks-popup" class="popup">
-        <div class="popup-content">
-            <div class="popup-header">
-                <h3 id="no-tweaks-popup-title">Manage No Tweaks</h3>
-            </div>
-            <div class="popup-body">
-                <div class="popup-icon" id="no-tweaks-popup-icon"></div>
-                <p id="no-tweaks-popup-message" style="margin-bottom: 16px; font-size: 14px; line-height: 1.4;">This package will not receive tweaks</p>
-                <div class="popup-package" id="no-tweaks-popup-package"></div>
-            </div>
-            <div class="popup-footer">
-                <button id="no-tweaks-popup-cancel" class="popup-btn cancel-btn">Cancel</button>
-                <button id="no-tweaks-popup-confirm" class="popup-btn action-btn">Confirm</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="backup-popup" class="popup">
-        <div class="popup-content">
-            <h3>Backup/Restore</h3>
-            <div class="popup-body backup-grid">
-                <div class="backup-row">
-                    <div class="backup-info">
-                        <div class="backup-title">COPG.json</div>
-                        <div class="backup-desc">Package names and devices</div>
-                    </div>
-                    <div class="button-group">
-                        <button class="small-btn backup-btn" data-file="COPG.json">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                <polyline points="7 3 7 8 15 8"></polyline>
-                            </svg>
-                        </button>
-                        <button class="small-btn restore-btn" data-file="COPG.json">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5-5-5 5M12 3.5V14"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="backup-row">
-                    <div class="backup-info">
-                        <div class="backup-title">list.json</div>
-                        <div class="backup-desc">Game names mapping</div>
-                    </div>
-                    <div class="button-group">
-                        <button class="small-btn backup-btn" data-file="list.json">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                <polyline points="7 3 7 8 15 8"></polyline>
-                            </svg>
-                        </button>
-                        <button class="small-btn restore-btn" data-file="list.json">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5-5-5 5M12 3.5V14"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="popup-footer">
-                <button id="backup-all-btn" class="action-btn">Backup All</button>
-                <button class="action-btn cancel-btn">Close</button>
-            </div>
-        </div>
-    </div>
+        <div class="scroll-bottom-pad"></div>
+      </div>
+    </section>
 
-    <div class="popup" id="file-picker-popup">
-        <div class="popup-content">
-            <h3>Select File</h3>
-            <div class="breadcrumb-container">
-                <button class="small-btn back-btn" id="file-picker-back">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 18l-6-6 6-6"></path>
-                    </svg>
-                </button>
-                <div class="breadcrumb-path" id="file-picker-path">/sdcard</div>
-            </div>
-            <div class="search-container">
-                <input type="text" id="file-picker-search" placeholder="Search files...">
-            </div>
-            <div class="popup-body">
-                <div class="scroll-container" id="file-picker-list"></div>
-            </div>
-            <div class="popup-footer">
-                <button class="action-btn cancel-btn">Cancel</button>
-            </div>
-        </div>
-    </div>
+  </main>
 
-    <div id="save-log-popup" class="popup">
-        <div class="popup-content">
-            <h3>Save Log</h3>
-            <p>Do you want to save this log to /storage/emulated/0/Download/COPG/LOGS?</p>
-            <p>File name: <span id="save-log-filename" style="font-family: monospace; font-weight: bold;">COPG-LOG.txt</span></p>
-            <div class="popup-buttons">
-                <button id="save-log-no" class="cancel-btn">No</button>
-                <button id="save-log-yes" class="action-btn">Yes</button>
-            </div>
-        </div>
+  <!-- ───────── BOTTOM NAV ───────── -->
+  <nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
+    <div class="bottom-nav__dock">
+      <button class="nav-item active" data-page="home" aria-label="Home" aria-current="page">
+        <span class="nav-item__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.8 12 3l9 6.8"/>
+            <path d="M5.3 8.6V20a1 1 0 0 0 1 1h3.4v-5.4a1 1 0 0 1 1-1h2.6a1 1 0 0 1 1 1V21h3.4a1 1 0 0 0 1-1V8.6"/>
+          </svg>
+        </span>
+        <span class="nav-item__label" data-i18n="nav_home">Home</span>
+        <span class="nav-item__pill"></span>
+      </button>
+
+      <button class="nav-item" data-page="library" aria-label="Library">
+        <span class="nav-item__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4v16"/><path d="M8 8v12"/><path d="M12 6v14"/><path d="m16 6 4 14"/>
+          </svg>
+        </span>
+        <span class="nav-item__label" data-i18n="nav_library">Library</span>
+        <span class="nav-item__pill"></span>
+      </button>
+
+      <button class="nav-item" data-page="settings" aria-label="Settings">
+        <span class="nav-item__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </span>
+        <span class="nav-item__label" data-i18n="nav_settings">Settings</span>
+        <span class="nav-item__pill"></span>
+      </button>
     </div>
-    
-    <script src="scripts.js"></script>
+  </nav>
+
+  <!-- ───────── SHEET OVERLAY ───────── -->
+  <div class="sheet-overlay" id="sheetOverlay" aria-hidden="true"></div>
+
+  <!-- ───────── THEME SHEET ───────── -->
+  <div class="bottom-sheet" id="themeSheet" role="dialog" aria-modal="true" aria-label="Choose theme">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-header__title" data-i18n="sheet_theme_title">Theme</span>
+      <button class="sheet-header__close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-option" data-theme-option="auto">
+        <div class="sheet-option__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </div>
+        <span class="sheet-option__label" data-i18n="theme_opt_auto">Auto (System)</span>
+        <svg class="sheet-option__check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="sheet-option" data-theme-option="dark">
+        <div class="sheet-option__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <span class="sheet-option__label" data-i18n="theme_opt_dark">Dark</span>
+        <svg class="sheet-option__check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="sheet-option" data-theme-option="light">
+        <div class="sheet-option__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </div>
+        <span class="sheet-option__label" data-i18n="theme_opt_light">Light</span>
+        <svg class="sheet-option__check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="sheet-option" data-theme-option="amoled">
+        <div class="sheet-option__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <span class="sheet-option__label" data-i18n="theme_opt_amoled">AMOLED Black</span>
+        <svg class="sheet-option__check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── LANGUAGE SHEET (options built dynamically from registered languages) ───────── -->
+  <div class="bottom-sheet" id="langSheet" role="dialog" aria-modal="true" aria-label="Choose language">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-header__title" data-i18n="sheet_lang_title">Language</span>
+      <button class="sheet-header__close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body"><!-- populated by buildLangSheet() in theme.js --></div>
+  </div>
+
+  <!-- ───────── RIPPLE ───────── -->
+  <div class="ripple-container" id="rippleContainer" aria-hidden="true"></div>
+
+  <!-- ───────── SCRIPTS (order matters) ───────── -->
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/lang/en.js"></script>
+  <script src="js/lang/fa.js"></script>
+  <script src="js/copg-data.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/home.js"></script>
+  <script src="js/modals.js"></script>
+  <script src="js/apppicker.js"></script>
+  <script src="js/console.js"></script>
+  <script src="js/gestures.js"></script>
+  <script src="js/library.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/boot.js"></script>
 </body>
 </html>
