@@ -28,8 +28,9 @@
 .nav-item {
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   width:78px;height:48px;border-radius:var(--radius-lg);
-  /* extra bottom padding lifts the icon+label, leaving a clear gap above the pill */
-  padding-bottom:8px;
+  /* small bottom bias only — just enough to clear the underline pill while the
+     icon+label stay visually centered in the dock (no top-heavy lift) */
+  padding-bottom:4px;
   background:transparent;border:none;cursor:pointer;
   color:var(--text-tertiary);
   transition:color var(--dur-med) var(--ease-out),transform var(--dur-fast) var(--spring);
