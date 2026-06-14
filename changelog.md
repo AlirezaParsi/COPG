@@ -31,7 +31,8 @@
 *   Reorganized the whole project (`src/`, `module/`) with a single clean CI workflow and an on-device build script.
 
 ### New Devices & Game Profiles
-*   **New devices:** **RedMagic 11 Pro**, **Sony Xperia 1 III**, and **Infinix GT 50 Pro** added to the spoof library.
+*   **New device:** **Infinix GT 50 Pro** added to the spoof library.
+*   **Device refresh:** **RedMagic 10 Pro → RedMagic 11 Pro**, and **HONOR Magic V2 RSR → Sony Xperia 1 III** (old profiles removed, replaced with newer hardware).
 *   **PUBG Mobile:** unlocked **HDR + 90+ FPS**.
 *   **Free Fire / Free Fire MAX:** unlocked **144 FPS**.
 *   **Asphalt 9:** unlocked **120 FPS**.
