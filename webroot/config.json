@@ -1,5 +1,5 @@
 {
-    "title": "COPG Manager",
+    "title": "COPG",
     "icon": "icon.png",
     "backHandler": false,
     "contentSecurityPolicy": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src *",
