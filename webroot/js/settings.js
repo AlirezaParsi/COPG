@@ -32,8 +32,6 @@ function populateAbout() {
   set('aboutVersion2',    ver || '—');
   set('aboutVersionCode', si.versionCode || '—');
   set('aboutAuthor',      si.author || '—');
-  // Real module description (overrides the generic localized fallback)
-  const desc = document.querySelector('.about-desc');
-  if (desc && si.description) { desc.textContent = si.description; desc.removeAttribute('data-i18n'); }
+  // Description stays the localized about_desc (data-i18n) — not module.prop's short text.
 }
 populateAbout();
