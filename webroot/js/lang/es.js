@@ -140,6 +140,9 @@ I18N.register('es', {
   picker_no_results: 'No se encontraron apps',
   picker_preview: 'Modo vista previa — instala en el dispositivo para ver apps',
   toast_picker_unavailable: 'Selector de apps no disponible aquí',
+  devpicker_title:  'Perfiles de dispositivo',
+  devpicker_search: 'Buscar dispositivos…',
+  devpicker_empty:  'Sin dispositivos — añade uno primero',
 
   /* Backup & Sync */
   lib_backup:           'Copia y sincronización',
@@ -211,6 +214,7 @@ I18N.register('es', {
   pkg_f_name:     'Nombre visible',
   pkg_f_type:     'Tipo',
   pkg_f_device:   'Perfil de dispositivo',
+  pkg_pick_device: 'Elige un dispositivo…',
   pkg_no_devices: 'Sin dispositivos — añade uno primero',
   pkg_sec_spoofing: 'Suplantación',
   pkg_sec_tweaks:   'Ajustes',

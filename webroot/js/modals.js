@@ -79,8 +79,11 @@
           </div>
         </div>
 
-        <label class="field" id="pfDeviceField"><span class="field__label" data-i18n="pkg_f_device">Device Profile</span>
-          <select class="field__input field__select" id="pfDevice"></select></label>
+        <div class="field" id="pfDeviceField"><span class="field__label" data-i18n="pkg_f_device">Device Profile</span>
+          <button type="button" class="field__input field__picker" id="pfDevice" data-i18n-attr="aria-label:pkg_f_device" aria-label="Device Profile">
+            <span class="field__picker-text is-placeholder" id="pfDeviceText" data-i18n="pkg_pick_device">Choose a device…</span>
+            <svg class="field__picker-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button></div>
 
         <div class="toggles" id="pfToggles">
           <div class="toggles__head" id="pfSpoofHead" data-i18n="pkg_sec_spoofing">Spoofing</div>
@@ -180,6 +183,12 @@
     span.className = 'field-msg';
     span.textContent = msg;
     field.appendChild(span);
+  }
+  function clearFieldError(inputEl) {
+    const field = inputEl.closest('.field') || inputEl.parentNode;
+    if (!field) return;
+    field.classList.remove('field--error');
+    field.querySelectorAll('.field-msg').forEach(m => m.remove());
   }
 
   /* ════════════ DEVICE MODAL ════════════ */
@@ -291,26 +300,29 @@
   /* ════════════ PACKAGE MODAL ════════════ */
   let editingPkg = null;  // { clean, type, deviceKey } | null
 
-  function populateDeviceSelect(selectedKey) {
-    const sel = $m('#pfDevice');
-    sel.innerHTML = '';
+  // The device field is now a picker button (opens DevicePicker). The chosen
+  // device's package-array key (PACKAGES_X — what listPackages tags onto
+  // pkg.deviceKey) is stashed in the button's dataset; the label shows its name.
+  function setDeviceSelection(pkgKey) {
+    const btn  = $m('#pfDevice');
+    const text = $m('#pfDeviceText');
     const devs = COPG.listDevices();
-    if (!devs.length) {
-      const o = document.createElement('option');
-      o.value = ''; o.textContent = I18N.t('pkg_no_devices'); o.disabled = true;
-      sel.appendChild(o);
-      return;
+    const dev  = pkgKey ? devs.find(d => d.pkgKey === pkgKey) : null;
+    if (dev) {
+      btn.dataset.deviceKey = dev.pkgKey;
+      text.textContent = dev.name;
+      text.classList.remove('is-placeholder');
+      text.removeAttribute('data-i18n');          // a real value, not the placeholder
+    } else {
+      delete btn.dataset.deviceKey;
+      text.textContent = I18N.t(devs.length ? 'pkg_pick_device' : 'pkg_no_devices');
+      text.classList.add('is-placeholder');
+      text.dataset.i18n = devs.length ? 'pkg_pick_device' : 'pkg_no_devices';
     }
-    devs.forEach(d => {
-      const o = document.createElement('option');
-      // value must be the package-array key (PACKAGES_X) — that's what listPackages
-      // tags onto pkg.deviceKey. Using d.key (PACKAGES_X_DEVICE) broke preselect, so
-      // an edited package silently re-homed to the first device (and to list end).
-      o.value = d.pkgKey; o.textContent = d.name;
-      if (d.pkgKey === selectedKey) o.selected = true;
-      sel.appendChild(o);
-    });
+    clearFieldError(btn);
   }
+  // kept name for the existing call sites (preselect on open/edit)
+  function populateDeviceSelect(selectedKey) { setDeviceSelection(selectedKey); }
 
   // Spoof toggles (with_cpu/blocked/got) are device-type only. Tweak toggles
   // (dnd/dab/kso/nolog) apply to device AND cpu_only. 'blocked' type gets neither.
@@ -338,6 +350,13 @@
 
   // segmented control
   $$('#pfType .seg__opt').forEach(b => b.addEventListener('click', () => setType(b.dataset.type)));
+
+  // Device field → open the searchable/sortable device picker sheet.
+  $m('#pfDevice').addEventListener('click', () => {
+    if (!w.DevicePicker) return;
+    const current = $m('#pfDevice').dataset.deviceKey || null;
+    DevicePicker.open(current, sel => setDeviceSelection(sel.pkgKey));
+  });
   // CPU default is BLOCK (unmount) module-side; "With CPU Spoofing" off = block, so no
   // separate block toggle / mutual-exclusion needed anymore.
 
@@ -414,7 +433,7 @@
     const raw = pkgEl.value.trim();
     const type = currentType();
     const devSel = $m('#pfDevice');
-    const deviceKey = devSel.value || null;
+    const deviceKey = devSel.dataset.deviceKey || null;
 
     let bad = false;
     if (!raw) { markError(pkgEl, I18N.t('msg_required')); bad = true; }

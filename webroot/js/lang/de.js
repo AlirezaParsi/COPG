@@ -140,6 +140,9 @@ I18N.register('de', {
   picker_no_results: 'Keine Apps gefunden',
   picker_preview: 'Vorschaumodus — auf dem Gerät installieren, um Apps aufzulisten',
   toast_picker_unavailable: 'App-Auswahl hier nicht verfügbar',
+  devpicker_title:  'Geräteprofile',
+  devpicker_search: 'Geräte suchen…',
+  devpicker_empty:  'Keine Geräte — zuerst eines hinzufügen',
 
   /* Backup & Sync */
   lib_backup:           'Sicherung & Sync',
@@ -211,6 +214,7 @@ I18N.register('de', {
   pkg_f_name:     'Anzeigename',
   pkg_f_type:     'Typ',
   pkg_f_device:   'Geräteprofil',
+  pkg_pick_device: 'Gerät auswählen…',
   pkg_no_devices: 'Keine Geräte — zuerst eins hinzufügen',
   pkg_sec_spoofing: 'Spoofing',
   pkg_sec_tweaks:   'Optimierungen',

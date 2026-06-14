@@ -140,6 +140,9 @@ I18N.register('id', {
   picker_no_results: 'Aplikasi tidak ditemukan',
   picker_preview: 'Mode pratinjau — pasang di perangkat untuk melihat aplikasi',
   toast_picker_unavailable: 'Pemilih aplikasi tidak tersedia di sini',
+  devpicker_title:  'Profil Perangkat',
+  devpicker_search: 'Cari perangkat…',
+  devpicker_empty:  'Tidak ada perangkat — tambahkan dulu',
 
   /* Backup & Sync */
   lib_backup:           'Cadangkan & Sinkron',
@@ -211,6 +214,7 @@ I18N.register('id', {
   pkg_f_name:     'Nama Tampilan',
   pkg_f_type:     'Tipe',
   pkg_f_device:   'Profil Perangkat',
+  pkg_pick_device: 'Pilih perangkat…',
   pkg_no_devices: 'Tidak ada perangkat — tambah dulu',
   pkg_sec_spoofing: 'Pemalsuan',
   pkg_sec_tweaks:   'Penyesuaian',

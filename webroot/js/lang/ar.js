@@ -140,6 +140,9 @@ I18N.register('ar', {
   picker_no_results: 'لا توجد تطبيقات',
   picker_preview: 'وضع المعاينة — ثبّت على الجهاز لعرض التطبيقات',
   toast_picker_unavailable: 'منتقي التطبيقات غير متاح هنا',
+  devpicker_title:  'ملفات الأجهزة',
+  devpicker_search: 'ابحث عن الأجهزة…',
+  devpicker_empty:  'لا توجد أجهزة — أضف واحدًا أولاً',
 
   /* Backup & Sync */
   lib_backup:           'النسخ الاحتياطي والمزامنة',
@@ -211,6 +214,7 @@ I18N.register('ar', {
   pkg_f_name:     'اسم العرض',
   pkg_f_type:     'النوع',
   pkg_f_device:   'ملف الجهاز',
+  pkg_pick_device: 'اختر جهازًا…',
   pkg_no_devices: 'لا توجد أجهزة — أضِف واحداً أولاً',
   pkg_sec_spoofing: 'الانتحال',
   pkg_sec_tweaks:   'التعديلات',

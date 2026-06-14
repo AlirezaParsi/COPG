@@ -140,6 +140,9 @@ I18N.register('th', {
   picker_no_results: 'ไม่พบแอป',
   picker_preview: 'โหมดดูตัวอย่าง — ติดตั้งบนอุปกรณ์เพื่อดูรายการแอป',
   toast_picker_unavailable: 'ตัวเลือกแอปใช้ไม่ได้ที่นี่',
+  devpicker_title:  'โปรไฟล์อุปกรณ์',
+  devpicker_search: 'ค้นหาอุปกรณ์…',
+  devpicker_empty:  'ไม่มีอุปกรณ์ — เพิ่มก่อน',
 
   /* Backup & Sync */
   lib_backup:           'สำรองและซิงค์',
@@ -211,6 +214,7 @@ I18N.register('th', {
   pkg_f_name:     'ชื่อที่แสดง',
   pkg_f_type:     'ประเภท',
   pkg_f_device:   'โปรไฟล์อุปกรณ์',
+  pkg_pick_device: 'เลือกอุปกรณ์…',
   pkg_no_devices: 'ไม่มีอุปกรณ์ — เพิ่มก่อน',
   pkg_sec_spoofing: 'การปลอมแปลง',
   pkg_sec_tweaks:   'การปรับแต่ง',

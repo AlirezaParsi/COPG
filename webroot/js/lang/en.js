@@ -140,6 +140,9 @@ I18N.register('en', {
   picker_no_results: 'No apps found',
   picker_preview: 'Preview mode — install on device to list apps',
   toast_picker_unavailable: 'App picker unavailable here',
+  devpicker_title:  'Device Profiles',
+  devpicker_search: 'Search devices…',
+  devpicker_empty:  'No devices — add one first',
 
   /* Backup & Sync */
   lib_backup:           'Backup & Sync',
@@ -211,6 +214,7 @@ I18N.register('en', {
   pkg_f_name:     'Display Name',
   pkg_f_type:     'Type',
   pkg_f_device:   'Device Profile',
+  pkg_pick_device: 'Choose a device…',
   pkg_no_devices: 'No devices — add one first',
   pkg_sec_spoofing: 'Spoofing',
   pkg_sec_tweaks:   'Tweaks',
