@@ -70,7 +70,7 @@
 /* ── Input ── */
 .console-input {
   display:flex; align-items:center; gap:8px; flex-shrink:0;
-  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);
+  padding:10px 12px calc(var(--inset-bottom,0px) + 12px);
   border-top:1px solid var(--glass-border);
   background:var(--bg-surface-1);
 }

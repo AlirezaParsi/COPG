@@ -4,6 +4,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
+  /* Safe-area insets — prefer the KsuWebUI host vars (--window-inset-*, set by
+     the internal insets.css API), fall back to CSS env() for WebUI-X / MMRL /
+     browsers, then 0. Use var(--inset-*) everywhere instead of raw env(). */
+  --inset-top:    var(--window-inset-top,    env(safe-area-inset-top,    0px));
+  --inset-right:  var(--window-inset-right,  env(safe-area-inset-right,  0px));
+  --inset-bottom: var(--window-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --inset-left:   var(--window-inset-left,   env(safe-area-inset-left,   0px));
+
   --accent-primary:   #818CF8;
   --accent-secondary: #A78BFA;
   --accent-glow:      #67E8F9;

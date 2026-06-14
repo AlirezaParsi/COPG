@@ -4,7 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="color-scheme" content="dark light" />
+  <!-- Tints the system status bar to the theme base (kept in sync in theme.js) -->
+  <meta name="theme-color" content="#0A0A12" />
   <title>COPG — Module Dashboard</title>
+  <!-- KsuWebUI host API: injects --window-inset-{top,right,bottom,left} for the
+       real system-bar insets and switches the WebView to edge-to-edge with
+       transparent bars. Without it KsuWebUI draws opaque (black) system bars.
+       Resolves only inside KsuWebUI; harmlessly 404s elsewhere (env() fallback). -->
+  <link rel="stylesheet" href="https://mui.kernelsu.org/internal/insets.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -278,6 +285,18 @@
             <span class="setting-row__label" data-i18n="set_language">Language</span>
             <span class="setting-row__value-hint" id="langRowHint">English</span>
             <svg class="setting-row__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="sys-divider"></div>
+          <!-- Fullscreen (immersive) toggle → ksu.fullScreen bridge -->
+          <div class="setting-row setting-row--toggle">
+            <span class="setting-row__icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </span>
+            <span class="setting-row__label" data-i18n="set_fullscreen">Fullscreen</span>
+            <label class="toggle" aria-label="Fullscreen mode">
+              <input type="checkbox" id="fullscreenToggle"/>
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+            </label>
           </div>
         </div>
 

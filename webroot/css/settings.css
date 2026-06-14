@@ -62,7 +62,7 @@
   background:var(--sheet-bg);
   border-top:1px solid var(--glass-border);
   border-radius:var(--radius-xl) var(--radius-xl) 0 0;
-  padding-bottom:env(safe-area-inset-bottom,0);
+  padding-bottom:var(--inset-bottom,0px);
   transform:translateY(100%);
   transition:transform var(--dur-slow) var(--spring);
   will-change:transform;

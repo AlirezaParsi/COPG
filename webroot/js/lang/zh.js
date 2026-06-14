@@ -60,6 +60,7 @@ I18N.register('zh', {
   /* Settings rows */
   set_theme:        '主题',
   set_language:     '语言',
+  set_fullscreen:   '全屏',
   set_debug:        '调试日志',
 
   /* Theme hints */
@@ -94,6 +95,8 @@ I18N.register('zh', {
   toast_console:   '控制台——即将推出',
   toast_debug_on:  '已启用调试日志',
   toast_debug_off: '已禁用调试日志',
+  toast_fullscreen_on:  '全屏已开启 — 状态栏已隐藏',
+  toast_fullscreen_off: '全屏已关闭 — 状态栏已显示',
   status_connected: '已连接',
   status_offline:   '离线',
 

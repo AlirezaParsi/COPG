@@ -5,7 +5,11 @@
   box-sizing: border-box; margin: 0; padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
-html { font-size: 16px; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+/* Paint the document root (the window/ICB that spans the full visual viewport,
+   incl. behind the status bar / notch) with the theme base — otherwise, in
+   immersive fullscreen, 100dvh stops short of the cutout and the bare WebView
+   window shows through as a black band at the top. */
+html { font-size: 16px; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; background: var(--bg-base); transition: background var(--dur-med) var(--ease-out); }
 body {
   font-family: var(--font-sans);
   background: var(--bg-base);
@@ -46,11 +50,12 @@ body::before {
 .scroll-area {
   height: 100%; overflow-y: auto; overflow-x: hidden;
   /* Safe-area insets keep the hero/headers clear of notches, punch-holes &
-     curved edges. max() guarantees a minimum clearance even when the WebUI
-     host reports a 0 inset (viewport-fit=cover is set in index.html). */
-  padding-top:    max(calc(env(safe-area-inset-top, 0px) + 16px), 34px);
-  padding-left:   calc(var(--page-px) + env(safe-area-inset-left, 0px));
-  padding-right:  calc(var(--page-px) + env(safe-area-inset-right, 0px));
+     curved edges. Uses the KsuWebUI window insets (var(--inset-*), env()
+     fallback): when the status bar is shown the top inset clears it; in
+     fullscreen the inset is 0 and content rises to the top edge (like ReZygisk). */
+  padding-top:    calc(var(--inset-top, 0px) + 16px);
+  padding-left:   calc(var(--page-px) + var(--inset-left, 0px));
+  padding-right:  calc(var(--page-px) + var(--inset-right, 0px));
   padding-bottom: 0;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
