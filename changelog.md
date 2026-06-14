@@ -11,7 +11,8 @@
 *   **App Picker:** Add games straight from your installed apps, complete with real names and icons.
 *   **Backup & Sync:** Export and restore your config, **Sync from GitHub** to pull the latest game list, and export logs — all saved to `Download/COPG`.
 *   **Built-In Console:** Run shell commands, tail logcat, and save logs without ever leaving the app.
-*   **Theming & Language:** Dark / Light / AMOLED / Auto themes, full English **and** Persian (RTL) with one-tap switching, plus haptic feedback.
+*   **Theming & Language:** Dark / Light / AMOLED / Auto themes with one-tap switching and haptic feedback. Now ships in **8 languages** — English, Persian (RTL), Arabic (RTL), German, Spanish, Indonesian, Thai and Chinese.
+*   **Fresh app icon** and a cleaner WebUI title.
 
 ### Simpler, Safer Spoofing
 *   **CPU spoof is now blocked by default.** Every device package is safe out of the box — flip on **With CPU Spoofing** only for the games that need the chipset faked.
@@ -39,6 +40,7 @@
 
 ### Note
 *   This is a massive overhaul and still a work in progress — more is on the way. Please report anything unexpected in the support group.
+*   **Translations:** going forward only **English** and **Persian** are officially maintained. The other languages are community-driven — contributions and fixes via pull request are very welcome.
 
 ### Summary
 v5.0.0 is the biggest release yet: a ground-up WebUI rewrite, a simpler and safer spoofing model (block-by-default CPU), brand-new per-app game tweaks, and a cleaner, faster foundation under the hood.
