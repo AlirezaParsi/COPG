@@ -140,6 +140,9 @@ I18N.register('zh', {
   picker_no_results: '未找到应用',
   picker_preview: '预览模式——请在设备上安装以列出应用',
   toast_picker_unavailable: '此处无法使用应用选择器',
+  devpicker_title:  '设备配置',
+  devpicker_search: '搜索设备…',
+  devpicker_empty:  '没有设备 — 请先添加',
 
   /* Backup & Sync */
   lib_backup:           '备份与同步',
@@ -211,6 +214,7 @@ I18N.register('zh', {
   pkg_f_name:     '显示名称',
   pkg_f_type:     '类型',
   pkg_f_device:   '设备配置',
+  pkg_pick_device: '选择设备…',
   pkg_no_devices: '没有设备——请先添加一个',
   pkg_sec_spoofing: '伪装',
   pkg_sec_tweaks:   '微调',

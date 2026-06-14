@@ -140,6 +140,9 @@ I18N.register('fa', {
   picker_no_results: 'اپی یافت نشد',
   picker_preview: 'حالت پیش‌نمایش — برای لیست اپ‌ها روی دستگاه نصب کنید',
   toast_picker_unavailable: 'انتخاب‌گر اپ اینجا در دسترس نیست',
+  devpicker_title:  'پروفایل‌های دستگاه',
+  devpicker_search: 'جستجوی دستگاه‌ها…',
+  devpicker_empty:  'دستگاهی نیست — ابتدا یکی اضافه کنید',
 
   /* Backup & Sync */
   lib_backup:           'پشتیبان‌گیری و همگام‌سازی',
@@ -211,6 +214,7 @@ I18N.register('fa', {
   pkg_f_name:     'نام نمایشی',
   pkg_f_type:     'نوع',
   pkg_f_device:   'پروفایل دستگاه',
+  pkg_pick_device: 'یک دستگاه انتخاب کنید…',
   pkg_no_devices: 'دستگاهی نیست — ابتدا یکی اضافه کنید',
   pkg_sec_spoofing: 'جعل',
   pkg_sec_tweaks:   'بهینه‌سازی‌ها',

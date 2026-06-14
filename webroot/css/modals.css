@@ -111,12 +111,24 @@
 }
 [dir="rtl"] .field__select { background-position:left 12px center; padding-right:14px; padding-left:38px; }
 
+/* Picker-button field (Device Profile) — looks like an input but opens a sheet. */
+.field__picker {
+  display:flex; align-items:center; gap:10px; text-align:start; cursor:pointer;
+}
+.field__picker:active { transform:scale(.99); }
+.field__picker-text {
+  flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.field__picker-text.is-placeholder { color:var(--text-tertiary); font-weight:400; }
+.field__picker-chevron { flex-shrink:0; color:var(--accent-primary); }
+
 .field-row { display:flex; gap:10px; }
 .field-row .field { flex:1; }
 
 /* validation */
 .field--error .field__input,
-.field--error .field__select { border-color:var(--accent-danger); box-shadow:0 0 0 3px rgba(248,113,113,.14); }
+.field--error .field__select,
+.field--error .field__picker { border-color:var(--accent-danger); box-shadow:0 0 0 3px rgba(248,113,113,.14); }
 .field-msg { font-size:.68rem; color:var(--accent-danger); padding-left:2px; }
 .form-error {
   background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3);
@@ -276,6 +288,7 @@
    pk-* names are deliberately distinct from the Library's lib-* controls so a
    global selector in library.js can never accidentally grab a picker element. */
 .picker-controls { display:flex; align-items:center; gap:8px; margin:0 12px 8px; }
+.pk-spacer { flex:1; }
 .pk-filters {
   display:flex; gap:6px; flex:1; min-width:0;
   overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
@@ -336,6 +349,16 @@
 .app-row__text  { display:flex; flex-direction:column; min-width:0; gap:1px; }
 .app-row__label { font-size:.85rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .app-row__pkg   { font-size:.66rem; color:var(--text-tertiary); font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Device-picker rows: gradient phone avatar + a check on the current selection. */
+.dev-row__avatar {
+  background:linear-gradient(135deg,rgba(129,140,248,.2),rgba(167,139,250,.15));
+  border-color:rgba(129,140,248,.2); color:var(--accent-primary);
+}
+.dev-row .app-row__pkg { font-family:var(--font-sans); font-size:.68rem; }
+.dev-row__check { flex-shrink:0; display:none; color:var(--accent-primary); margin-inline-start:auto; }
+.app-row.is-selected .dev-row__check { display:grid; place-items:center; }
+.app-row.is-selected { background:rgba(129,140,248,.10); }
 
 .picker-loading { display:grid; place-items:center; padding:40px 0; }
 .picker-loading .spin {
