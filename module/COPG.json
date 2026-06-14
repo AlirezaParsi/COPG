@@ -202,16 +202,16 @@
     "FINGERPRINT": "samsung/q2qzh/q2q:15/UP1A.231005.007/F946BXXU1BWK4:user/release-keys",
     "PRODUCT": "SM-F9460"
   },
-  "PACKAGES_HONOR_MAGIC_V2_RSR": [
+  "PACKAGES_SONY_XPERIA_1_III": [
     "com.gameloft.android.ANMP.GloftA9HM"
   ],
-  "PACKAGES_HONOR_MAGIC_V2_RSR_DEVICE": {
-    "BRAND": "HONOR",
-    "DEVICE": "Honor Magic V2 RSR",
-    "MANUFACTURER": "HONOR",
-    "MODEL": "VER-N49DP",
-    "FINGERPRINT": "HONOR/VER-N49DP/VER:13/ENG.20240918.123456:user/release-keys",
-    "PRODUCT": "VER-N49DP"
+  "PACKAGES_SONY_XPERIA_1_III_DEVICE": {
+    "BRAND": "Sony",
+    "DEVICE": "pdx215",
+    "MANUFACTURER": "Sony",
+    "MODEL": "A101SO",
+    "FINGERPRINT": "Sony/A101SO/pdx215:13/61.2.B.0.683/0470464051:user/release-keys",
+    "PRODUCT": "A101SO"
   },
   "PACKAGES_INFINIX_GT_50_PRO_5G": [
     "com.dts.freefireth",
