@@ -251,7 +251,7 @@ jobs:
           fi
 
       - name: Upload Module ZIP as Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: COPG
           path: ${{ env.ZIP_NAME }}
