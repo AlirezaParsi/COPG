@@ -9,7 +9,7 @@
 const LibQuery = {
   devices: '', packages: '',
   devSort: 'default',  // default | name | apps | brand
-  pkgSort: 'device',   // default | name | device | type | installed
+  pkgSort: 'default',  // default | name | type | installed
   pkgFilter: 'all',    // all | installed | blocked | cpu_only
 };
 
@@ -49,7 +49,7 @@ const chip = (cls, text) => { const s = document.createElement('span'); s.classN
 /* ─── Sort / filter definitions ─── */
 const SORT_OPTS = {
   devices:  [['default', 'sort_default'], ['name', 'sort_name'], ['name_desc', 'sort_name_za'], ['apps', 'sort_apps'], ['brand', 'sort_brand']],
-  packages: [['default', 'sort_default'], ['name', 'sort_name'], ['name_desc', 'sort_name_za'], ['device', 'sort_device'], ['type', 'sort_type'], ['installed', 'sort_installed']],
+  packages: [['default', 'sort_default'], ['name', 'sort_name'], ['name_desc', 'sort_name_za'], ['type', 'sort_type'], ['installed', 'sort_installed']],
 };
 
 function sortDevices(arr) {
@@ -68,7 +68,6 @@ function sortPackages(arr) {
   // 'name'/'name_desc' sort by DISPLAY name (x.name), not the package id.
   if (LibQuery.pkgSort === 'name')   a.sort((x, y) => x.name.toLowerCase().localeCompare(y.name.toLowerCase()));
   else if (LibQuery.pkgSort === 'name_desc') a.sort((x, y) => y.name.toLowerCase().localeCompare(x.name.toLowerCase()));
-  else if (LibQuery.pkgSort === 'device') a.sort((x, y) => (x.deviceName || '~').localeCompare(y.deviceName || '~'));
   else if (LibQuery.pkgSort === 'type')   a.sort((x, y) => x.type.localeCompare(y.type));
   else if (LibQuery.pkgSort === 'installed') a.sort((x, y) => (set.has(y.clean) ? 1 : 0) - (set.has(x.clean) ? 1 : 0));
   return a;
