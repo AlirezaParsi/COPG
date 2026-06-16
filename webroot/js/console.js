@@ -122,13 +122,38 @@
   });
 
   /* ─── Shell command runner (root via bridge; device-only) ─── */
+  /* ksu.exec resolves only when the spawned process EXITS, buffering all its
+     stdout first. A command that never terminates (bare `logcat`, `top`,
+     `tail -f`, `cat /dev/…`) therefore never resolves: its output balloons and
+     the bridge — and the whole device — hangs. Guard the runner:
+       • bare `logcat` (no -d) → rewrite to `logcat -d` (dump current buffer & exit)
+       • other known infinite streamers → refuse with a hint instead of hanging. */
+  function fixStreaming(cmd) {
+    // `-d`/`-c`/`-g`/`-S`/`--help` make logcat exit; otherwise it streams.
+    if (/\blogcat\b/.test(cmd) && !/\blogcat\b[^|;&]*\s-d\b/.test(cmd) && !/-[cgS]\b|--help/.test(cmd))
+      return cmd.replace(/\blogcat\b/, 'logcat -d');
+    return cmd;
+  }
+  function isInfinite(cmd) {
+    return /(^|[;&|]\s*)(top|htop)\b(?![^|;&]*\s-n\b)/.test(cmd)          // top without -n
+        || /\btail\s+-[fF]\b/.test(cmd)                                  // tail -f
+        || /\bgetevent\b(?![^|;&]*-c\b)/.test(cmd)                       // getevent without -c
+        || /\bcat\b[^|;&]*(\/dev\/|\/proc\/kmsg)/.test(cmd);             // cat of a stream
+  }
+
   async function runCmd(cmd) {
     cmd = (cmd || '').trim();
     if (!cmd) return;
     add('$ ' + cmd, 'cmd');
+    if (isInfinite(cmd)) {
+      add('That command never exits and would hang the bridge. Add a count / `-d` / file redirect so it terminates.', 'warning');
+      return;
+    }
+    const run = fixStreaming(cmd);
+    if (run !== cmd) add('↪ ran as: ' + run + '   (bare logcat streams forever — added -d)', 'warning');
     if (!w.COPG || !COPG.hasBridge()) { add('No bridge — shell commands run on-device only.', 'warning'); return; }
     try {
-      const o = await COPG.execCommand(cmd);
+      const o = await COPG.execCommand(run);
       add(o && o.trim() ? o.replace(/\s+$/, '') : '(no output)', 'out');
     } catch (err) { add(String(err), 'error'); }
   }

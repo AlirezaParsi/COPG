@@ -3,7 +3,6 @@
 # ================================================
 
 INSTALL_SUCCESS=true
-ENABLE_GPHOTO_SPOOF=true
 
 print_box_start() {
   ui_print "╔═════════════════════════════════╗"
@@ -23,7 +22,7 @@ print_failure_and_exit() {
   local section="$1"
   print_empty_line
   ui_print " ✗ Installation Failed!          "
-  if [ "$section" = "binary" ] || [ "$section" = "gphoto" ]; then
+  if [ "$section" = "binary" ]; then
     print_empty_line
     print_empty_line
     print_empty_line
@@ -159,93 +158,6 @@ check_zygisk() {
     ui_print " ➤ Install ReZygisk or Zygisk Next       "
     print_failure_and_exit "zygisk"
   fi
-}
-
-prompt_gphoto_spoof() {
-  print_box_start
-  ui_print "      ✦ Google Photos Spoof ✦    "
-  print_empty_line
-  ui_print " ❓ Enable Unlimited Photos?      "
-  ui_print " ➤ Volume Up: Yes (Recommended)  "
-  ui_print " ➤ Volume Down: No               "
-  print_box_end
-
-  TIMEOUT=10
-  START_TIME=$(date +%s)
-
-  while true; do
-    CURRENT_TIME=$(date +%s)
-    ELAPSED=$((CURRENT_TIME - START_TIME))
-    if [ $ELAPSED -ge $TIMEOUT ]; then
-      print_empty_line
-      ui_print " ⏰ Timeout (10s) - Disabled"
-      ENABLE_GPHOTO_SPOOF=false
-      return
-    fi
-
-    if command -v timeout >/dev/null 2>&1; then
-      EVENT=$(timeout 0.1 getevent -lc1 2>/dev/null | tr -d '\r')
-    else
-      EVENT=$(getevent -lc1 2>/dev/null | tr -d '\r')
-    fi
-
-    if [ -n "$EVENT" ]; then
-      if echo "$EVENT" | grep -q "KEY_VOLUMEUP.*DOWN"; then
-        print_empty_line
-        ui_print " ✅ Enabled Unlimited Photos"
-        ENABLE_GPHOTO_SPOOF=true
-        return
-      elif echo "$EVENT" | grep -q "KEY_VOLUMEDOWN.*DOWN"; then
-        print_empty_line
-        ui_print " ❌ Disabled Unlimited Photos"
-        ENABLE_GPHOTO_SPOOF=false
-        return
-      fi
-    fi
-
-    sleep 0.1
-  done
-}
-
-setup_gphoto_spoof() {
-  print_box_start
-  ui_print "      ✦ Google Photos Spoof ✦    "
-  print_empty_line
-  ui_print " ⚙ Configuring Sysconfig Files   "
-  mkdir -p "$MODPATH/system/product/etc/sysconfig" "$MODPATH/system/etc/sysconfig" 2>/dev/null
-  if [ -d "/system/product/etc/sysconfig" ]; then
-    find /system/product/etc/sysconfig -type f | while read -r file; do
-      if grep -qE "PIXEL_2020_|PIXEL_2021_|PIXEL_2019_PRELOAD|PIXEL_2018_PRELOAD|PIXEL_2017_PRELOAD|PIXEL_2022_" "$file"; then
-        filename=$(basename "$file")
-        grep -vE "PIXEL_2020_|PIXEL_2021_|PIXEL_2022_|PIXEL_2018_PRELOAD|PIXEL_2019_PRELOAD|PIXEL_2017_PRELOAD" "$file" > \
-          "$MODPATH/system/product/etc/sysconfig/$filename" 2>/dev/null
-      fi
-    done
-  fi
-  if [ -d "/system/etc/sysconfig" ]; then
-    find /system/etc/sysconfig -type f | while read -r file; do
-      if grep -qE "PIXEL_2020_|PIXEL_2021_|PIXEL_2019_PRELOAD|PIXEL_2018_PRELOAD|PIXEL_2017_PRELOAD|PIXEL_2022_" "$file"; then
-        filename=$(basename "$file")
-        grep -vE "PIXEL_2020_|PIXEL_2021_|PIXEL_2022_|PIXEL_2018_PRELOAD|PIXEL_2019_PRELOAD|PIXEL_2017_PRELOAD" "$file" > \
-          "$MODPATH/system/etc/sysconfig/$filename" 2>/dev/null
-      fi
-    done
-  fi
-  find "$MODPATH/system/product/etc/sysconfig" "$MODPATH/system/etc/sysconfig" -type f 2>/dev/null | while read -r file; do
-    chmod 0644 "$file" 2>/dev/null
-    chcon u:object_r:system_file:s0 "$file" 2>/dev/null
-  done
-
-  ui_print " ✔ Unlimited Photos Configured   "
-  print_box_end
-}
-
-cleanup_gphoto_directories() {
-  rm -rf "$MODPATH/system/etc/sysconfig" 2>/dev/null
-  rm -rf "$MODPATH/system/product/etc/sysconfig" 2>/dev/null
-  rm -rf "$MODPATH/product/etc/sysconfig" 2>/dev/null
-  
-  find "$MODPATH" -type d -empty -delete 2>/dev/null
 }
 
 cleanup_unused_architectures() {
@@ -419,29 +331,6 @@ fi
     cleanup_unused_architectures
   fi
 
-  if $INSTALL_SUCCESS; then
-    prompt_gphoto_spoof
-    if $ENABLE_GPHOTO_SPOOF; then
-      setup_gphoto_spoof || {
-        INSTALL_SUCCESS=false
-      }
-    else
-      print_box_start
-      ui_print "      ✦ Google Photos Spoof ✦    "
-      print_empty_line
-      ui_print " ⚙ Removing Google Photos Config "
-      if [ -f "$MODPATH/COPG.json" ]; then
-        sed -i '/com\.google\.android\.apps\.photos/d' "$MODPATH/COPG.json" 2>/dev/null
-        chmod 0644 "$MODPATH/COPG.json" 2>/dev/null
-        chcon u:object_r:system_file:s0 "$MODPATH/COPG.json" 2>/dev/null
-      fi
-      
-      cleanup_gphoto_directories
-      
-      ui_print " ✔ Unlimited Photos Disabled    "
-      print_box_end
-    fi
-  fi
 
   if $INSTALL_SUCCESS; then
     print_empty_line

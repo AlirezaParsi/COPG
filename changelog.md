@@ -4,6 +4,17 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v5.1.1
+### Fully Systemless — no /system mount, no metamodule
+*   **No metamodule needed.** COPG no longer touches `/system` at all, so on newer KernelSU you **no longer need the system-overlay metamodule** — it installs and runs as a plain module on KernelSU / Magisk / APatch.
+*   **Removed the Google Photos "unlimited backup" spoof.** It worked by overlaying Pixel feature-flag files into `/system`, which forced a system mount (and required that metamodule on newer KernelSU). Dropping it makes COPG **fully systemless** — lighter, cleaner, and free of mount conflicts.
+*   **Removed `system.prop`.** The `game_default_frame_rate.disabled` prop meant to lift Android 15's 60fps game cap backfired on some ROMs (read inverted → games **locked** to 60fps). Removed — affected devices now run at full refresh.
+
+### Fixes
+*   **Console no longer freezes the UI.** A never-ending command typed in the console (bare `logcat`, `top`, `tail -f`) used to hang the whole WebUI, because the bridge waits for the process to exit. Streaming commands are now guarded: `logcat` auto-runs as `logcat -d`, and other infinite commands are refused with a hint.
+*   **Zygisk detection on install.** Fixed two false negatives — Zygisk Next *disabled* + ReZygisk *enabled* no longer aborts install, and Magisk's built-in Zygisk being **ON** is now caught (it silently breaks Zygisk Next / ReZygisk).
+
+---
 ## v5.1.0
 ### Faster, Smarter App Icons
 *   **No more lag.** Package icons no longer hammer the root bridge one-by-one — a single background task fetches everything, so the Library stays smooth while icons fill in.

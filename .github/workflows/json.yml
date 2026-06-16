@@ -189,8 +189,8 @@ jobs:
 
           chmod 755 module/customize.sh module/service.sh module/uninstall.sh module/META-INF/com/google/android/update-binary
 
-          VERSION="${{ github.event.inputs.custom_version || '5.1.0' }}"
-          VERSION_CODE="${{ github.event.inputs.custom_version_code || '510' }}"
+          VERSION="${{ github.event.inputs.custom_version || '5.1.1' }}"
+          VERSION_CODE="${{ github.event.inputs.custom_version_code || '511' }}"
           cat > module/module.prop << EOF
           id=COPG
           name=✨ COPG SPOOF ✨

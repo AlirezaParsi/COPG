@@ -18,8 +18,8 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO"
 
-VERSION="${1:-5.1.0}"
-VERSION_CODE="${2:-510}"
+VERSION="${1:-5.1.1}"
+VERSION_CODE="${2:-511}"
 OUT_DIR="/storage/emulated/0/Download/COPG"
 BUILD_DIR="$REPO/.build"
 STAGE="$BUILD_DIR/module"
@@ -55,15 +55,14 @@ log "target ABI: $ABI   version: $VERSION ($VERSION_CODE)"
 
 # ── fresh staging ────────────────────────────────────────────────────────────
 rm -rf "$BUILD_DIR"
-mkdir -p "$STAGE/zygisk" "$STAGE/webroot" "$STAGE/system"
+mkdir -p "$STAGE/zygisk" "$STAGE/webroot"
 
 # ── assemble static module files ─────────────────────────────────────────────
 log "assembling module tree"
 cp -r module/.   "$STAGE/"            # everything that ships at module root: customize/service/uninstall.sh,
-                                      # system.prop, config.json, banner.png, cpuinfo_spoof, common/,
+                                      # config.json, banner.png, cpuinfo_spoof, common/,
                                       # COPG.json, list.json, META-INF/
 cp -r webroot/.  "$STAGE/webroot/"
-cp -r system/.   "$STAGE/system/" 2>/dev/null || true
 
 cat > "$STAGE/module.prop" <<EOF
 id=COPG

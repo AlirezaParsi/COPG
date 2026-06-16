@@ -152,17 +152,6 @@
     "FINGERPRINT": "REDMAGIC/NX809J-UN/NX809J:16/BP2A.250605.031.A3/20251017.000000:user/release-keys",
     "PRODUCT": "NX809J"
   },
-  "PACKAGES_PIXEL_XL": [
-    "com.google.android.apps.photos:notweak"
-  ],
-  "PACKAGES_PIXEL_XL_DEVICE": {
-    "BRAND": "google",
-    "DEVICE": "Pixel XL",
-    "MANUFACTURER": "Google",
-    "MODEL": "marlin",
-    "FINGERPRINT": "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys",
-    "PRODUCT": "marlin"
-  },
   "PACKAGES_REALME_15_PRO_5G": [
     "com.ngame.allstar.eu",
     "com.clashoftitansandroid.india",
