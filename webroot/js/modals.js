@@ -42,10 +42,10 @@
           <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_sdk">SDK Int</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__warn" id="dfSdkWarn" role="button" tabindex="0" data-i18n-attr="aria-label:info_aria" aria-label="What's this?">${WARN_SVG}</span></span>
             <input class="field__input" id="dfSdk" type="text" inputmode="numeric" /></label>
         </div>
-        <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__gen" id="dfSerialGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
-          <input class="field__input field__input--mono" id="dfSerial" type="text" maxlength="24" /></label>
         <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_androidid">Android ID</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__warn" id="dfAndroidIdInfo" role="button" tabindex="0" data-i18n-attr="aria-label:info_aria" aria-label="What's this?">${WARN_SVG}</span><span class="field__gen" id="dfAndroidIdGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
           <input class="field__input field__input--mono" id="dfAndroidId" type="text" maxlength="16" inputmode="latin" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+        <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__gen" id="dfSerialGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
+          <input class="field__input field__input--mono" id="dfSerial" type="text" maxlength="24" /></label>
         <div class="form-buttons">
           <button type="button" class="btn btn--ghost" data-close="deviceModal" data-i18n="btn_cancel">Cancel</button>
           <button type="submit" class="btn btn--primary" data-i18n="btn_save">Save</button>
