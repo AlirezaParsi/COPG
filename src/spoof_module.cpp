@@ -25,6 +25,7 @@
 #include <elf.h>
 #include <thread>
 #include <atomic>
+#include <sys/system_properties.h>
 
 using json = nlohmann::json;
 
@@ -756,6 +757,67 @@ static void forgeAndroidId(JNIEnv* env, const char* fakeId) {
     LOGI("[AID] forged android_id -> %s (synchronous, no thread)", fakeId);
 }
 
+// ─────────────────────────────────────────
+// Prop spoof — STEALTH (COW remap + in-place overwrite, then DLCLOSE)
+// ─────────────────────────────────────────
+// Same model as ANDROID_ID: a one-shot DATA write, no resident hook. The bionic
+// property area (/dev/__properties__/<ctx>) is MAP_SHARED read-only across all
+// processes. We remap the page(s) holding the target prop_info as MAP_PRIVATE
+// (copy-on-write), so the edit is PER-PROCESS (system + other apps untouched),
+// overwrite the value inline, then DLCLOSE. Covers BOTH __system_property_get
+// and __system_property_read_callback (same data). prop_info (short props):
+//   atomic_uint32 serial; char value[PROP_VALUE_MAX]; char name[];
+// Only EXISTING short props, value len <= PROP_VALUE_MAX-1. Layout is stable
+// bionic; fails-safe (logs + keeps real value) if a prop is missing/long.
+static std::vector<std::pair<uintptr_t, uintptr_t>> g_priv_prop_ranges;
+
+static bool ensurePropAreaPrivate(const void* addr) {
+    uintptr_t t = (uintptr_t)addr;
+    for (auto& r : g_priv_prop_ranges) if (t >= r.first && t < r.second) return true; // already COW
+    FILE* f = fopen("/proc/self/maps", "r");
+    if (!f) return false;
+    char line[512];
+    bool ok = false;
+    while (fgets(line, sizeof(line), f)) {
+        uintptr_t s, e; unsigned long long off; char perms[8]; char path[256];
+        path[0] = 0;
+        if (sscanf(line, "%lx-%lx %7s %llx %*x:%*x %*u %255[^\n]", &s, &e, perms, &off, path) < 4) continue;
+        if (t < s || t >= e) continue;
+        char* p = path; while (*p == ' ') p++;
+        if (strncmp(p, "/dev/__properties__", 19) != 0) break;   // not a prop area
+        int fd = open(p, O_RDONLY);
+        if (fd >= 0) {
+            void* r = mmap((void*)s, (size_t)(e - s), PROT_READ | PROT_WRITE,
+                           MAP_PRIVATE | MAP_FIXED, fd, (off_t)off);
+            close(fd);
+            if (r != MAP_FAILED) { g_priv_prop_ranges.push_back({s, e}); ok = true; }
+        }
+        break;
+    }
+    fclose(f);
+    return ok;
+}
+
+static void forgeProp(const char* name, const char* val) {
+    const prop_info* cpi = __system_property_find(name);
+    if (!cpi) { LOGW("[PROP] %s: not found, skip", name); return; }
+    if (!ensurePropAreaPrivate(cpi)) { LOGE("[PROP] %s: COW remap failed", name); return; }
+    volatile uint32_t* serial = (volatile uint32_t*)cpi;
+    char* value = (char*)cpi + sizeof(uint32_t);
+    size_t len = strlen(val);
+    if (len > PROP_VALUE_MAX - 1) len = PROP_VALUE_MAX - 1;
+    uint32_t old = *serial;
+    *serial = old | 1;                                   // mark dirty (readers retry)
+    __sync_synchronize();
+    memcpy(value, val, len); value[len] = '\0';
+    __sync_synchronize();
+    *serial = ((uint32_t)len << 24) | (((old & 0x00FFFFFFu) + 2) & 0x00FFFFFFu);  // len + bumped gen, bit0=0
+    __sync_synchronize();
+    char rb[PROP_VALUE_MAX] = {0};
+    __system_property_get(name, rb);
+    LOGI("[PROP] %s -> '%s' (read-back '%s')", name, val, rb);
+}
+
 class COPGModule : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
@@ -787,6 +849,14 @@ public:
 
         PKG_LOG("Processing: %s", package_name);
         do_android_id = false;
+        do_prop_test  = false;
+
+        // TEST: COW prop-spoof prototype — keep module loaded, forge in post.
+        if (strcmp(package_name, "com.akademiteknoloji.androidallid") == 0) {
+            do_prop_test = true;
+            PKG_LOG("%s: prop COW test target — deferring to postAppSpecialize", package_name);
+            return;
+        }
 
         // Reset build class for forked process
         buildClass = nullptr;
@@ -890,6 +960,14 @@ public:
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
+        if (do_prop_test) {
+            forgeProp("ro.product.model", "COPG_PROP_TEST");
+            forgeProp("ro.product.manufacturer", "CopgMfr");
+            forgeProp("ro.serialno", "COPGSERIAL123");
+            LOGI("[PROP] test done, unloading module");
+            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+            return;
+        }
         if (do_android_id) {
             forgeAndroidId(env, current_info.android_id.c_str());
         }
@@ -908,6 +986,7 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     bool do_android_id = false;
+    bool do_prop_test = false;   // TEST: COW prop-spoof prototype
     // ✅ CORRECT STRUCTURE: DeviceInfo + map of package_name -> PackageFlags
     std::vector<std::pair<DeviceInfo, std::unordered_map<std::string, PackageFlags>>> device_packages;
     std::vector<GotHookEntry> precomputed_hooks;
