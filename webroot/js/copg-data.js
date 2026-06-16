@@ -8,7 +8,7 @@
      "PACKAGES_<KEY>_DEVICE": { BRAND, DEVICE, MANUFACTURER, MODEL,
                                 FINGERPRINT, PRODUCT, SERIAL?, ANDROID_ID?, ANDROID_VERSION?, SDK_INT? }
    Insertion order of keys is meaningful and preserved on save (keyOrder).
-   Package tags are colon suffixes: pkg:blocked, pkg:with_cpu, pkg:got.
+   Package tags are colon suffixes: pkg:blocked, pkg:with_cpu, pkg:cow.
    Logic ported from the previous WebUI (old.js) for full parity.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 (function (w) {
@@ -175,7 +175,7 @@
         deviceName: deviceName || null,
         tags: tagsOf(raw),
         with_cpu: hasTag(raw, 'with_cpu'),
-        got: hasTag(raw, 'got'),
+        cow: hasTag(raw, 'cow'),
         dnd: hasTag(raw, 'dnd'),
         dab: hasTag(raw, 'dab'),
         kso: hasTag(raw, 'kso'),
@@ -284,7 +284,7 @@
 
   /* ─── Package mutations (ported from old.js saveGame / deleteGame) ─── */
   /* form: { pkg (may include tags as typed), name, type:'device'|'cpu_only'|'blocked',
-            deviceKey (PACKAGES_…_DEVICE when type=device), with_cpu, got,
+            deviceKey (PACKAGES_…_DEVICE when type=device), with_cpu, cow,
             dnd, dab, kso, nolog }
      editing: { clean, type, deviceKey } | null  */
   function upsertPackage(form, editing) {
@@ -300,12 +300,12 @@
     if (editing && editing.clean && editing.clean !== cleanName) delete names[editing.clean];
     names[cleanName] = displayName;
 
-    // Build the tagged package string. Spoof tags (with_cpu/blocked/got) are device-only;
+    // Build the tagged package string. Spoof tags (with_cpu/blocked/cow) are device-only;
     // tweak tags (dnd/dab/kso/nolog) apply to device AND cpu_only (controller comfort toggles).
     let finalPkg = cleanName;
     if (type === 'device') {
       if (form.with_cpu)  finalPkg = addTag(finalPkg, 'with_cpu');
-      if (form.got)       finalPkg = addTag(finalPkg, 'got');
+      if (form.cow)       finalPkg = addTag(finalPkg, 'cow');
     }
     if (type === 'device' || type === 'cpu_only') {
       if (form.dnd)       finalPkg = addTag(finalPkg, 'dnd');

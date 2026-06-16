@@ -1,3 +1,19 @@
+/* ============================================================================
+ *  COPG — device & CPU spoof module for Android
+ *  Copyright (c) Alireza Parsi  ·  https://github.com/AlirezaParsi/COPG
+ *  Telegram: https://t.me/COPG_module
+ *
+ *  Original work by Alireza Parsi. The stealth spoofing techniques here —
+ *  notably the ANDROID_ID cache-forge (Settings$Secure.sNameValueCache +
+ *  forged GenerationTracker) and the copy-on-write property spoof (per-process
+ *  MAP_PRIVATE remap of /dev/__properties__ then DLCLOSE, zero memory
+ *  residency) — were designed and implemented for this project.
+ *
+ *  ⚠ If you reuse, fork, or learn from this code in ANOTHER module (free OR
+ *  paid), you MUST give clear, visible credit to Alireza Parsi and link back to
+ *  the repository above. Copying it into a "personal"/paid module without
+ *  attribution is not OK. Be decent — credit the author.
+ * ========================================================================== */
 #include <jni.h>
 #include <string>
 #include <zygisk.hpp>
@@ -41,7 +57,6 @@ using json = nlohmann::json;
 #define SPOOF_LOG(...) LOGI("[SPOOF] " __VA_ARGS__)
 #define COMPANION_LOG(...) LOGI("[COMPANION] " __VA_ARGS__)
 #define PKG_LOG(...) LOGI("[PKG] " __VA_ARGS__)
-#define GOT_LOG(...) LOGI("[GOT] " __VA_ARGS__)
 
 #if defined(__aarch64__) || defined(__x86_64__)
     #define IS_64BIT 1
@@ -53,101 +68,6 @@ using json = nlohmann::json;
     #error "Unsupported architecture"
 #endif
 
-// ─────────────────────────────────────────
-// GOT Hook Types
-// ─────────────────────────────────────────
-typedef int (*prop_get_t)(const char*, char*);
-typedef void (*prop_read_cb_t)(void*, const char*, const char*, uint32_t);
-typedef void (*prop_read_t)(const void*, prop_read_cb_t, void*);
-typedef const void* (*prop_find_t)(const char*);
-typedef void (*prop_read_old_t)(const void*, unsigned*, char*, char*);
-
-static const char* TARGET_SYMBOLS[] = {
-    "__system_property_get",
-    "__system_property_read_callback",
-    "__system_property_find",
-    "__system_property_read",
-    nullptr
-};
-
-static const char* ABI_DIRS[] = {
-    "arm64", "arm64-v8a", "arm", "armeabi-v7a", "x86_64", "x86", nullptr
-};
-
-struct GotHookEntry {
-    std::string lib_name;
-    std::string symbol;
-    uintptr_t got_offset = 0;
-    uintptr_t load_base = 0;
-    void* original = nullptr;
-    bool hooked = false;
-};
-
-struct GotProcessContext {
-    std::unordered_map<std::string, std::string> props;
-    std::vector<GotHookEntry> hooks;
-    std::atomic<bool> ready{false};
-    std::string package_name;
-
-    prop_get_t orig_get = nullptr;
-    prop_read_t orig_read_cb = nullptr;
-    prop_find_t orig_find = nullptr;
-    prop_read_old_t orig_read_old = nullptr;
-};
-
-static GotProcessContext* g_got_ctx = nullptr;
-static prop_read_cb_t g_app_callback = nullptr;
-
-// ─────────────────────────────────────────
-// GOT Hook Functions
-// ─────────────────────────────────────────
-static int hooked_prop_get(const char* name, char* value) {
-    if (!g_got_ctx || !g_got_ctx->orig_get) return 0;
-    if (name && g_got_ctx->ready.load()) {
-        auto it = g_got_ctx->props.find(name);
-        if (it != g_got_ctx->props.end()) {
-            strncpy(value, it->second.c_str(), 91);
-            value[91] = '\0';
-            return (int)strlen(value);
-        }
-    }
-    return g_got_ctx->orig_get(name, value);
-}
-
-static void hooked_read_cb(void* cookie, const char* name, const char* value, uint32_t serial) {
-    if (!g_app_callback) return;
-    if (g_got_ctx && name && g_got_ctx->ready.load()) {
-        auto it = g_got_ctx->props.find(name);
-        if (it != g_got_ctx->props.end()) {
-            g_app_callback(cookie, name, it->second.c_str(), serial);
-            return;
-        }
-    }
-    g_app_callback(cookie, name, value, serial);
-}
-
-static void hooked_prop_read(const void* pi, prop_read_cb_t cb, void* cookie) {
-    if (!g_got_ctx || !g_got_ctx->orig_read_cb) return;
-    g_app_callback = cb;
-    g_got_ctx->orig_read_cb(pi, hooked_read_cb, cookie);
-}
-
-static const void* hooked_prop_find(const char* name) {
-    if (!g_got_ctx || !g_got_ctx->orig_find) return nullptr;
-    return g_got_ctx->orig_find(name);
-}
-
-static void hooked_prop_read_old(const void* pi, unsigned* serial, char* name, char* value) {
-    if (!g_got_ctx || !g_got_ctx->orig_read_old) return;
-    g_got_ctx->orig_read_old(pi, serial, name, value);
-    if (name && value && g_got_ctx->ready.load()) {
-        auto it = g_got_ctx->props.find(name);
-        if (it != g_got_ctx->props.end()) {
-            strncpy(value, it->second.c_str(), 91);
-            value[91] = '\0';
-        }
-    }
-}
 
 // ─────────────────────────────────────────
 // Device Info & Package Flags
@@ -174,7 +94,7 @@ struct PackageFlags {
     bool needs_device_spoof = false;
     bool needs_cpu_mount = false;    // with_cpu
     bool needs_cpu_unmount = false;  // blocked
-    bool needs_got_hook = false;     // got
+    bool needs_cow = false;          // cow → stealth COW prop spoof
 };
 
 static DeviceInfo current_info;
@@ -237,367 +157,6 @@ static bool ipc_readU64(int fd, uint64_t& v) {
     return read(fd, &v, 8) == 8;
 }
 
-// ─────────────────────────────────────────
-// ELF Parser (64-bit)
-// ─────────────────────────────────────────
-#if IS_64BIT
-static uintptr_t findFromSections64(FILE* f, const Elf64_Ehdr& ehdr, const char* symbol) {
-    std::vector<Elf64_Shdr> shdrs(ehdr.e_shnum);
-    fseek(f, ehdr.e_shoff, SEEK_SET);
-    if (fread(shdrs.data(), sizeof(Elf64_Shdr), ehdr.e_shnum, f) != (size_t)ehdr.e_shnum) return 0;
-
-    Elf64_Shdr& ss = shdrs[ehdr.e_shstrndx];
-    std::vector<char> shstrtab(ss.sh_size);
-    fseek(f, ss.sh_offset, SEEK_SET);
-    fread(shstrtab.data(), 1, ss.sh_size, f);
-
-    Elf64_Shdr *rela_plt = nullptr, *rela_dyn = nullptr, *dynsym_h = nullptr, *dynstr_h = nullptr;
-    for (auto& s : shdrs) {
-        const char* n = shstrtab.data() + s.sh_name;
-        if (!strcmp(n, ".rela.plt")) rela_plt = &s;
-        else if (!strcmp(n, ".rela.dyn")) rela_dyn = &s;
-        else if (!strcmp(n, ".dynsym")) dynsym_h = &s;
-        else if (!strcmp(n, ".dynstr")) dynstr_h = &s;
-    }
-    if (!dynsym_h || !dynstr_h) return 0;
-
-    std::vector<char> dynstr(dynstr_h->sh_size);
-    fseek(f, dynstr_h->sh_offset, SEEK_SET);
-    fread(dynstr.data(), 1, dynstr_h->sh_size, f);
-
-    size_t sym_count = dynsym_h->sh_size / sizeof(Elf64_Sym);
-    std::vector<Elf64_Sym> syms(sym_count);
-    fseek(f, dynsym_h->sh_offset, SEEK_SET);
-    fread(syms.data(), sizeof(Elf64_Sym), sym_count, f);
-
-    auto search = [&](Elf64_Shdr* rh) -> uintptr_t {
-        if (!rh) return 0;
-        size_t cnt = rh->sh_size / sizeof(Elf64_Rela);
-        std::vector<Elf64_Rela> rs(cnt);
-        fseek(f, rh->sh_offset, SEEK_SET);
-        fread(rs.data(), sizeof(Elf64_Rela), cnt, f);
-        for (auto& r : rs) {
-            uint32_t idx = ELF64_R_SYM(r.r_info);
-            if (idx >= sym_count) continue;
-            if (!strcmp(dynstr.data() + syms[idx].st_name, symbol))
-                return (uintptr_t)r.r_offset;
-        }
-        return 0;
-    };
-
-    uintptr_t off = search(rela_plt);
-    if (!off) off = search(rela_dyn);
-    return off;
-}
-
-static uintptr_t findFromDynamic64(FILE* f, const Elf64_Ehdr& ehdr, const char* symbol) {
-    std::vector<Elf64_Phdr> phdrs(ehdr.e_phnum);
-    fseek(f, ehdr.e_phoff, SEEK_SET);
-    fread(phdrs.data(), sizeof(Elf64_Phdr), ehdr.e_phnum, f);
-
-    Elf64_Phdr* dyn_ph = nullptr;
-    for (auto& ph : phdrs)
-        if (ph.p_type == PT_DYNAMIC) { dyn_ph = &ph; break; }
-    if (!dyn_ph) return 0;
-
-    size_t dyn_cnt = dyn_ph->p_filesz / sizeof(Elf64_Dyn);
-    std::vector<Elf64_Dyn> dyns(dyn_cnt);
-    fseek(f, dyn_ph->p_offset, SEEK_SET);
-    fread(dyns.data(), sizeof(Elf64_Dyn), dyn_cnt, f);
-
-    uintptr_t strtab_va = 0, symtab_va = 0;
-    uintptr_t plt_va = 0, plt_sz = 0, rela_va = 0, rela_sz = 0;
-    uintptr_t syment = sizeof(Elf64_Sym);
-
-    for (auto& d : dyns) {
-        switch (d.d_tag) {
-            case DT_STRTAB: strtab_va = d.d_un.d_ptr; break;
-            case DT_SYMTAB: symtab_va = d.d_un.d_ptr; break;
-            case DT_SYMENT: syment = d.d_un.d_val; break;
-            case DT_JMPREL: plt_va = d.d_un.d_ptr; break;
-            case DT_PLTRELSZ: plt_sz = d.d_un.d_val; break;
-            case DT_RELA: rela_va = d.d_un.d_ptr; break;
-            case DT_RELASZ: rela_sz = d.d_un.d_val; break;
-        }
-    }
-    if (!strtab_va || !symtab_va) return 0;
-    if (!plt_va && !rela_va) return 0;
-
-    auto va2off = [&](uintptr_t va) -> uintptr_t {
-        for (auto& ph : phdrs) {
-            if (ph.p_type != PT_LOAD) continue;
-            if (va >= ph.p_vaddr && va < ph.p_vaddr + ph.p_filesz)
-                return va - ph.p_vaddr + ph.p_offset;
-        }
-        return 0;
-    };
-
-    uintptr_t strtab_off = va2off(strtab_va);
-    uintptr_t symtab_off = va2off(symtab_va);
-    if (!strtab_off || !symtab_off) return 0;
-
-    std::vector<char> strtab(65536);
-    fseek(f, strtab_off, SEEK_SET);
-    fread(strtab.data(), 1, strtab.size(), f);
-
-    auto searchRela = [&](uintptr_t va, uintptr_t sz) -> uintptr_t {
-        if (!va || !sz) return 0;
-        uintptr_t off = va2off(va);
-        if (!off) return 0;
-
-        size_t cnt = sz / sizeof(Elf64_Rela);
-        std::vector<Elf64_Rela> relas(cnt);
-        fseek(f, off, SEEK_SET);
-        fread(relas.data(), sizeof(Elf64_Rela), cnt, f);
-
-        for (auto& r : relas) {
-            uint32_t sym_idx = ELF64_R_SYM(r.r_info);
-            Elf64_Sym sym;
-            fseek(f, symtab_off + sym_idx * syment, SEEK_SET);
-            fread(&sym, sizeof(sym), 1, f);
-            if (sym.st_name >= strtab.size()) continue;
-            if (!strcmp(strtab.data() + sym.st_name, symbol))
-                return (uintptr_t)r.r_offset;
-        }
-        return 0;
-    };
-
-    uintptr_t off = searchRela(plt_va, plt_sz);
-    if (!off) off = searchRela(rela_va, rela_sz);
-    return off;
-}
-#endif
-
-// ─────────────────────────────────────────
-// ELF Parser (32-bit)
-// ─────────────────────────────────────────
-#if IS_32BIT
-static uintptr_t findFromSections32(FILE* f, const Elf32_Ehdr& ehdr, const char* symbol) {
-    std::vector<Elf32_Shdr> shdrs(ehdr.e_shnum);
-    fseek(f, ehdr.e_shoff, SEEK_SET);
-    if (fread(shdrs.data(), sizeof(Elf32_Shdr), ehdr.e_shnum, f) != (size_t)ehdr.e_shnum) return 0;
-
-    Elf32_Shdr& shstr_hdr = shdrs[ehdr.e_shstrndx];
-    std::vector<char> shstrtab(shstr_hdr.sh_size);
-    fseek(f, shstr_hdr.sh_offset, SEEK_SET);
-    fread(shstrtab.data(), 1, shstr_hdr.sh_size, f);
-
-    Elf32_Shdr *rel_plt = nullptr, *rel_dyn = nullptr, *dynsym_h = nullptr, *dynstr_h = nullptr;
-    for (auto& s : shdrs) {
-        const char* name = shstrtab.data() + s.sh_name;
-        if (!strcmp(name, ".rel.plt")) rel_plt = &s;
-        else if (!strcmp(name, ".rel.dyn")) rel_dyn = &s;
-        else if (!strcmp(name, ".dynsym")) dynsym_h = &s;
-        else if (!strcmp(name, ".dynstr")) dynstr_h = &s;
-    }
-    if (!dynsym_h || !dynstr_h) return 0;
-
-    std::vector<char> dynstr(dynstr_h->sh_size);
-    fseek(f, dynstr_h->sh_offset, SEEK_SET);
-    fread(dynstr.data(), 1, dynstr_h->sh_size, f);
-
-    size_t sym_count = dynstr_h->sh_size / sizeof(Elf32_Sym);
-    std::vector<Elf32_Sym> syms(sym_count);
-    fseek(f, dynstr_h->sh_offset, SEEK_SET);
-    fread(syms.data(), sizeof(Elf32_Sym), sym_count, f);
-
-    auto searchRel = [&](Elf32_Shdr* rel_hdr) -> uintptr_t {
-        if (!rel_hdr) return 0;
-        size_t rel_count = rel_hdr->sh_size / sizeof(Elf32_Rel);
-        std::vector<Elf32_Rel> rels(rel_count);
-        fseek(f, rel_hdr->sh_offset, SEEK_SET);
-        fread(rels.data(), sizeof(Elf32_Rel), rel_count, f);
-
-        for (auto& rel : rels) {
-            uint32_t sym_idx = ELF32_R_SYM(rel.r_info);
-            if (sym_idx >= sym_count) continue;
-            if (!strcmp(dynstr.data() + syms[sym_idx].st_name, symbol))
-                return (uintptr_t)rel.r_offset;
-        }
-        return 0;
-    };
-
-    uintptr_t off = searchRel(rel_plt);
-    if (!off) off = searchRel(rel_dyn);
-    return off;
-}
-
-static uintptr_t findFromDynamic32(FILE* f, const Elf32_Ehdr& ehdr, const char* symbol) {
-    std::vector<Elf32_Phdr> phdrs(ehdr.e_phnum);
-    fseek(f, ehdr.e_phoff, SEEK_SET);
-    fread(phdrs.data(), sizeof(Elf32_Phdr), ehdr.e_phnum, f);
-
-    Elf32_Phdr* dyn_ph = nullptr;
-    for (auto& ph : phdrs)
-        if (ph.p_type == PT_DYNAMIC) { dyn_ph = &ph; break; }
-    if (!dyn_ph) return 0;
-
-    size_t dyn_cnt = dyn_ph->p_filesz / sizeof(Elf32_Dyn);
-    std::vector<Elf32_Dyn> dyns(dyn_cnt);
-    fseek(f, dyn_ph->p_offset, SEEK_SET);
-    fread(dyns.data(), sizeof(Elf32_Dyn), dyn_cnt, f);
-
-    uint32_t strtab_va = 0, symtab_va = 0;
-    uint32_t rel_va = 0, rel_sz = 0;
-    uint32_t jmprel_va = 0, jmprel_sz = 0;
-    uint32_t syment = sizeof(Elf32_Sym);
-
-    for (auto& d : dyns) {
-        switch (d.d_tag) {
-            case DT_STRTAB: strtab_va = d.d_un.d_ptr; break;
-            case DT_SYMTAB: symtab_va = d.d_un.d_ptr; break;
-            case DT_REL: rel_va = d.d_un.d_ptr; break;
-            case DT_RELSZ: rel_sz = d.d_un.d_val; break;
-            case DT_JMPREL: jmprel_va = d.d_un.d_ptr; break;
-            case DT_PLTRELSZ: jmprel_sz = d.d_un.d_val; break;
-            case DT_SYMENT: syment = d.d_un.d_val; break;
-        }
-    }
-    if (!strtab_va || !symtab_va) return 0;
-
-    auto va2off = [&](uint32_t va) -> uint32_t {
-        for (auto& ph : phdrs) {
-            if (ph.p_type != PT_LOAD) continue;
-            if (va >= ph.p_vaddr && va < ph.p_vaddr + ph.p_filesz)
-                return va - ph.p_vaddr + ph.p_offset;
-        }
-        return 0;
-    };
-
-    uint32_t strtab_off = va2off(strtab_va);
-    uint32_t symtab_off = va2off(symtab_va);
-    if (!strtab_off || !symtab_off) return 0;
-
-    std::vector<char> strtab(65536);
-    fseek(f, strtab_off, SEEK_SET);
-    fread(strtab.data(), 1, strtab.size(), f);
-
-    auto searchRel32 = [&](uint32_t va, uint32_t sz) -> uintptr_t {
-        if (!va || !sz) return 0;
-        uint32_t off = va2off(va);
-        if (!off) return 0;
-
-        size_t cnt = sz / sizeof(Elf32_Rel);
-        std::vector<Elf32_Rel> rels(cnt);
-        fseek(f, off, SEEK_SET);
-        fread(rels.data(), sizeof(Elf32_Rel), cnt, f);
-
-        for (auto& r : rels) {
-            uint32_t sym_idx = ELF32_R_SYM(r.r_info);
-            Elf32_Sym sym;
-            fseek(f, symtab_off + sym_idx * syment, SEEK_SET);
-            fread(&sym, sizeof(sym), 1, f);
-            if (sym.st_name >= strtab.size()) continue;
-            if (!strcmp(strtab.data() + sym.st_name, symbol))
-                return (uintptr_t)r.r_offset;
-        }
-        return 0;
-    };
-
-    uintptr_t off = searchRel32(jmprel_va, jmprel_sz);
-    if (!off) off = searchRel32(rel_va, rel_sz);
-    return off;
-}
-#endif
-
-static uintptr_t findGotOffset(const char* path, const char* sym) {
-    FILE* f = fopen(path, "rb");
-    if (!f) return 0;
-
-    unsigned char ident[EI_NIDENT];
-    if (fread(ident, 1, EI_NIDENT, f) != EI_NIDENT) {
-        fclose(f);
-        return 0;
-    }
-    rewind(f);
-
-    uintptr_t off = 0;
-
-#if IS_64BIT
-    Elf64_Ehdr ehdr;
-    if (fread(&ehdr, sizeof(ehdr), 1, f) == 1 && memcmp(ehdr.e_ident, ELFMAG, SELFMAG) == 0) {
-        if (ehdr.e_shoff) off = findFromSections64(f, ehdr, sym);
-        if (!off) off = findFromDynamic64(f, ehdr, sym);
-    }
-#elif IS_32BIT
-    Elf32_Ehdr ehdr;
-    if (fread(&ehdr, sizeof(ehdr), 1, f) == 1 && memcmp(ehdr.e_ident, ELFMAG, SELFMAG) == 0) {
-        if (ehdr.e_shoff) off = findFromSections32(f, ehdr, sym);
-        if (!off) off = findFromDynamic32(f, ehdr, sym);
-    }
-#endif
-
-    fclose(f);
-    return off;
-}
-
-// ─────────────────────────────────────────
-// Library Directory Finding
-// ─────────────────────────────────────────
-static std::string findLibDir(const std::string& pkg) {
-    const char* base = "/data/app";
-    DIR* d1 = opendir(base);
-    if (!d1) return "";
-
-    std::string result;
-    struct dirent* e1;
-
-    while ((e1 = readdir(d1)) && result.empty()) {
-        if (e1->d_name[0] == '.') continue;
-        std::string tier1 = std::string(base) + "/" + e1->d_name;
-        DIR* d2 = opendir(tier1.c_str());
-        if (!d2) continue;
-
-        struct dirent* e2;
-        while ((e2 = readdir(d2)) && result.empty()) {
-            if (e2->d_name[0] == '.') continue;
-            if (strncmp(e2->d_name, pkg.c_str(), pkg.size()) != 0) continue;
-            if (e2->d_name[pkg.size()] != '-') continue;
-
-            for (int i = 0; ABI_DIRS[i]; i++) {
-                std::string candidate = tier1 + "/" + e2->d_name + "/lib/" + ABI_DIRS[i];
-                struct stat st;
-                if (stat(candidate.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-                    result = candidate;
-                    break;
-                }
-            }
-        }
-        closedir(d2);
-    }
-    closedir(d1);
-
-    if (!result.empty()) return result;
-
-    std::string cmd = "pm path " + pkg + " 2>/dev/null";
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) return "";
-
-    char buf[512] = {0};
-    fgets(buf, sizeof(buf), pipe);
-    pclose(pipe);
-
-    char* path_start = strstr(buf, "package:");
-    if (!path_start) return "";
-    path_start += 8;
-
-    size_t len = strlen(path_start);
-    while (len > 0 && (path_start[len-1] == '\n' || path_start[len-1] == '\r'))
-        path_start[--len] = '\0';
-
-    char* last_slash = strrchr(path_start, '/');
-    if (!last_slash) return "";
-    *last_slash = '\0';
-
-    for (int i = 0; ABI_DIRS[i]; i++) {
-        std::string candidate = std::string(path_start) + "/lib/" + ABI_DIRS[i];
-        struct stat st;
-        if (stat(candidate.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-            return candidate;
-        }
-    }
-    return "";
-}
 
 // ─────────────────────────────────────────
 // Companion (runs as root)
@@ -626,52 +185,6 @@ static void companion(int fd) {
                 }
             }
             write(fd, &result, sizeof(result));
-        }
-        else if (command.substr(0, 9) == "got_scan:") {
-            std::string pkg = command.substr(9);
-            COMPANION_LOG("GOT scan for: %s", pkg.c_str());
-            
-            std::string lib_dir = findLibDir(pkg);
-            if (lib_dir.empty()) {
-                uint32_t zero = 0;
-                write(fd, &zero, 4);
-                close(fd);
-                return;
-            }
-            
-            struct ScanResult {
-                std::string lib_name;
-                std::string symbol;
-                uintptr_t got_offset;
-            };
-            std::vector<ScanResult> results;
-            
-            DIR* d = opendir(lib_dir.c_str());
-            if (d) {
-                struct dirent* e;
-                while ((e = readdir(d))) {
-                    size_t len = strlen(e->d_name);
-                    if (len < 4) continue;
-                    if (strcmp(e->d_name + len - 3, ".so") != 0) continue;
-                    
-                    std::string path = lib_dir + "/" + e->d_name;
-                    for (int i = 0; TARGET_SYMBOLS[i]; i++) {
-                        uintptr_t off = findGotOffset(path.c_str(), TARGET_SYMBOLS[i]);
-                        if (!off) continue;
-                        results.push_back({e->d_name, TARGET_SYMBOLS[i], off});
-                    }
-                }
-                closedir(d);
-            }
-            
-            uint32_t count = (uint32_t)results.size();
-            write(fd, &count, 4);
-            for (auto& r : results) {
-                ipc_writeStr(fd, r.lib_name);
-                ipc_writeStr(fd, r.symbol);
-                ipc_writeU64(fd, (uint64_t)r.got_offset);
-            }
-            COMPANION_LOG("GOT scan found %zu targets", results.size());
         }
     }
     close(fd);
@@ -909,15 +422,13 @@ public:
                 // wants the app's uid / SELinux domain); just flag it here.
                 do_android_id = current_info.should_spoof_android_id;
 
-                // Any package tagged `got` spoofs device props via the resident
-                // GOT hook (a ~540KB anon r-xp .so an anti-cheat can flag). Route
-                // it through the stealth COW path instead — overwrite the props in
-                // a per-process copy-on-write view of the bionic property area,
-                // skip the GOT hook, and let the module DLCLOSE. Zero residency.
-                if (flags.needs_got_hook) {
+                // `cow` tag → stealth COW prop spoof. The device props are forged
+                // (below, still in pre) into a per-process copy-on-write view of
+                // the bionic property area, then the module DLCLOSEs — zero
+                // residency, no foreign code in the app's memory for an anti-cheat.
+                if (flags.needs_cow) {
                     do_prop_cow = true;
                     prop_cow_map = current_info.prop_overrides;  // copy under lock
-                    flags.needs_got_hook = false;                // replace GOT with COW → allow unload
                 }
             }
 
@@ -928,57 +439,29 @@ public:
             }
         }
 
-        // GOT Hook preparation
-        if (flags.needs_got_hook) {
-            PKG_LOG("%s: Requesting GOT scan", package_name);
-            int cfd = api->connectCompanion();
-            if (cfd >= 0) {
-                std::string scan_cmd = std::string("got_scan:") + package_name;
-                write(cfd, scan_cmd.c_str(), scan_cmd.size());
-                
-                uint32_t count = 0;
-                if (read(cfd, &count, 4) == 4 && count > 0) {
-                    for (uint32_t i = 0; i < count; i++) {
-                        GotHookEntry e;
-                        uint64_t off = 0;
-                        if (!ipc_readStr(cfd, e.lib_name)) break;
-                        if (!ipc_readStr(cfd, e.symbol)) break;
-                        if (!ipc_readU64(cfd, off)) break;
-                        e.got_offset = (uintptr_t)off;
-                        precomputed_hooks.push_back(e);
-                    }
-                    GOT_LOG("Got %zu GOT hook targets", precomputed_hooks.size());
-                }
-                close(cfd);
-            }
-            needs_got_hook = true;
-            current_pkg_name = package_name;
+        // Stealth COW prop spoof — runs HERE in preAppSpecialize. It doesn't need
+        // the app uid (unlike ANDROID_ID's ashmem): it only edits /dev/__properties__
+        // which is already mapped, and the pre stage's zygote SELinux domain has
+        // broader access to the per-context prop files than the restricted app
+        // domain. The COW pages persist through specialization + the unload.
+        if (do_prop_cow) {
+            for (auto& kv : prop_cow_map) forgeProp(kv.first.c_str(), kv.second.c_str());
+            LOGI("[PROP] COW spoof done (%zu props)", prop_cow_map.size());
         }
 
-        // Stealth Mode: close now unless a later callback still needs us — GOT
-        // hooks, or the ANDROID_ID forge which runs in postAppSpecialize.
-        if (!needs_got_hook && !do_android_id && !do_prop_cow) {
+        // Stealth Mode: close now unless ANDROID_ID still needs postAppSpecialize.
+        if (!do_android_id) {
             PKG_LOG("%s: No deferred work, closing module for stealth", package_name);
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        if (do_prop_cow) {
-            for (auto& kv : prop_cow_map) forgeProp(kv.first.c_str(), kv.second.c_str());
-            LOGI("[PROP] COW spoof done (%zu props), unloading module", prop_cow_map.size());
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
+        // ANDROID_ID is the only thing deferred to post (it needs the app uid for
+        // its ashmem). Forge it, then unload: the fake lives in the ART heap, so
+        // nothing of COPG stays mapped when the app's anti-cheat scans its memory.
         if (do_android_id) {
             forgeAndroidId(env, current_info.android_id.c_str());
-        }
-        if (needs_got_hook && !precomputed_hooks.empty()) {
-            applyGotHooksAsync();   // GOT hooks must stay resident — no DLCLOSE here
-        } else if (do_android_id) {
-            // ANDROID_ID was the only deferred action: one-shot value write done,
-            // data lives in the ART heap → unload now so nothing of COPG is mapped
-            // when the app's anti-cheat scans its own memory.
             LOGI("[AID] done, unloading module");
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
@@ -988,112 +471,11 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     bool do_android_id = false;
-    bool do_prop_cow = false;    // TEST: stealth COW prop-spoof (FIFA) instead of GOT
+    bool do_prop_cow = false;    // cow tag → stealth COW prop spoof
     std::unordered_map<std::string, std::string> prop_cow_map;
     // ✅ CORRECT STRUCTURE: DeviceInfo + map of package_name -> PackageFlags
     std::vector<std::pair<DeviceInfo, std::unordered_map<std::string, PackageFlags>>> device_packages;
-    std::vector<GotHookEntry> precomputed_hooks;
-    bool needs_got_hook = false;
-    std::string current_pkg_name;
 
-    // ─────────────────────────────────────────
-    // GOT Hook helpers (Async)
-    // ─────────────────────────────────────────
-    static uintptr_t getLoadBase(const char* lib_name) {
-        FILE* maps = fopen("/proc/self/maps", "r");
-        if (!maps) return 0;
-        char line[512];
-        uintptr_t base = 0;
-        while (fgets(line, sizeof(line), maps)) {
-            if (!strstr(line, lib_name)) continue;
-            if (!strstr(line, "r--p")) continue;
-            uintptr_t start, end, offset;
-            char perms[8];
-            if (sscanf(line, "%lx-%lx %s %lx", &start, &end, perms, &offset) != 4) continue;
-            if (offset == 0) { base = start; break; }
-        }
-        fclose(maps);
-        return base;
-    }
-
-    static bool applyGotHook(GotHookEntry& e) {
-        uintptr_t got = e.load_base + e.got_offset;
-        e.original = *(void**)got;
-        if (!e.original) return false;
-
-        void* hook = nullptr;
-        if (e.symbol == "__system_property_get") hook = (void*)hooked_prop_get;
-        else if (e.symbol == "__system_property_read_callback") hook = (void*)hooked_prop_read;
-        else if (e.symbol == "__system_property_find") hook = (void*)hooked_prop_find;
-        else if (e.symbol == "__system_property_read") hook = (void*)hooked_prop_read_old;
-        if (!hook) return false;
-
-        size_t ps = getpagesize();
-        uintptr_t pg = got & ~(ps - 1);
-        if (mprotect((void*)pg, ps, PROT_READ | PROT_WRITE) != 0) return false;
-
-        *(void**)got = hook;
-        mprotect((void*)pg, ps, PROT_READ);
-
-        e.hooked = (*(void**)got == hook);
-        if (e.hooked) GOT_LOG("✅ Hooked: %s -> %s", e.symbol.c_str(), e.lib_name.c_str());
-        return e.hooked;
-    }
-
-    void applyGotHooksAsync() {
-        std::vector<GotHookEntry> hooks_to_apply = precomputed_hooks;
-        std::string pkg_name = current_pkg_name;
-        DeviceInfo info_copy = current_info;
-        
-        std::thread([hooks_to_apply, pkg_name, info_copy]() mutable {
-            GOT_LOG("Hook thread started for %s", pkg_name.c_str());
-            
-            std::lock_guard<std::mutex> lock(info_mutex);
-            g_got_ctx = new GotProcessContext();
-            g_got_ctx->props = info_copy.prop_overrides;
-            g_got_ctx->package_name = pkg_name;
-            
-            if (g_got_ctx->props.empty()) {
-                if (!info_copy.model.empty()) g_got_ctx->props["ro.product.model"] = info_copy.model;
-                if (!info_copy.brand.empty()) g_got_ctx->props["ro.product.brand"] = info_copy.brand;
-                if (!info_copy.manufacturer.empty()) g_got_ctx->props["ro.product.manufacturer"] = info_copy.manufacturer;
-                if (!info_copy.device.empty()) g_got_ctx->props["ro.product.device"] = info_copy.device;
-                if (!info_copy.fingerprint.empty()) g_got_ctx->props["ro.build.fingerprint"] = info_copy.fingerprint;
-                if (!info_copy.product.empty()) g_got_ctx->props["ro.product.name"] = info_copy.product;
-            }
-            
-            for (int w = 0; w < 30; w++) {
-                bool any_loaded = false;
-                for (auto& h : hooks_to_apply) {
-                    if (getLoadBase(h.lib_name.c_str())) {
-                        any_loaded = true;
-                        break;
-                    }
-                }
-                if (any_loaded) {
-                    sleep(1);
-                    break;
-                }
-                sleep(1);
-            }
-            
-            for (auto& h : hooks_to_apply) {
-                h.load_base = getLoadBase(h.lib_name.c_str());
-                if (!h.load_base) continue;
-                
-                if (applyGotHook(h)) {
-                    if (h.symbol == "__system_property_get") g_got_ctx->orig_get = (prop_get_t)h.original;
-                    else if (h.symbol == "__system_property_read_callback") g_got_ctx->orig_read_cb = (prop_read_t)h.original;
-                    else if (h.symbol == "__system_property_find") g_got_ctx->orig_find = (prop_find_t)h.original;
-                    else if (h.symbol == "__system_property_read") g_got_ctx->orig_read_old = (prop_read_old_t)h.original;
-                    g_got_ctx->hooks.push_back(h);
-                }
-            }
-            
-            g_got_ctx->ready.store(true);
-            GOT_LOG("✅ Installed %zu GOT hooks for %s", g_got_ctx->hooks.size(), pkg_name.c_str());
-        }).detach();
-    }
 
     // ─────────────────────────────────────────
     // Package tag parsing - ✅ Supports multiple tags
@@ -1153,8 +535,8 @@ private:
         } else {
             flags.needs_cpu_unmount = true;
         }
-        if (tags.find("got") != tags.end()) {
-            flags.needs_got_hook = true;
+        if (tags.find("cow") != tags.end()) {
+            flags.needs_cow = true;
         }
 
         return flags;
