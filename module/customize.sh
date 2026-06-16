@@ -115,77 +115,49 @@ check_zygisk() {
     ui_print " ➔ Root Solution: $ROOT_SOLUTION "
   fi
 
+  # ── Per-variant ACTIVE state ──────────────────────────────────────────────
+  # A variant counts as active only if its module dir exists AND has no
+  # `disable` marker. Each is checked independently, so a disabled variant can
+  # never mask another that IS active (e.g. Zygisk Next disabled + ReZygisk on
+  # → ReZygisk still wins). `disable` on one says nothing about the other.
+  ZN_ACTIVE=false; RZ_ACTIVE=false
+  [ -d "$ZYGISK_NEXT_PATH" ] && [ ! -f "$ZYGISK_NEXT_PATH/disable" ] && ZN_ACTIVE=true
+  [ -d "$REZYGISK_PATH" ]    && [ ! -f "$REZYGISK_PATH/disable" ]    && RZ_ACTIVE=true
+  ZYGISK_INSTALLED=false
+  { [ -d "$ZYGISK_NEXT_PATH" ] || [ -d "$REZYGISK_PATH" ]; } && ZYGISK_INSTALLED=true
+
+  # ── Magisk: built-in Zygisk must be OFF ───────────────────────────────────
+  # ReZygisk / Zygisk Next replace Magisk's native Zygisk and only load when
+  # the built-in one is disabled. If native Zygisk is ON they silently fail to
+  # work even though the module dir is present — so block install and tell the
+  # user to turn it off (instead of falsely reporting the variant "Active").
   if [ "$ROOT_SOLUTION" = "Magisk" ]; then
     ZYGISK_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='zygisk';" 2>/dev/null)
     if [ "$ZYGISK_STATUS" = "value=1" ]; then
-      if [ -d "$REZYGISK_PATH" ]; then
-        if [ -f "$REZYGISK_PATH/disable" ]; then
-          ui_print " ✗ ReZygisk Installed but Disabled!"
-          ui_print " ➤ Enable ReZygisk in Modules"
-          print_failure_and_exit "zygisk"
-        else
-          ui_print " ✔ Magisk: ReZygisk Active    "
-          print_box_end
-          return
-        fi
-      elif [ -d "$ZYGISK_NEXT_PATH" ]; then
-        if [ -f "$ZYGISK_NEXT_PATH/disable" ]; then
-          ui_print " ✗ Zygisk Next Installed but Disabled!"
-          ui_print " ➤ Enable Zygisk Next in Modules"
-          print_failure_and_exit "zygisk"
-        else
-          ui_print " ✔ Magisk: Zygisk Next Active    "
-          print_box_end
-          return
-        fi
-      else
-        ui_print " ✗ Magisk: Native Zygisk Not Supported!"
-        ui_print " ➤ Install ReZygisk or Zygisk Next"
-        ui_print " ➤ Disable Native Zygisk in Settings"
-        print_failure_and_exit "zygisk"
-      fi
-    else
-      if [ -d "$REZYGISK_PATH" ]; then
-        if [ -f "$REZYGISK_PATH/disable" ]; then
-          ui_print " ✗ ReZygisk Disabled!         "
-          ui_print " ➤ Enable in $MANAGER_NAME       "
-          print_failure_and_exit "zygisk"
-        else
-          ui_print " ✔ Magisk: ReZygisk Active    "
-          print_box_end
-          return
-        fi
-      elif [ -d "$ZYGISK_NEXT_PATH" ]; then
-        if [ -f "$ZYGISK_NEXT_PATH/disable" ]; then
-          ui_print " ✗ Zygisk Next Disabled!         "
-          ui_print " ➤ Enable in $MANAGER_NAME       "
-          print_failure_and_exit "zygisk"
-        else
-          ui_print " ✔ Magisk: Zygisk Next Active    "
-          print_box_end
-          return
-        fi
-      else
-        ui_print " ✗ Magisk: No Zygisk Detected!   "
-        ui_print " ➤ Install ReZygisk or Zygisk Next"
-        print_failure_and_exit "zygisk"
-      fi
-    fi
-  else
-    if [ -d "$ZYGISK_NEXT_PATH" ] || [ -d "$REZYGISK_PATH" ]; then
-      if [ -f "$ZYGISK_NEXT_PATH/disable" ] || [ -f "$REZYGISK_PATH/disable" ]; then
-        ui_print " ✗ $ROOT_SOLUTION: Zygisk Module Disabled! "
-        ui_print " ➤ Enable in $MANAGER_NAME    "
-        print_failure_and_exit "zygisk"
-      else
-        ui_print " ✔ $ROOT_SOLUTION: Zygisk Module Active    "
-        print_box_end
-      fi
-    else
-      ui_print " ✗ $ROOT_SOLUTION: Zygisk Module Not Found! "
-      ui_print " ➤ Install Zygisk Next/ReZygisk Module    "
+      ui_print " ✗ Magisk: Built-in Zygisk Enabled!"
+      ui_print " ➤ Disable Native Zygisk in Magisk Settings"
+      ui_print " ➤ ReZygisk / Zygisk Next need it OFF"
       print_failure_and_exit "zygisk"
     fi
+  fi
+
+  # ── Require an ACTIVE standalone Zygisk variant ───────────────────────────
+  if $RZ_ACTIVE; then
+    ui_print " ✔ $ROOT_SOLUTION: ReZygisk Active    "
+    print_box_end
+    return
+  elif $ZN_ACTIVE; then
+    ui_print " ✔ $ROOT_SOLUTION: Zygisk Next Active  "
+    print_box_end
+    return
+  elif $ZYGISK_INSTALLED; then
+    ui_print " ✗ $ROOT_SOLUTION: Zygisk Module Disabled!"
+    ui_print " ➤ Enable ReZygisk / Zygisk Next in $MANAGER_NAME"
+    print_failure_and_exit "zygisk"
+  else
+    ui_print " ✗ $ROOT_SOLUTION: No Zygisk Module Found!"
+    ui_print " ➤ Install ReZygisk or Zygisk Next       "
+    print_failure_and_exit "zygisk"
   fi
 }
 
