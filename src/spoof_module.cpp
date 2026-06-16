@@ -801,11 +801,11 @@ static bool ensurePropAreaPrivate(const void* addr) {
 static void forgeProp(const char* name, const char* val) {
     const prop_info* cpi = __system_property_find(name);
     if (!cpi) { LOGW("[PROP] %s: not found, skip", name); return; }
+    size_t len = strlen(val);
+    if (len >= PROP_VALUE_MAX) { LOGW("[PROP] %s: value len %zu >= %d (long prop), skip", name, len, PROP_VALUE_MAX); return; }
     if (!ensurePropAreaPrivate(cpi)) { LOGE("[PROP] %s: COW remap failed", name); return; }
     volatile uint32_t* serial = (volatile uint32_t*)cpi;
     char* value = (char*)cpi + sizeof(uint32_t);
-    size_t len = strlen(val);
-    if (len > PROP_VALUE_MAX - 1) len = PROP_VALUE_MAX - 1;
     uint32_t old = *serial;
     *serial = old | 1;                                   // mark dirty (readers retry)
     __sync_synchronize();
@@ -849,14 +849,7 @@ public:
 
         PKG_LOG("Processing: %s", package_name);
         do_android_id = false;
-        do_prop_test  = false;
-
-        // TEST: COW prop-spoof prototype — keep module loaded, forge in post.
-        if (strcmp(package_name, "com.akademiteknoloji.androidallid") == 0) {
-            do_prop_test = true;
-            PKG_LOG("%s: prop COW test target — deferring to postAppSpecialize", package_name);
-            return;
-        }
+        do_prop_cow   = false;
 
         // Reset build class for forked process
         buildClass = nullptr;
@@ -915,6 +908,17 @@ public:
                 // ANDROID_ID is forged in postAppSpecialize (the MemoryIntArray
                 // wants the app's uid / SELinux domain); just flag it here.
                 do_android_id = current_info.should_spoof_android_id;
+
+                // Any package tagged `got` spoofs device props via the resident
+                // GOT hook (a ~540KB anon r-xp .so an anti-cheat can flag). Route
+                // it through the stealth COW path instead — overwrite the props in
+                // a per-process copy-on-write view of the bionic property area,
+                // skip the GOT hook, and let the module DLCLOSE. Zero residency.
+                if (flags.needs_got_hook) {
+                    do_prop_cow = true;
+                    prop_cow_map = current_info.prop_overrides;  // copy under lock
+                    flags.needs_got_hook = false;                // replace GOT with COW → allow unload
+                }
             }
 
             if (flags.needs_cpu_unmount) {
@@ -953,18 +957,16 @@ public:
 
         // Stealth Mode: close now unless a later callback still needs us — GOT
         // hooks, or the ANDROID_ID forge which runs in postAppSpecialize.
-        if (!needs_got_hook && !do_android_id) {
+        if (!needs_got_hook && !do_android_id && !do_prop_cow) {
             PKG_LOG("%s: No deferred work, closing module for stealth", package_name);
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
-        if (do_prop_test) {
-            forgeProp("ro.product.model", "COPG_PROP_TEST");
-            forgeProp("ro.product.manufacturer", "CopgMfr");
-            forgeProp("ro.serialno", "COPGSERIAL123");
-            LOGI("[PROP] test done, unloading module");
+        if (do_prop_cow) {
+            for (auto& kv : prop_cow_map) forgeProp(kv.first.c_str(), kv.second.c_str());
+            LOGI("[PROP] COW spoof done (%zu props), unloading module", prop_cow_map.size());
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
         }
@@ -986,7 +988,8 @@ private:
     zygisk::Api* api;
     JNIEnv* env;
     bool do_android_id = false;
-    bool do_prop_test = false;   // TEST: COW prop-spoof prototype
+    bool do_prop_cow = false;    // TEST: stealth COW prop-spoof (FIFA) instead of GOT
+    std::unordered_map<std::string, std::string> prop_cow_map;
     // ✅ CORRECT STRUCTURE: DeviceInfo + map of package_name -> PackageFlags
     std::vector<std::pair<DeviceInfo, std::unordered_map<std::string, PackageFlags>>> device_packages;
     std::vector<GotHookEntry> precomputed_hooks;
