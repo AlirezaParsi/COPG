@@ -167,7 +167,7 @@ jobs:
 
       - name: Prepare module structure
         run: |
-          mkdir -p module/zygisk module/webroot/assets module/common module/system
+          mkdir -p module/zygisk module/webroot/assets module/common
 
           # Zygisk Libraries
           cp build/arm64-v8a/libspoof.so module/zygisk/arm64-v8a.so
@@ -184,7 +184,7 @@ jobs:
           chmod 755 module/controller_*
 
           # Other files (COPG.json, list.json, META-INF already live under module/)
-          cp -rf system/* module/system/ 2>/dev/null || true
+          # No system/ — COPG is fully systemless (no /system mount, no metamodule).
           cp -r webroot/* module/webroot/ 2>/dev/null || true
 
           chmod 755 module/customize.sh module/service.sh module/uninstall.sh module/META-INF/com/google/android/update-binary
