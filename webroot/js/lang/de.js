@@ -190,7 +190,7 @@ I18N.register('de', {
 
   /* Package tags (chips) */
   tag_withcpu:  'Mit CPU',
-  tag_got:      'GOT',
+  tag_cow:      'COW',
   tag_dnd:      'Nicht stören',
   tag_dab:      'Auto-Helligkeit',
   tag_kso:      'Bildschirm an',
@@ -227,25 +227,20 @@ I18N.register('de', {
   pkg_sec_spoofing: 'Spoofing',
   pkg_sec_tweaks:   'Optimierungen',
   pkg_t_withcpu:  'Mit CPU-Spoofing',
-  pkg_t_got:      'GOT Hooking',
+  pkg_t_cow:      'COW-Prop-Spoof',
   pkg_t_dnd:      'Nicht stören',
   pkg_t_dab:      'Auto-Helligkeit deaktivieren',
   pkg_t_kso:      'Bildschirm anlassen',
   pkg_t_nolog:    'Protokollierung deaktivieren',
 
-  /* GOT Hooking warning */
-  got_warn_title: 'GOT Hooking aktivieren?',
-  got_warn_msg:   'GOT Hooking hält das Modul im Speicher der App oder des Spiels resident. Das kann erkannt werden und sogar zur Sperrung deines Spielkontos führen.\n\nBist du sicher, dass du es aktivieren willst? Wir empfehlen, vorher die Community zu fragen.',
-  got_warn_ok:    'Trotzdem aktivieren',
-  got_warn_link:  'COPG-Community auf Telegram',
 
   /* Toggle info popups */
   info_aria:           'Was ist das?',
   info_ok:             'Verstanden',
   info_withcpu_title:  'Mit CPU-Spoofing',
   info_withcpu_msg:    'Zusätzlich zum Vortäuschen des Gerätemodells werden auch die Prozessor-Details (CPU) deines Telefons für diese App vorgetäuscht. Aktiviere es für Spiele, die den Chipsatz prüfen. Lass es aus (Standard), dann bleibt das CPU-Spoofing blockiert — was Banking- und sensible Apps bevorzugen.',
-  info_got_title:      'GOT Hooking',
-  info_got_msg:        'Eine tiefere, aggressivere Methode, das Spoofing aus dem Speicher der App heraus anzuwenden. Stärker, aber riskanter: Es kann erkannt werden und sogar zur Sperrung eines Spielkontos führen. Aktiviere es nur, wenn du weißt, dass du es brauchst.',
+  info_cow_title:      'COW-Prop-Spoof',
+  info_cow_msg:        'Fälscht die System-Properties des Geräts (ro.product.*, ro.build.fingerprint …) für diese App, sodass selbst ihr nativer Code das gefälschte Gerät sieht. Stealth: Die Werte werden in eine private Copy-on-Write-Ansicht des Property-Bereichs geschrieben, und das Modul entlädt sich vor dem App-Start — nichts von COPG bleibt im Speicher der App, sicher gegen Anti-Cheat-Speicherscans. Für Spiele, die Properties nativ lesen.',
   info_dnd_title:      'Nicht stören',
   info_dnd_msg:        'Schaltet Anrufe und Benachrichtigungen stumm, während du in diesem Spiel bist, damit nichts dein Match unterbricht. Deine normale Einstellung kehrt beim Verlassen zurück.',
   info_dab_title:      'Auto-Helligkeit deaktivieren',

@@ -182,7 +182,7 @@ function renderPackages() {
     // chips: tags + installed (type now shown above the name, not as a chip)
     const chips = card.querySelector('.package-card__chips');
     if (pkg.with_cpu)    chips.appendChild(chip('chip--withcpu', I18N.t('tag_withcpu')));
-    if (pkg.got)         chips.appendChild(chip('chip--got', I18N.t('tag_got')));
+    if (pkg.cow)         chips.appendChild(chip('chip--cow', I18N.t('tag_cow')));
     // tweak tags — muted shared style so they read as a group, not as loud as spoof chips
     if (pkg.dnd)         chips.appendChild(chip('chip--tweak', I18N.t('tag_dnd')));
     if (pkg.dab)         chips.appendChild(chip('chip--tweak', I18N.t('tag_dab')));

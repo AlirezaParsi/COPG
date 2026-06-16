@@ -190,7 +190,7 @@ I18N.register('zh', {
 
   /* Package tags (chips) */
   tag_withcpu:  '含 CPU',
-  tag_got:      'GOT',
+  tag_cow:      'COW',
   tag_dnd:      '勿扰',
   tag_dab:      '自动亮度',
   tag_kso:      '屏幕常亮',
@@ -227,25 +227,20 @@ I18N.register('zh', {
   pkg_sec_spoofing: '伪装',
   pkg_sec_tweaks:   '微调',
   pkg_t_withcpu:  '伪装 CPU',
-  pkg_t_got:      'GOT Hooking',
+  pkg_t_cow:      'COW 属性伪装',
   pkg_t_dnd:      '勿扰模式',
   pkg_t_dab:      '关闭自动亮度',
   pkg_t_kso:      '保持屏幕常亮',
   pkg_t_nolog:    '关闭日志记录',
 
-  /* GOT Hooking warning */
-  got_warn_title: '启用 GOT Hooking？',
-  got_warn_msg:   'GOT Hooking 会让模块常驻于应用或游戏的内存中。这可能被检测到，甚至可能导致你的游戏账号被封。\n\n确定要启用吗？建议在决定前先咨询社区。',
-  got_warn_ok:    '仍然启用',
-  got_warn_link:  'Telegram 上的 COPG 社区',
 
   /* Toggle info popups */
   info_aria:           '这是什么？',
   info_ok:             '知道了',
   info_withcpu_title:  '伪装 CPU',
   info_withcpu_msg:    '在伪装设备型号之外，这还会为此应用伪装手机的处理器 (CPU) 信息。对于会检查芯片的游戏请开启。保持关闭（默认）则 CPU 伪装被屏蔽——银行和敏感应用更喜欢这样。',
-  info_got_title:      'GOT Hooking',
-  info_got_msg:        '一种更深入、更激进的方式，从应用内存内部应用伪装。更强但更冒险：可能被检测到，甚至可能导致游戏账号被封。仅在你确定需要时才启用。',
+  info_cow_title:      'COW 属性伪装',
+  info_cow_msg:        '为此应用伪造设备系统属性（ro.product.*、ro.build.fingerprint 等），让其原生代码也看到伪造的设备。隐身：数值写入属性区域的私有写时复制视图，且模块在应用运行前卸载——应用内存中不留任何 COPG 痕迹，可抵御反作弊的内存扫描。适用于以原生方式读取属性的游戏。',
   info_dnd_title:      '勿扰模式',
   info_dnd_msg:        '在你玩此游戏期间静音来电和通知，让任何东西都不会打断你的对局。退出后恢复你的常规设置。',
   info_dab_title:      '关闭自动亮度',

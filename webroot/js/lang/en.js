@@ -190,7 +190,7 @@ I18N.register('en', {
 
   /* Package tags (chips) */
   tag_withcpu:  'With CPU',
-  tag_got:      'GOT',
+  tag_cow:      'COW',
   tag_dnd:      'DND',
   tag_dab:      'Auto-Bright',
   tag_kso:      'Screen On',
@@ -227,25 +227,20 @@ I18N.register('en', {
   pkg_sec_spoofing: 'Spoofing',
   pkg_sec_tweaks:   'Tweaks',
   pkg_t_withcpu:  'With CPU Spoofing',
-  pkg_t_got:      'GOT Hooking',
+  pkg_t_cow:      'COW Prop Spoof',
   pkg_t_dnd:      'Do Not Disturb',
   pkg_t_dab:      'Disable Auto-Brightness',
   pkg_t_kso:      'Keep Screen On',
   pkg_t_nolog:    'Disable Logging',
 
-  /* GOT Hooking warning */
-  got_warn_title: 'Enable GOT Hooking?',
-  got_warn_msg:   'GOT Hooking keeps the module resident in the app or game’s memory. This can be detected and may even get your game account banned.\n\nAre you sure you want to enable it? We recommend asking the community before deciding.',
-  got_warn_ok:    'Enable anyway',
-  got_warn_link:  'COPG community on Telegram',
 
   /* Toggle info popups (the ⓘ buttons) */
   info_aria:           'What’s this?',
   info_ok:             'Got it',
   info_withcpu_title:  'With CPU Spoofing',
   info_withcpu_msg:    'On top of faking the device model, this also fakes your phone’s processor (CPU) details for this app. Turn it on for games that check the chipset. Leave it off (the default) and the CPU fake stays blocked — which banking and sensitive apps prefer.',
-  info_got_title:      'GOT Hooking',
-  info_got_msg:        'A deeper, more aggressive way to apply the spoof from inside the app’s memory. Stronger, but riskier: it can be detected and may even get a game account banned. Only enable it if you know you need it.',
+  info_cow_title:      'COW Prop Spoof',
+  info_cow_msg:        'Spoofs the device system properties (ro.product.*, ro.build.fingerprint, …) for this app so even its native code sees the fake device. Stealth: the values are written into a private copy-on-write view of the property area and the module unloads before the app runs, so nothing of COPG stays in the app’s memory — safe against anti-cheat memory scans. Use it for games that read props natively.',
   info_dnd_title:      'Do Not Disturb',
   info_dnd_msg:        'Silences calls and notifications while you’re in this game, so nothing interrupts your match. Your normal setting comes back when you leave.',
   info_dab_title:      'Disable Auto-Brightness',

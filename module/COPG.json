@@ -178,7 +178,7 @@
     "PRODUCT": "RMX5101"
   },
   "PACKAGES_GALAXY_Z_FOLD_5": [
-    "com.ea.gp.fifamobile:got"
+    "com.ea.gp.fifamobile:cow"
   ],
   "PACKAGES_GALAXY_Z_FOLD_5_DEVICE": {
     "BRAND": "samsung",

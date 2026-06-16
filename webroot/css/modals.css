@@ -34,7 +34,7 @@
 .chip--cpu     { background:rgba(167,139,250,.14); border-color:rgba(167,139,250,.3);  color:var(--accent-secondary); }
 .chip--blocked { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.3);  color:var(--accent-danger); }
 .chip--withcpu { background:rgba(103,232,249,.12); border-color:rgba(103,232,249,.3);  color:var(--accent-glow); }
-.chip--got     { background:rgba(251,191,36,.14);  border-color:rgba(251,191,36,.35);  color:#FBBF24; }
+.chip--cow     { background:rgba(52,211,153,.14);  border-color:rgba(52,211,153,.35);  color:#34D399; }
 /* tweak chips — one muted neutral style so the 4 comfort tags group quietly
    under the louder spoof chips */
 .chip--tweak   { background:rgba(148,163,184,.1);  border-color:rgba(148,163,184,.24); color:var(--text-secondary); font-weight:500; }
