@@ -6,7 +6,7 @@
      "cpu_spoof": { blacklist:[pkg…], cpu_only_packages:[pkg…] }   // global, optional
      "PACKAGES_<KEY>":        [ "com.x:blocked", "com.y:with_cpu" ] // a device's game list
      "PACKAGES_<KEY>_DEVICE": { BRAND, DEVICE, MANUFACTURER, MODEL,
-                                FINGERPRINT, PRODUCT, SERIAL?, ANDROID_VERSION?, SDK_INT? }
+                                FINGERPRINT, PRODUCT, SERIAL?, ANDROID_ID?, ANDROID_VERSION?, SDK_INT? }
    Insertion order of keys is meaningful and preserved on save (keyOrder).
    Package tags are colon suffixes: pkg:blocked, pkg:with_cpu, pkg:got.
    Logic ported from the previous WebUI (old.js) for full parity.
