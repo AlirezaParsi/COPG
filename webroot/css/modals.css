@@ -84,6 +84,9 @@
 }
 .field__warn svg { width:14px; height:14px; }
 .field__warn:active { opacity:.55; }
+/* Inline variant: sit right next to the label (no auto-push), so a sibling
+   Generate button can still take the right edge. */
+.field__warn--inline { margin-left:0; }
 .field__input, .field__select {
   width:100%; padding:11px 14px;
   background:var(--glass-bg); border:1px solid var(--glass-border);

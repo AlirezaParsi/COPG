@@ -207,8 +207,11 @@ I18N.register('zh', {
   dev_f_android:      'Android 版本',
   dev_f_sdk:          'SDK Int',
   dev_f_serial:       '序列号',
+  dev_f_androidid:    'Android ID',
   opt_optional:       '（可选）',
   serial_gen:         '生成',
+  info_androidid_title: '伪装 Android ID',
+  info_androidid_msg: '让此设备配置下的应用读取伪造的 ANDROID_ID（来自 Settings.Secure 的标识符）。16 位十六进制字符。模块在应用运行前卸载，因此应用内存中不留任何 COPG 痕迹。留空则保留真实 ID。注意：执意的应用仍可通过其他方式读取真实 ID——此项仅改变标准 Settings 查询。',
   info_sdk_title:     'SDK Int',
   info_sdk_msg:       'SDK 级别与 Android 版本是配对的——它会根据 Android 版本自动填充。如果设置了与版本不匹配的 SDK，部分应用会检测到不一致并崩溃。仅当模块尚不认识某个全新 Android 版本时才手动编辑。',
 

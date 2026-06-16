@@ -42,6 +42,8 @@
           <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_sdk">SDK Int</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__warn" id="dfSdkWarn" role="button" tabindex="0" data-i18n-attr="aria-label:info_aria" aria-label="What's this?">${WARN_SVG}</span></span>
             <input class="field__input" id="dfSdk" type="text" inputmode="numeric" /></label>
         </div>
+        <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_androidid">Android ID</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__warn field__warn--inline" id="dfAndroidIdInfo" role="button" tabindex="0" data-i18n-attr="aria-label:info_aria" aria-label="What's this?">${WARN_SVG}</span><span class="field__gen" id="dfAndroidIdGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
+          <input class="field__input field__input--mono" id="dfAndroidId" type="text" maxlength="16" inputmode="latin" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
         <label class="field"><span class="field__head"><span class="field__label" data-i18n="dev_f_serial">Serial Number</span><span class="field__opt" data-i18n="opt_optional">(optional)</span><span class="field__gen" id="dfSerialGen" role="button" tabindex="0" data-i18n="serial_gen">Generate</span></span>
           <input class="field__input field__input--mono" id="dfSerial" type="text" maxlength="24" /></label>
         <div class="form-buttons">
@@ -210,6 +212,7 @@
       $m('#dfAndroid').value = d.ANDROID_VERSION || '';
       $m('#dfSdk').value = d.SDK_INT || '';
       $m('#dfSerial').value = d.SERIAL || '';
+      $m('#dfAndroidId').value = d.ANDROID_ID || '';
     } else {
       form.reset();
     }
@@ -251,6 +254,34 @@
     g.addEventListener('click', gen);
     g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') gen(e); });
   }
+  // ANDROID_ID is exactly 16 lowercase hex chars (a 64-bit value).
+  function genAndroidId() {
+    const hex = '0123456789abcdef';
+    let out = '';
+    try {
+      const buf = new Uint32Array(16);
+      crypto.getRandomValues(buf);
+      for (let i = 0; i < 16; i++) out += hex[buf[i] % 16];
+    } catch (_) {
+      for (let i = 0; i < 16; i++) out += hex[Math.floor(Math.random() * 16)];
+    }
+    return out;
+  }
+  function wireAndroidIdGen() {
+    const g = $m('#dfAndroidIdGen'), s = $m('#dfAndroidId');
+    if (!g || !s) return;
+    const gen = e => { if (e) { e.preventDefault(); e.stopPropagation(); } s.value = genAndroidId(); flash(s); };
+    g.addEventListener('click', gen);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') gen(e); });
+  }
+  function wireAndroidIdInfo() {
+    const w = $m('#dfAndroidIdInfo');
+    if (!w) return;
+    const open = e => { if (e) { e.preventDefault(); e.stopPropagation(); }
+      info({ title: I18N.t('info_androidid_title'), message: I18N.t('info_androidid_msg') }); };
+    w.addEventListener('click', open);
+    w.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(e); });
+  }
   function wireSdkWarn() {
     const w = $m('#dfSdkWarn');
     if (!w) return;
@@ -291,6 +322,7 @@
       name, brand: $m('#dfBrand').value, model,
       manufacturer: fields.manufacturer.value, fingerprint: fields.fingerprint.value,
       android: $m('#dfAndroid').value, sdk: $m('#dfSdk').value, serial: $m('#dfSerial').value,
+      androidId: $m('#dfAndroidId').value,
     }, editingDeviceKey);
 
     closeAll();
@@ -530,6 +562,8 @@
   /* init */
   wireAndroidSdk();
   wireSerialGen();
+  wireAndroidIdGen();
+  wireAndroidIdInfo();
   wireSdkWarn();
 
   w.Modals = { openDevice, openPackage, confirm, confirmDelete, info, closeAll };

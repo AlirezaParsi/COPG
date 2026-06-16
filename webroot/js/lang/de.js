@@ -207,8 +207,11 @@ I18N.register('de', {
   dev_f_android:      'Android-Version',
   dev_f_sdk:          'SDK Int',
   dev_f_serial:       'Seriennummer',
+  dev_f_androidid:    'Android-ID',
   opt_optional:       '(optional)',
   serial_gen:         'Generieren',
+  info_androidid_title: 'Android-ID fälschen',
+  info_androidid_msg: 'Lässt Apps dieses Geräteprofils eine gefälschte ANDROID_ID lesen (die Kennung aus Settings.Secure). 16 Hex-Zeichen. Das Modul entlädt sich vor dem App-Start, sodass nichts von COPG im Speicher der App bleibt. Leer lassen, um die echte ID zu behalten. Hinweis: Eine entschlossene App kann die echte ID anders auslesen — dies ändert nur die Standard-Settings-Abfrage.',
   info_sdk_title:     'SDK Int',
   info_sdk_msg:       'SDK-Level und Android-Version gehören zusammen — es wird automatisch aus der Android-Version ausgefüllt. Wenn du ein nicht passendes SDK einstellst, erkennen manche Apps die Abweichung und stürzen ab. Bearbeite es nur von Hand für eine brandneue Android-Version, die das Modul noch nicht kennt.',
 

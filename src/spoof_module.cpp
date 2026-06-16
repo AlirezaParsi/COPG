@@ -164,6 +164,8 @@ struct DeviceInfo {
     bool should_spoof_sdk_int = false;
     std::string serial;                       // Build.SERIAL spoof (optional, per device profile)
     bool should_spoof_serial = false;
+    std::string android_id;                   // Settings.Secure ANDROID_ID spoof (optional, per device profile)
+    bool should_spoof_android_id = false;
     std::unordered_map<std::string, std::string> prop_overrides;
 };
 
@@ -677,6 +679,83 @@ static void companion(int fd) {
 // ─────────────────────────────────────────
 // Main Module
 // ─────────────────────────────────────────
+// ─────────────────────────────────────────
+// ANDROID_ID spoof — STEALTH (synchronous, no thread, then DLCLOSE)
+// ─────────────────────────────────────────
+// ANDROID_ID is not a prop/Build field — Settings.Secure.getString reads it
+// through an in-process cache: Settings$Secure.sNameValueCache, which holds
+//   ArrayMap<String,String>              mValues
+//   ArrayMap<String,GenerationTracker>   mGenerationTrackers   (per-key, A15)
+// getStringForUser() returns mValues.get(name) WITHOUT any binder call iff a
+// tracker exists for that name AND tracker.isGenerationChanged()==false.
+// isGenerationChanged() = (mArray.get(mIndex) != mCurrentGeneration).
+//
+// So we forge the whole thing synchronously, no ContentResolver/ActivityThread
+// needed: build a PRIVATE MemoryIntArray(1)=[0], a GenerationTracker(name,arr,
+// 0,0,null) (→ isGenerationChanged() is permanently false because nothing else
+// writes our array), then put the fake value + tracker into the cache. The app
+// then reads the fake from its OWN heap with the provider never consulted.
+// Because it's a one-shot value write (data lives in the ART heap, like a
+// Build.* field), the module can DLCLOSE immediately — no resident thread, no
+// mapped .so at anti-cheat scan time. Layout verified against an Android 15
+// (AOSPA) framework.jar; falls back to the real value if any class/field/ctor
+// doesn't resolve (older/newer ART). Value is per-device: COPG.json's
+// PACKAGES_<KEY>_DEVICE.ANDROID_ID, applied to every app on that profile.
+static void forgeAndroidId(JNIEnv* env, const char* fakeId) {
+    if (!fakeId || !*fakeId) return;
+    auto clr = [&]{ if (env->ExceptionCheck()) env->ExceptionClear(); };
+
+    jclass secCls = env->FindClass("android/provider/Settings$Secure");           clr();
+    jclass nvcCls = env->FindClass("android/provider/Settings$NameValueCache");   clr();
+    jclass gtCls  = env->FindClass("android/provider/Settings$GenerationTracker");clr();
+    jclass miaCls = env->FindClass("android/util/MemoryIntArray");                clr();
+    if (!secCls || !nvcCls || !gtCls || !miaCls) {
+        LOGE("[AID] class resolve fail (sec=%p nvc=%p gt=%p mia=%p)", secCls, nvcCls, gtCls, miaCls);
+        return;
+    }
+
+    jfieldID cacheFld  = env->GetStaticFieldID(secCls, "sNameValueCache", "Landroid/provider/Settings$NameValueCache;"); clr();
+    jfieldID valuesFld = env->GetFieldID(nvcCls, "mValues", "Landroid/util/ArrayMap;");                                  clr();
+    jfieldID tracksFld = env->GetFieldID(nvcCls, "mGenerationTrackers", "Landroid/util/ArrayMap;");                      clr();
+    if (!cacheFld || !valuesFld || !tracksFld) {
+        LOGE("[AID] field resolve fail (cache=%p values=%p tracks=%p)", cacheFld, valuesFld, tracksFld);
+        return;
+    }
+
+    jobject cache = env->GetStaticObjectField(secCls, cacheFld); clr();
+    if (!cache) { LOGE("[AID] sNameValueCache null"); return; }
+    jobject values = env->GetObjectField(cache, valuesFld); clr();
+    jobject tracks = env->GetObjectField(cache, tracksFld); clr();
+    if (!values || !tracks) { LOGE("[AID] maps null (values=%p tracks=%p)", values, tracks); return; }
+
+    // Private MemoryIntArray(1), [0]=0 → our tracker's generation never changes.
+    jmethodID miaCtor = env->GetMethodID(miaCls, "<init>", "(I)V"); clr();
+    jmethodID miaSet  = env->GetMethodID(miaCls, "set", "(II)V");   clr();
+    jobject mia = miaCtor ? env->NewObject(miaCls, miaCtor, (jint)1) : nullptr; clr();
+    if (!mia) { LOGE("[AID] MemoryIntArray create fail"); return; }
+    if (miaSet) { env->CallVoidMethod(mia, miaSet, (jint)0, (jint)0); clr(); }
+
+    jstring key = env->NewStringUTF("android_id");
+
+    // GenerationTracker(String name, MemoryIntArray arr, int index, int curGen, Consumer errorHandler)
+    jmethodID gtCtor = env->GetMethodID(gtCls, "<init>",
+        "(Ljava/lang/String;Landroid/util/MemoryIntArray;IILjava/util/function/Consumer;)V"); clr();
+    jobject tracker = gtCtor ? env->NewObject(gtCls, gtCtor, key, mia, (jint)0, (jint)0, (jobject)nullptr) : nullptr; clr();
+    if (!tracker) { LOGE("[AID] GenerationTracker create fail"); return; }
+
+    // ArrayMap.put(Object,Object) via the Map interface signature.
+    jclass amCls = env->GetObjectClass(values);
+    jmethodID putMid = env->GetMethodID(amCls, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"); clr();
+    env->DeleteLocalRef(amCls);
+    if (!putMid) { LOGE("[AID] ArrayMap.put not found"); return; }
+
+    jstring fakeStr = env->NewStringUTF(fakeId);
+    jobject p1 = env->CallObjectMethod(values, putMid, key, fakeStr);  clr(); if (p1) env->DeleteLocalRef(p1);
+    jobject p2 = env->CallObjectMethod(tracks, putMid, key, tracker);  clr(); if (p2) env->DeleteLocalRef(p2);
+
+    LOGI("[AID] forged android_id -> %s (synchronous, no thread)", fakeId);
+}
+
 class COPGModule : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api* api, JNIEnv* env) override {
@@ -707,7 +786,8 @@ public:
         }
 
         PKG_LOG("Processing: %s", package_name);
-        
+        do_android_id = false;
+
         // Reset build class for forked process
         buildClass = nullptr;
         versionClass = nullptr;
@@ -762,6 +842,9 @@ public:
             if (flags.needs_device_spoof) {
                 ensureBuildClass();
                 spoofDevice(current_info);
+                // ANDROID_ID is forged in postAppSpecialize (the MemoryIntArray
+                // wants the app's uid / SELinux domain); just flag it here.
+                do_android_id = current_info.should_spoof_android_id;
             }
 
             if (flags.needs_cpu_unmount) {
@@ -798,22 +881,33 @@ public:
             current_pkg_name = package_name;
         }
 
-        // Stealth Mode: If no GOT hook is needed, close module immediately
-        if (!needs_got_hook) {
-            PKG_LOG("%s: No GOT hook needed, closing module for stealth", package_name);
+        // Stealth Mode: close now unless a later callback still needs us — GOT
+        // hooks, or the ANDROID_ID forge which runs in postAppSpecialize.
+        if (!needs_got_hook && !do_android_id) {
+            PKG_LOG("%s: No deferred work, closing module for stealth", package_name);
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
+        if (do_android_id) {
+            forgeAndroidId(env, current_info.android_id.c_str());
+        }
         if (needs_got_hook && !precomputed_hooks.empty()) {
-            applyGotHooksAsync();
+            applyGotHooksAsync();   // GOT hooks must stay resident — no DLCLOSE here
+        } else if (do_android_id) {
+            // ANDROID_ID was the only deferred action: one-shot value write done,
+            // data lives in the ART heap → unload now so nothing of COPG is mapped
+            // when the app's anti-cheat scans its own memory.
+            LOGI("[AID] done, unloading module");
+            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
 private:
     zygisk::Api* api;
     JNIEnv* env;
+    bool do_android_id = false;
     // ✅ CORRECT STRUCTURE: DeviceInfo + map of package_name -> PackageFlags
     std::vector<std::pair<DeviceInfo, std::unordered_map<std::string, PackageFlags>>> device_packages;
     std::vector<GotHookEntry> precomputed_hooks;
@@ -1083,6 +1177,8 @@ private:
                     info.product = device.value("PRODUCT", info.brand);
                     info.serial = device.value("SERIAL", "");
                     info.should_spoof_serial = !info.serial.empty();
+                    info.android_id = device.value("ANDROID_ID", "");
+                    info.should_spoof_android_id = !info.android_id.empty();
 
                     // Auto-generate props
                     info.prop_overrides["ro.product.model"] = info.model;

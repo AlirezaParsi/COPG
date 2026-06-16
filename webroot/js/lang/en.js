@@ -207,8 +207,11 @@ I18N.register('en', {
   dev_f_android:      'Android Version',
   dev_f_sdk:          'SDK Int',
   dev_f_serial:       'Serial Number',
+  dev_f_androidid:    'Android ID',
   opt_optional:       '(optional)',
   serial_gen:         'Generate',
+  info_androidid_title: 'Android ID spoof',
+  info_androidid_msg: 'Makes apps on this device profile read a fake ANDROID_ID (the identifier from Settings.Secure). 16 hex characters. The module unloads before the app runs, so nothing of COPG stays in the app’s memory. Leave empty to keep the real ID. Note: a determined app can still read the real ID by other means — this only changes the standard Settings lookup.',
   info_sdk_title:     'SDK Int',
   info_sdk_msg:       'The SDK level and the Android Version are a matched pair — it auto-fills from the Android Version. If you set an SDK that doesn’t match the version, some apps detect the mismatch and crash. Only edit it by hand for a brand-new Android version the module doesn’t know yet.',
 

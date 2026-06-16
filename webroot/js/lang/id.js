@@ -207,8 +207,11 @@ I18N.register('id', {
   dev_f_android:      'Versi Android',
   dev_f_sdk:          'SDK Int',
   dev_f_serial:       'Nomor Seri',
+  dev_f_androidid:    'Android ID',
   opt_optional:       '(opsional)',
   serial_gen:         'Buat',
+  info_androidid_title: 'Palsukan Android ID',
+  info_androidid_msg: 'Membuat aplikasi pada profil perangkat ini membaca ANDROID_ID palsu (identifier dari Settings.Secure). 16 karakter heksa. Modul dibongkar sebelum aplikasi berjalan, sehingga tidak ada jejak COPG di memori aplikasi. Kosongkan untuk memakai ID asli. Catatan: aplikasi yang gigih masih bisa membaca ID asli lewat cara lain — ini hanya mengubah pencarian Settings standar.',
   info_sdk_title:     'SDK Int',
   info_sdk_msg:       'Level SDK dan Versi Android adalah pasangan yang cocok — terisi otomatis dari Versi Android. Jika kamu menyetel SDK yang tidak cocok, sebagian aplikasi mendeteksi ketidakcocokan dan crash. Edit manual hanya untuk versi Android baru yang belum dikenal modul.',
 
