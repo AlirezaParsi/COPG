@@ -1,28 +1,20 @@
 support: https://t.me/TheAOSP
 categories:
-  - Gaming 
+  - Gaming
   - Tweaks and Spoofing
   - WebUI
   - Miscellaneous
   - Zygisk
 license: "Apache-2.0 license"
-cover: https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/banner.png
-icon: https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/icon.png
+cover: https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/banner.png
+icon: https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/webroot/icon.png
 screenshots:
-  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/screenshots/Screenshot_20250913-210930_WebUI%20X.png
-  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/screenshots/Screenshot_20250913-211418_WebUI%20X.png
-  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/screenshots/Screenshot_20250913-211454_WebUI%20X.png
-  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/screenshots/Screenshot_20250913-211502_WebUI%20X.png
-  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/screenshots/Screenshot_20250913-213048_WebUI%20X.png
-  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/screenshots/Screenshot_20250913-211818_WebUI%20X.png
-  - https://github.com/user-attachments/assets/d9d3398f-5944-44e6-8df6-312e099c9738
-  - https://github.com/user-attachments/assets/9a9fd8b2-7449-404f-888a-dedeefbe670d
-  - https://github.com/user-attachments/assets/735aa872-fbf0-4cd1-8299-1989c08b9b80
-  - https://github.com/AlirezaParsi/COPG/raw/JSON/screenshots/Screenshot_20250914-131838_Free%20Fire%20MAX.png?raw=true
+  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/screenshots/Screenshot_20260614-121040_KsuWebUI.png
+  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/screenshots/Screenshot_20260614-121848_WebUI%20X.png
+  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/screenshots/Screenshot_20260614-121127_KsuWebUI.png
+  - https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/screenshots/Screenshot_20260614-121204_KsuWebUI.png
 readme: https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/README.md
 donate: https://t.me/COPG_module/72
 note:
-  title: COPG Module 
+  title: COPG Module
   message: Spoof your device for games/apps to unlock new features.
-  
-  
