@@ -250,6 +250,7 @@
       PRODUCT: model,
     };
     if ((form.serial || '').trim())  data.SERIAL = form.serial.trim();
+    if ((form.androidId || '').trim()) data.ANDROID_ID = form.androidId.trim().toLowerCase();
     if ((form.android || '').trim()) data.ANDROID_VERSION = form.android.trim();
     if ((form.sdk || '').trim())     data.SDK_INT = form.sdk.trim();
 

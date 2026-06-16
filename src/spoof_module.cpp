@@ -164,6 +164,8 @@ struct DeviceInfo {
     bool should_spoof_sdk_int = false;
     std::string serial;                       // Build.SERIAL spoof (optional, per device profile)
     bool should_spoof_serial = false;
+    std::string android_id;                   // Settings.Secure ANDROID_ID spoof (optional, per device profile)
+    bool should_spoof_android_id = false;
     std::unordered_map<std::string, std::string> prop_overrides;
 };
 
@@ -695,12 +697,12 @@ static void companion(int fd) {
 // then reads the fake from its OWN heap with the provider never consulted.
 // Because it's a one-shot value write (data lives in the ART heap, like a
 // Build.* field), the module can DLCLOSE immediately — no resident thread, no
-// mapped .so at anti-cheat scan time. Layout verified against THIS device's
-// framework.jar (Android 15 / AOSPA).
-#define AID_TARGET_PKG  "com.akademiteknoloji.androidallid"
-#define AID_FAKE_VALUE  "a1b2c3d4e5f60718"
-
+// mapped .so at anti-cheat scan time. Layout verified against an Android 15
+// (AOSPA) framework.jar; falls back to the real value if any class/field/ctor
+// doesn't resolve (older/newer ART). Value is per-device: COPG.json's
+// PACKAGES_<KEY>_DEVICE.ANDROID_ID, applied to every app on that profile.
 static void forgeAndroidId(JNIEnv* env, const char* fakeId) {
+    if (!fakeId || !*fakeId) return;
     auto clr = [&]{ if (env->ExceptionCheck()) env->ExceptionClear(); };
 
     jclass secCls = env->FindClass("android/provider/Settings$Secure");           clr();
@@ -784,14 +786,7 @@ public:
         }
 
         PKG_LOG("Processing: %s", package_name);
-
-        // TEST: ANDROID_ID spoof target — keep the module loaded (do NOT stealth-close)
-        // so postAppSpecialize can launch the poison worker once the app starts.
-        do_android_id = (strcmp(package_name, AID_TARGET_PKG) == 0);
-        if (do_android_id) {
-            PKG_LOG("%s: android_id spoof target — deferring to postAppSpecialize", package_name);
-            return;
-        }
+        do_android_id = false;
 
         // Reset build class for forked process
         buildClass = nullptr;
@@ -847,6 +842,9 @@ public:
             if (flags.needs_device_spoof) {
                 ensureBuildClass();
                 spoofDevice(current_info);
+                // ANDROID_ID is forged in postAppSpecialize (the MemoryIntArray
+                // wants the app's uid / SELinux domain); just flag it here.
+                do_android_id = current_info.should_spoof_android_id;
             }
 
             if (flags.needs_cpu_unmount) {
@@ -883,23 +881,26 @@ public:
             current_pkg_name = package_name;
         }
 
-        // Stealth Mode: If no GOT hook is needed, close module immediately
-        if (!needs_got_hook) {
-            PKG_LOG("%s: No GOT hook needed, closing module for stealth", package_name);
+        // Stealth Mode: close now unless a later callback still needs us — GOT
+        // hooks, or the ANDROID_ID forge which runs in postAppSpecialize.
+        if (!needs_got_hook && !do_android_id) {
+            PKG_LOG("%s: No deferred work, closing module for stealth", package_name);
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs* args) override {
         if (do_android_id) {
-            forgeAndroidId(env, AID_FAKE_VALUE);
-            // One-shot value write — data persists in the ART heap, so unload
-            // the module now: no resident thread/.so for an anti-cheat scan.
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
+            forgeAndroidId(env, current_info.android_id.c_str());
         }
         if (needs_got_hook && !precomputed_hooks.empty()) {
-            applyGotHooksAsync();
+            applyGotHooksAsync();   // GOT hooks must stay resident — no DLCLOSE here
+        } else if (do_android_id) {
+            // ANDROID_ID was the only deferred action: one-shot value write done,
+            // data lives in the ART heap → unload now so nothing of COPG is mapped
+            // when the app's anti-cheat scans its own memory.
+            LOGI("[AID] done, unloading module");
+            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
         }
     }
 
@@ -1176,6 +1177,8 @@ private:
                     info.product = device.value("PRODUCT", info.brand);
                     info.serial = device.value("SERIAL", "");
                     info.should_spoof_serial = !info.serial.empty();
+                    info.android_id = device.value("ANDROID_ID", "");
+                    info.should_spoof_android_id = !info.android_id.empty();
 
                     // Auto-generate props
                     info.prop_overrides["ro.product.model"] = info.model;
