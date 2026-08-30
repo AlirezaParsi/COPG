@@ -1,7 +1,8 @@
-name: Notify KernelSU module repo
+name: Notify module repos
 
-# Fires the moment you publish a release on AlirezaParsi/COPG,
-# telling KernelSU-Modules-Repo/COPG to mirror the new zip.
+# Fires the moment you publish a release on AlirezaParsi/COPG, telling each module
+# repo to mirror the new zip. Fans out to both the KernelSU repo and the Magisk
+# Alt Repo — each listens for a repository_dispatch of type "sync-release".
 
 on:
   release:
@@ -11,11 +12,17 @@ on:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false           # one repo failing must not skip the other
+      matrix:
+        repo:
+          - KernelSU-Modules-Repo/COPG
+          - Magisk-Modules-Alt-Repo/COPG
     steps:
-      - name: Trigger module-repo sync
+      - name: Trigger ${{ matrix.repo }} sync
         run: |
           curl -fsSL -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.MODULE_DISPATCH_PAT }}" \
-            https://api.github.com/repos/KernelSU-Modules-Repo/COPG/dispatches \
+            https://api.github.com/repos/${{ matrix.repo }}/dispatches \
             -d '{"event_type":"sync-release"}'
