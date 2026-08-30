@@ -4,6 +4,23 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v6.7.0
+*Adds a per-app GPS location spoof, a fake Play install source, and a PairIP license-check block for running paid / locked apps.*
+
+### GPS Location Spoof — new PRO feature
+*   **Put any app anywhere on the map.** A new **GPS** option in the package editor makes an app read a location you pick — choose a country/city from the built-in list (135 places) or drop in your own latitude/longitude. It covers the normal location APIs **and** Google's Fused/GMS provider, so map, weather, dating, delivery and region-locked apps see the spoofed spot.
+*   **Only the coordinates change.** Latitude and longitude are overwritten; accuracy, altitude and speed stay real, so the fix still looks natural. No need for a separate mock-location app or Developer Options.
+*   **Resident — use with care.** This hook stays mapped while the app runs, so a strict anti-cheat CAN detect it. It sits behind a red *"use at your own risk"* confirmation and should **never** be used on anti-cheat games. PRO, arm64 and arm32.
+
+### Fake Play Install Source — new PRO feature
+*   **Make an app look Play-installed.** A new **Fake Play Install Source** toggle makes an app read its installer as the Google Play Store (`com.android.vending`) — for apps that gate features or trust on a "genuine Play install".
+*   **Invisible to the app.** It works in the system, not inside the app — nothing of the module is loaded into the app's process, so there's nothing on-device to detect. Applies at boot; no residency.
+
+### Block PairIP License Check — new PRO feature
+*   **Run paid / locked apps.** A new **Block PairIP License Check** toggle stops Google's PairIP "you don't own this app / buy it on Play" screen from appearing, so the app opens normally.
+*   **Done out of process — undetectable.** The block happens in the Android system, not inside the app, so PairIP's in-app anti-tamper can't see it. **Safe / not detectable.** It works for apps where the license screen is a separate step; if that screen is the app's own launcher or the check is built into native code, it won't help — just turn it off if an app misbehaves. PRO.
+
+---
 ## v6.6.0
 *Adds a device-wide "Disable FLAG_SECURE" so you can screenshot and screen-record apps that normally block it.*
 

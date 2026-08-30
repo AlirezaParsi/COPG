@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-6.4.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Version](https://img.shields.io/badge/version-6.7.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
 [![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
 [![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
@@ -74,6 +74,16 @@ readers, useful against anti‑fraud / referral flows that distrust a freshly‑
 Give any WebView‑based app its own **browser User‑Agent** — from a reusable named profile — for sites
 and in‑app pages that gate content, layout or pricing on the browser identity.
 
+#### 📸 Screenshot &amp; Storage Unlocks *(free)*
+**Disable FLAG_SECURE** device‑wide to screenshot / screen‑record apps that block it (banking, chat,
+wallets) — done in the system, invisible to the app · **No Storage Restrict** re‑enables picking
+Android/data, obb, the SD‑card root and Download in the system file picker. Both toggle with no reboot.
+
+#### 🎟️ Play Source &amp; PairIP Bypass *(PRO)*
+Make an app look **Play‑installed** (installer → Google Play) and **block Google's PairIP license
+check** so paid / locked apps open normally. Both run in the system, out of the app — nothing loads
+into the app's process, so they're **not detectable**.
+
 </td>
 <td width="50%" valign="top">
 
@@ -97,6 +107,17 @@ reward / referral / multi‑account apps where each install should look like a d
 Give each app its **own Google App Set ID** — the resettable fingerprint signal ad / analytics SDKs
 read via Play Services — automatic per‑app, or pin an exact UUID, so each looks like a separate device.
 It's a **resident** hook behind a *use‑at‑your‑own‑risk* gate — **never for anti‑cheat games.**
+
+#### 🌐 Per‑App Proxy *(PRO)*
+Route a single app through your own **SOCKS5 / HTTP / SOCKS4** proxy so its traffic exits from that IP
+and country — no VPN, no interface the app can see, nothing runs inside the app (kernel‑level, ban‑safe).
+Save proxies and assign one per app; pair with a matching SIM/region so device, SIM and IP all agree.
+
+#### 📍 GPS Location Spoof *(PRO)*
+Put an app **anywhere on the map** — pick a country/city from the built‑in list (135 places) or drop in
+your own latitude/longitude. Covers the normal location APIs **and** Google's Fused/GMS provider; only
+lat/lng change (accuracy/altitude stay real). Resident hook behind a *use‑at‑your‑own‑risk* gate —
+never for anti‑cheat games.
 
 #### 🛡️ Privacy Hides
 **Hide VPN** — covers both the Java (network‑interface / capabilities) and native interface checks,
@@ -188,8 +209,12 @@ per‑app **screen DPI** — applied only while a tagged game is active, then re
 ### Get the module
 
 [![MMRL](https://mmrl.dev/assets/badge.svg)](https://mmrl.dev/repository/zguectZGR/COPG)
+[![Magisk Alt Repo](https://img.shields.io/badge/Magisk_Alt_Repo-COPG-00B39B?style=for-the-badge&logo=magisk&logoColor=white)](https://github.com/Magisk-Modules-Alt-Repo/COPG)
+[![KernelSU Repo](https://img.shields.io/badge/KernelSU_Repo-COPG-7D4698?style=for-the-badge)](https://github.com/KernelSU-Modules-Repo/COPG)
 
-Install from **[MMRL](https://mmrl.dev/repository/zguectZGR/COPG)**, or grab the latest
+Install from **[MMRL](https://mmrl.dev/repository/zguectZGR/COPG)** (auto‑updates), from the
+**[Magisk Alt Repo](https://github.com/Magisk-Modules-Alt-Repo/COPG)** or the
+**[KernelSU Modules Repo](https://github.com/KernelSU-Modules-Repo/COPG)**, or grab the latest
 `COPG.zip` from **[Releases](https://github.com/AlirezaParsi/COPG/releases)**.
 
 ### Steps
