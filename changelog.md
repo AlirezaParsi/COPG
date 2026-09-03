@@ -4,6 +4,33 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v6.8.0
+*Adds per-user spoofing — a different device identity for each Android user or dual-app clone — keeps your PRO license across updates, and shows the module's real health on the home screen.*
+
+### Per-User Spoofing — new
+*   **A different device for each Android user.** If you use dual-apps / app clones (HyperOS, One UI, etc.), a work profile, or a second Android user, you can now give the SAME app a different spoof per user — e.g. the main WhatsApp reads a Pixel while the cloned one reads a Galaxy. Add the app twice, once per user, each on its own device profile.
+*   **The picker finds your clones.** The app picker now has an **"Apps for"** dropdown that lists every Android user on the phone. Owner apps look normal; a cloned copy shows a small **"User 10"** tag so you can tell them apart. Picking one automatically scopes it to that user.
+*   **Launch & clear-data hit the right copy.** The restart and clear-data buttons now act on the exact user the entry is scoped to — clearing a clone no longer wipes the main app.
+*   **Each clone gets its own identity.** Derived values (Android ID, serial, advertising / App Set ID, IMEI) are keyed per user, so two clones of the same app never share an ID.
+
+### PRO license now survives updates — fix
+*   **No more re-importing after every update.** Your device-locked PRO license is now carried over automatically when you update the module, and backed up so it also survives a full uninstall + reinstall. Update and your PRO features stay on.
+
+### Real module status on the home screen — new
+*   **See if the module is actually working.** The status badge no longer just checks that the folder exists — it now reflects the real state: **Active** (loaded and running this boot), **Reboot to activate** (just installed), **Not loaded** (didn't start — bad install / needs attention), **Disabled**, **Uninstalling**, or **Zygisk off**. Colour-coded green / amber / red / grey.
+
+### Country flags in the pickers — polish
+*   **Flags everywhere you pick a country.** The SIM/carrier, language, timezone and GPS location pickers now show a country flag next to each entry, so the right one is easier to spot.
+
+### Languages
+*   **New: Português (Brasil).** The WebUI is now fully translated to Brazilian Portuguese — pick it in Settings → Language.
+*   **All translations updated.** Every language (English, فارسی, العربية, Deutsch, Español, Português, Bahasa Indonesia, ไทย, Türkçe, 中文) is brought fully up to date with the new features and screens — 10 languages, complete coverage.
+
+### Fixes
+*   **Scrolling in the editors.** The Add/Edit dialogs couldn't be scrolled on some phones — fixed, the whole form scrolls again.
+*   **Timezone list.** Added Europe/Lisbon (Portugal) to the built-in timezones.
+
+---
 ## v6.7.0
 *Adds a per-app GPS location spoof, a fake Play install source, and a PairIP license-check block for running paid / locked apps.*
 
