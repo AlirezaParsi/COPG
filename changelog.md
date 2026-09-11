@@ -4,6 +4,24 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v6.9.8
+*Custom SIM identity (IMSI + ICCID), a big multi-user / app-clone overhaul — clones are now found and shown with their real icons and names on every phone — plus fixes for an Android 11 boot loop and a 32-bit app crash.*
+
+### Custom SIM identity — new
+*   **Spoof the SIM's IMSI and ICCID per app.** On top of the existing carrier spoof you can now set a custom **IMSI** (subscriber ID) and **ICCID** (SIM serial number) for a chosen app — grouped under the IMEI section. Leave blank to auto-derive a valid one, or pin your own.
+*   **Dual-SIM aware.** Separate values for SIM 1 and SIM 2, with Generate buttons that produce valid, checksum-correct numbers.
+
+### App clones & multi-user — greatly improved
+*   **Clones are actually detected now.** App-clone spaces on Motorola / OnePlus (the built-in "App clone" / 应用分身) and Xiaomi dual-apps / secondary users are found reliably — even on ROMs that block the usual lookups. The "Apps for" dropdown lists every user, and each clone's apps show up under it.
+*   **Real icons + names for clone apps.** Every installed app — including cloned copies and apps in a second user — now shows its real icon and name, rendered right on the device (works offline, no more blank tiles for clones).
+*   **Smoother app picker.** No more flicker on open: the list appears already sorted by name and correctly filtered to User / System.
+*   **Nicer placeholders.** When an app has no icon, the letter tile now uses the app's name.
+
+### Crash fixes
+*   **Android 11 boot loop fixed.** Devices on Android 11 no longer risk a boot loop from the advanced spoof engine — it now safely stays off there (your basic spoofs still work).
+*   **32-bit app crash fixed.** Some 32-bit games (e.g. Mobile Legends) could crash on launch with the module active — fixed.
+
+---
 ## v6.8.0
 *Adds per-user spoofing — a different device identity for each Android user or dual-app clone — keeps your PRO license across updates, and shows the module's real health on the home screen.*
 
