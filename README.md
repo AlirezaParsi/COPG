@@ -242,7 +242,6 @@ development. And a ⭐ on GitHub helps a lot too!
 | Network | Address |
 | --- | --- |
 | ![USDT ERC20](https://img.shields.io/badge/USDT-ERC20-627EEA?style=flat-square&logo=ethereum&logoColor=white) | `0xB8eb7Ea033823C9aA4616B0648B89CDbC931BAAd` |
-| ![USDT TRC20](https://img.shields.io/badge/USDT-TRC20-EF0027?style=flat-square&logo=tron&logoColor=white) | `TMMDAyJ9Fs3yQpidd2Q4eYLTMkM1hsrauV` |
 | ![USDT BEP20](https://img.shields.io/badge/USDT-BEP20-F0B90B?style=flat-square&logo=binance&logoColor=white) | `0xB8eb7Ea033823C9aA4616B0648B89CDbC931BAAd` |
 | ![GRAM TON](https://img.shields.io/badge/GRAM-TON-0098EA?style=flat-square&logo=ton&logoColor=white) | `UQAOHoREeGeJ0_kzJpSW3m-6Dlb_lzdHpT1a-gA7NkbuCM8N` |
 
