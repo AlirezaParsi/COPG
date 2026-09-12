@@ -4,6 +4,26 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.0.0
+*Custom SIM identity (IMSI + ICCID) and a new cell-tower (LAC/CI) spoof, a big multi-user / app-clone overhaul — clones are found and shown with their real icons and per-clone names — 23 built-in Pixel profiles, plus fixes for an Android 11 boot loop and a 32-bit app crash.*
+
+### Cell Tower spoof (LAC / CI) — new
+*   **Fake the serving cell tower, separate from GPS.** A new per-app toggle lets you set the **Area Code (LAC/TAC)** and **Cell Identity (CI/CID/NCI)** as plain decimal numbers. Your real GPS latitude/longitude are left untouched — turn this on *alongside* GPS spoof when an app cross-checks that the coordinates and the tower agree (common in China risk-control). Carrier (MCC/MNC) stays real. Resident hook → PRO, risk-gated, arm64/arm32; never for competitive games.
+
+### Stability — new
+*   **Master switch for system-server spoofs (Settings), OFF by default.** The advanced spoofs that run inside Android's `system_server` (VPN hide, per-app language, disable FLAG_SECURE, fake Play install source, PairIP block) are now behind one master toggle that ships **off**, so a fresh or updated install can never boot-loop from them. Turn it on in Settings and **reboot** to arm them; each still has its own boot-crash guard underneath. **After updating, if you use any of those, enable "System-Server Spoofs" in Settings and reboot once.**
+
+### Crash fixes
+*   **No more Files / storage crash on 32-bit phones.** On some 32-bit devices the module's "No storage restrict" helper could crash the **Files** and **External Storage** apps (files wouldn't open). It now safely stays off on 32-bit — no crash. The same guard also covers the screenshot-unblock and system-wide IMEI helpers.
+
+### Per-user spoofing — fix + improvements
+*   **Owner spoofs no longer leak to clones.** When you spoof an app for the **Owner** on a phone that has app-clones / a second user, it now applies to the Owner only — the cloned copy keeps its own identity. Pick a specific user in the app picker's **"Apps for"** dropdown to scope each one.
+*   **Clones show their real name.** In the app picker and library, a cloned app now shows the clone's own name (e.g. "Clone 1", "Clone 2" from your system app-clone settings) instead of a plain "User 10", so you can tell them apart.
+
+### 23 Pixel device profiles — new
+*   **Google Pixel devices built in.** Ready-made profiles for Pixel 3 → Pixel 9 Pro XL / Fold / Tablet (correct model, fingerprint, SoC, GPU) are now bundled — pick one for any app, no manual entry.
+
+---
 ## v6.9.8
 *Custom SIM identity (IMSI + ICCID), a big multi-user / app-clone overhaul — clones are now found and shown with their real icons and names on every phone — plus fixes for an Android 11 boot loop and a 32-bit app crash.*
 
