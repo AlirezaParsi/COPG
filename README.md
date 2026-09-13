@@ -18,7 +18,10 @@
 <a href="#-webui"><img src="https://img.shields.io/badge/🖥_WebUI-1f2937?style=for-the-badge" alt="WebUI" /></a>
 <a href="#-faq"><img src="https://img.shields.io/badge/❓_FAQ-1f2937?style=for-the-badge" alt="FAQ" /></a>
 <a href="https://t.me/COPG_module"><img src="https://img.shields.io/badge/💬_Telegram-2CA5E0?style=for-the-badge" alt="Telegram" /></a>
+<a href="https://vendors.copg.my"><img src="https://img.shields.io/badge/🌐_Website-6d28d9?style=for-the-badge" alt="COPG Website" /></a>
 <a href="#-support-copg"><img src="https://img.shields.io/badge/Support-f59e0b?style=for-the-badge&logo=bitcoin&logoColor=white" alt="Support" /></a>
+
+**🌐 Official website — download COPG free & buy COPG PRO: [vendors.copg.my](https://vendors.copg.my)**
 
 </div>
 
