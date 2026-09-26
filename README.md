@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-6.7.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Version](https://img.shields.io/badge/version-6.8.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
 [![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
 [![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
@@ -22,6 +22,8 @@
 <a href="#-support-copg"><img src="https://img.shields.io/badge/Support-f59e0b?style=for-the-badge&logo=bitcoin&logoColor=white" alt="Support" /></a>
 
 **🌐 Official website — download COPG free & buy COPG PRO: [vendors.copg.my](https://vendors.copg.my)**
+
+🌐 Languages / 语言：**English** · [简体中文](README.zh.md)
 
 </div>
 
@@ -42,6 +44,12 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 #### 🎯 Device Spoofing
 Per‑app device profiles (brand, model, fingerprint, SDK, **baseband**, **per‑app serial** and 12
 extra Build fields) so each game sees the exact flagship it rewards.
+
+#### 👥 Per‑User Spoofing *(new)*
+Give the **same app a different device per Android user** — dual‑apps / app clones (HyperOS, One UI),
+work profiles, second users. The main copy reads one phone, the clone reads another; each clone even
+gets its own derived Android ID / serial / advertising ID / IMEI. The app picker's **"Apps for"**
+drawer finds your clones automatically.
 
 #### ⚙️ CPU Spoofing
 Spoof the CPU to flagship‑class silicon for apps that gate features on the chipset.
@@ -135,7 +143,7 @@ per‑app **screen DPI** — applied only while a tagged game is active, then re
 </tr>
 </table>
 
-> 🔁 **Add or remove devices, games &amp; apps without a reboot.** ✨ Fully customizable. 🌍 9‑language
+> 🔁 **Add or remove devices, games &amp; apps without a reboot.** ✨ Fully customizable. 🌍 10‑language
 > WebUI with Light / Dark / AMOLED themes.
 
 ---
@@ -246,7 +254,7 @@ straight from the manager. On **Magisk**, install the **KSU WebUI** app and open
 - 📡 **Global Hooks** — device‑wide **Global IMEI** (Settings): one fake IMEI for every app, `*#06#`
   and the dialer
 - 💾 **Backup / Restore** &amp; **Sync from GitHub**
-- 🎨 **Light / Dark / AMOLED** themes · 🌍 **9 languages** (EN, FA, AR, DE, ES, ID, TH, TR, ZH)
+- 🎨 **Light / Dark / AMOLED** themes · 🌍 **10 languages** (EN, FA, AR, DE, ES, PT‑BR, ID, TH, TR, ZH)
 
 <details>
 <summary><b>⚙️ Advanced — edit profiles by hand</b></summary>
