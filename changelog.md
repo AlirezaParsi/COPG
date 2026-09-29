@@ -4,6 +4,36 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.3.0
+*Three new spoofs — a per-app sensor-roster spoof, a WebView canvas fingerprint spoof and a Pixel "Tensor" feature unlock — plus a new Hook Status page so you can see at a glance which spoofs are actually live on your device.*
+
+### Sensor spoof — new
+*   **Give each app its own sensor fingerprint.** Anti-fraud and tracking SDKs hash your device's sensor list (accelerometer, gyroscope, magnetometer…) into a stable device ID — and if your build says one phone but the sensors say another, that mismatch flags you. COPG now rewrites each sensor's **name *and* vendor** with a per-app, stable-but-unique value, so the roster no longer matches your real hardware and two apps never see the same one. Resident hook → **PRO**, behind the *use-at-your-own-risk* gate, arm64/arm32; never for competitive games.
+
+### WebView Canvas spoof — new
+*   **Break canvas fingerprinting in WebView apps.** Websites and in-app browsers identify you by reading a hidden `<canvas>` and hashing the pixels. The new **Canvas Spoof** toggle adds tiny, per-app, *stable* noise so every WebView-based app reads a different — but consistent — canvas fingerprint, including content loaded inside iframes. (WebGL is already covered by GPU spoof.) Resident hook → **PRO**, risk-gated.
+
+### Tensor feature spoof — new
+*   **Unlock Pixel "Tensor" AI features in Google apps.** A new per-app **Tensor Feature Targets** toggle makes chosen apps see the Google **Tensor** system features, exactly as on a real Pixel — so Google apps expose their Tensor-gated AI and exclusive functionality. It runs **out-of-process inside `system_server`**, so nothing loads into the app and it's undetectable. **PRO**; lives under the **System-Server Spoofs** master switch — enable it and reboot to arm.
+
+### Per-app proxy
+*   **Kill-switch (fail-closed).** A proxied app now stays locked to its proxy: if the proxy is unreachable, the app's traffic is **blocked** instead of silently leaking out over your real connection. No more accidental direct connections.
+*   **Works for app clones & second users.** Per-app proxy routing now covers cloned / secondary-user copies of an app too, not just the main (owner) copy.
+
+### Hook Status — new
+*   **See which spoofs are actually working.** A new **Hook Status** page (Settings) shows, device-wide, the spoof values COPG has served recently — model, CPU, ANDROID_ID, sensors, carrier and more — with which app and when. A quick, honest check that your spoofs are live instead of guessing. Shows spoofed values only.
+
+### Quality of life
+*   **Select & delete many packages at once.** Long-press a package in the Library to enter multi-select, tick several, and remove them in one go.
+*   **Send your device code without the clipboard.** The License screen can now hand off your device code by **Share**, save it to a **file**, or show it as a **QR code** — easier when messaging it to get a license.
+*   **Cleaner install screen.** The flashing checklist (root, Zygisk, Android, controller) is realigned and easier to read.
+
+### Fixes
+*   **CPU spoof: fixed an empty `/proc/cpuinfo`.** On some ROMs the mounted CPU profile could come back blank (wrong SELinux label); it's now relabelled before every bind so the fake CPU always reads correctly.
+*   **Device cards showed codenames.** Saved devices again show their friendly name (e.g. "Pixel 8 Pro") instead of the internal codename.
+*   **App-clone icons & names.** More reliable real icons and per-clone names for cloned/secondary-user apps, including adaptive icons.
+
+---
 ## v7.0.0
 *Custom SIM identity (IMSI + ICCID) and a new cell-tower (LAC/CI) spoof, a big multi-user / app-clone overhaul — clones are found and shown with their real icons and per-clone names — 23 built-in Pixel profiles, plus fixes for an Android 11 boot loop and a 32-bit app crash.*
 
