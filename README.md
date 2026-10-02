@@ -4,7 +4,7 @@
 
 # 🎮 COPG
 
-**The most advanced device &amp; CPU spoofer for Android — bypass restrictions and unlock premium graphics, higher FPS and exclusive features on most games and apps.**
+**The most advanced device for Android — bypass restrictions and unlock premium graphics, higher FPS and exclusive features on most games and apps.**
 
 <br>
 
