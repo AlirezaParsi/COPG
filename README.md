@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-6.8.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Version](https://img.shields.io/badge/version-7.3.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
 [![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
 [![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
@@ -106,9 +106,9 @@ fields and block‑CPU stay free.)
 
 #### 📶 SIM / Carrier Spoofing *(PRO)*
 Make an app read a different **network carrier** — name, operator code (MCC/MNC) &amp; country — per
-app, even a **different carrier per SIM slot**. **Safe** mode is fully stealth (anti‑cheat safe);
-**Aggressive** mode also covers the newer subscription API but is resident (opt‑in, never for
-anti‑cheat games).
+app, even a **different carrier per SIM slot**. Also spoof the per‑app, per‑slot **IMSI** and **ICCID**
+(SIM serial). **Safe** mode is fully stealth (anti‑cheat safe); **Aggressive** mode also covers the
+newer subscription API but is resident (opt‑in, never for anti‑cheat games).
 
 #### 🆔 Per‑App Advertising ID *(PRO)*
 Give each app its **own Google Advertising ID** — automatic per‑app, or pin an exact UUID — for ad /
@@ -130,6 +130,22 @@ your own latitude/longitude. Covers the normal location APIs **and** Google's Fu
 lat/lng change (accuracy/altitude stay real). Resident hook behind a *use‑at‑your‑own‑risk* gate —
 never for anti‑cheat games.
 
+#### 🧭 Sensor Spoof *(PRO · new)*
+Give each app its **own sensor fingerprint**. Anti‑fraud SDKs hash the device's sensor list
+(accelerometer, gyroscope, magnetometer…) into a stable ID — and a build that says one phone while the
+sensors say another is a red flag. COPG rewrites each sensor's **name *and* vendor** with a per‑app,
+stable‑but‑unique value. Resident hook behind a *use‑at‑your‑own‑risk* gate — never for anti‑cheat games.
+
+#### 🖼️ WebView Canvas Spoof *(PRO · new)*
+Break **canvas fingerprinting** in WebView apps. Sites hash a hidden `<canvas>` to identify you; COPG adds
+tiny, per‑app, *stable* noise so every WebView app reads a different but consistent canvas fingerprint,
+including inside iframes. (WebGL is already covered by GPU spoof.) Resident hook, risk‑gated.
+
+#### 🧠 Tensor Feature Unlock *(PRO · new)*
+Make chosen apps see Google's Pixel **Tensor** system features — so Google apps expose their Tensor‑gated
+**AI / exclusive functionality**. Runs **out‑of‑process in `system_server`**, so nothing loads into the
+app and it's undetectable (under the System‑Server Spoofs master switch — enable + reboot).
+
 #### 🛡️ Privacy Hides
 **Hide VPN** — covers both the Java (network‑interface / capabilities) and native interface checks,
 pairip‑safe *(free)* · **Mock‑Location hide** *(PRO)* · **Hide Developer Options + USB
@@ -138,6 +154,14 @@ debugging** (free) — pass the checks that banking &amp; privacy‑sensitive ap
 #### 🎛️ Per‑App Comfort Tweaks
 Auto **Do‑Not‑Disturb**, **disable auto‑brightness**, **keep screen on**, **stop logging** and a
 per‑app **screen DPI** — applied only while a tagged game is active, then restored.
+
+#### 📦 Install Patches *(free)*
+Device‑wide package‑installer patches so you can install **modified, re‑signed or downgraded APKs**:
+disable **signature verification** (and force signature‑match checks to pass), **allow downgrade**,
+**disable the install verifier** (Play Protect scan) and **allow compressed `resources.arsc`**. It patches
+Android's installer inside `system_server`, so nothing loads into any app. Under the System‑Server Spoofs
+master switch (enable + reboot). This lowers a real security boundary for every install — only install
+APKs you trust.
 
 </td>
 </tr>
@@ -246,10 +270,12 @@ straight from the manager. On **Magisk**, install the **KSU WebUI** app and open
 - 📋 **Library** — add &amp; manage **device profiles** and **per‑app spoof lists** with search,
   sort &amp; filters
 - ➕ **Add Package** — pick any installed app, choose a device profile, toggle **CPU / GPU / SIM /
-  Prop / Android ID / Advertising ID (GAID) / App Set ID / DRM / IMEI / Timezone / Language /
-  WebView User‑Agent / Fake Uptime / Mock‑Location / Hide VPN / Hide Developer Options** and the
-  **DND / Auto‑Brightness / Keep‑Screen‑On / Screen‑DPI** tweaks
+  Prop / Android ID / Advertising ID (GAID) / App Set ID / DRM / IMEI / Sensor / Canvas / Tensor /
+  GPS / Proxy / Timezone / Language / WebView User‑Agent / Fake Uptime / Mock‑Location / Hide VPN /
+  Hide Developer Options** and the **DND / Auto‑Brightness / Keep‑Screen‑On / Screen‑DPI** tweaks
 - 📊 **Dashboard** — live system info: Android, ABI, Zygisk variant, root &amp; kernel
+- ✅ **Hook Status** — device‑wide board (Settings) showing the spoof values COPG has actually served
+  recently (model, CPU, Android ID, sensors, carrier…) with which app and when
 - 🆔 **Advertising ID** — view, randomize, set a custom one or restore your real ID (Settings · free)
 - 📡 **Global Hooks** — device‑wide **Global IMEI** (Settings): one fake IMEI for every app, `*#06#`
   and the dialer
@@ -283,6 +309,8 @@ Package **tags** are colon suffixes — e.g. `:cpu=<model>` (CPU spoof + pick th
 `:serial` (per‑app serial), `:gaid` (Advertising ID), `:appset` (App Set ID), `:drm` (Widevine),
 `:imei` (IMEI), `:sim=<carrier>` / `:simx=<carrier>` (SIM · safe / aggressive), `:tz=<zone>` (timezone),
 `:lang=<bcp47>` (language / region), `:ua=<profile>` (WebView User‑Agent), `:uptime=<sec>` (fake uptime),
+`:sensor` (sensor‑roster spoof), `:webfp` (WebView canvas spoof), `:tensorfeat` (Pixel Tensor features),
+`:gps=<lat>,<lng>` (GPS location), `:proxy` (per‑app proxy),
 `:mock` (mock‑location hide), `:vpn` / `:vpns` (VPN hide), `:hidedev` (hide developer options),
 `:blocked` (force real CPU), `:dnd` / `:dab` / `:kso` / `:nolog` / `:dpi=<n>` (comfort tweaks).
 
