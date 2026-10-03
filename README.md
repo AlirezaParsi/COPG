@@ -163,6 +163,12 @@ Android's installer inside `system_server`, so nothing loads into any app. Under
 master switch (enable + reboot). This lowers a real security boundary for every install — only install
 APKs you trust.
 
+#### 🎙️ Concurrent Mic *(free · new)*
+Let **two apps use the microphone at once** — a game's in‑voice **plus** a screen recorder, or a call
+app while another app records. Android normally silences one capturer for privacy; COPG stops that
+silencing device‑wide while enabled. It works **out‑of‑process in the audio server** (nothing loads
+into the app), and toggles from the WebUI with **no reboot**.
+
 </td>
 </tr>
 </table>
@@ -364,7 +370,7 @@ the <b>KSU WebUI</b> app and open COPG from there.
 
 ## ₿ Support COPG
 
-COPG is developed in my spare time and given away free. If it leveled up your games, please consider
+COPG is developed in my spare time and given away free. If it leveled up your games or apps, please consider
 supporting with **any amount you wish** — every bit is real motivation for stronger, continued
 development. And a ⭐ on GitHub helps a lot too!
 
@@ -390,7 +396,7 @@ development. And a ⭐ on GitHub helps a lot too!
 
 <div align="center">
 
-**If COPG leveled up your games, drop a ⭐ — it really helps!**
+**If COPG leveled up your games or apps, drop a ⭐ — it really helps!**
 
 Made with ❤️ by **Alireza Parsi** · © 2026 COPG Project
 
