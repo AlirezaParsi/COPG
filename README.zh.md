@@ -2,9 +2,9 @@
 
 <img src="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/banner.png" width="560" alt="COPG banner" />
 
-# 🎮 COPG
+# 🎮 COPG — 安卓高级定制与伪装
 
-**Android 上最强大的设备与 CPU 伪装模块 —— 绕过硬件限制，在绝大多数游戏和应用中解锁高画质、高帧率和专属功能。**
+**一个强大的平台，支持设备与应用伪装、系统级控制以及高级 ROM 功能。**
 
 <br>
 

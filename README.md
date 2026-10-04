@@ -2,9 +2,9 @@
 
 <img src="https://raw.githubusercontent.com/AlirezaParsi/COPG/refs/heads/JSON/module/banner.png" width="560" alt="COPG banner" />
 
-# 🎮 COPG
+# 🎮 COPG — Advanced Android Customization & Spoofing
 
-**The most advanced device for Android — bypass restrictions and unlock premium graphics, higher FPS and exclusive features on most games and apps.**
+**A powerful platform for device & app spoofing, system-level control, and advanced ROM capabilities.**
 
 <br>
 
