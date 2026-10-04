@@ -360,6 +360,9 @@ the <b>KSU WebUI</b> app and open COPG from there.
 
 [![Telegram Channel](https://img.shields.io/badge/Telegram_Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/COPG_module)
 [![Telegram Group](https://img.shields.io/badge/Telegram_Group-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/TheAOSP)
+[![Email](https://img.shields.io/badge/Email-support@copg.my-EA4335?style=for-the-badge&logo=maildotru&logoColor=white)](mailto:support@copg.my)
+
+**📧 Support email: [support@copg.my](mailto:support@copg.my)**
 
 </div>
 
