@@ -4,6 +4,54 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.5.0
+*Two new tools — Concurrent Mic and a dedicated Device tab — plus three new anti-fingerprinting spoofs (Google Account, Wallpaper ID, getprop Consistency), a more reliable GPS spoof, MCC/MNC on the Cell spoof, wider screenshot-bypass coverage, a heartbeat-driven Hook Status, and a batch of fixes.*
+
+### Concurrent Mic — new
+*   **Use the microphone in two apps at once.** Normally Android hands the mic to one app at a time, so you can't, say, talk in a game's voice chat while a recorder runs. The new **Concurrent Mic** toggle lets a second app capture the mic alongside the first. It's **opt-in and off by default** (with a boot crash-guard), since it works at a low level; turn it on only if you need it.
+
+### Device tab — new
+*   **Device-wide controls now live in their own tab.** System- and device-level options moved out of Settings into a dedicated **Device** tab, so per-app spoofs (Library) and device-wide hooks (Device) are cleanly separated and easier to find.
+
+### Google Account spoof — new
+*   **Hide or fake the Google accounts an app sees.** Anti-fraud SDKs (e.g. DoorDash's Forter) read the list of Google accounts signed in on your phone — the Gmail addresses plus a hidden per-account ID — and use it as a device-link signal that survives clearing app data and reinstalling, quietly tying two "different" accounts back to one phone. The new **Google Account** toggle makes a chosen app read a different account list than the rest of your phone: leave it on **Hide** so the app sees no accounts, or switch to **Fake email** to show one made-up account per persona. Applied **out-of-process in `system_server`**, so nothing of COPG loads into the app — stealth, pairip/anti-cheat-safe. Relaunch the app to apply. **PRO.**
+
+### Wallpaper ID spoof — new
+*   **Give each app its own wallpaper ID.** Your wallpaper ID is a number Android bumps every time you change wallpaper; it survives data-clear/reinstall, so fraud SDKs use it to link accounts to one device. The new **Wallpaper ID** toggle reports a per-app value instead — set a normal-looking number per persona so each looks like a different, real phone. Out-of-process (`system_server`), stealth, pairip-safe. **PRO.**
+
+### getprop Consistency — new
+*   **Make a shelled-out `getprop` match the API.** Some apps don't trust the normal Android APIs — they run the `getprop` command in a shell and compare it against what the app reads directly, and a mismatch exposes the spoof. The new **getprop Consistency** toggle makes a chosen app's child `getprop` (via `Runtime.exec` / `ProcessBuilder` / `sh -c`) return the **same spoofed values** as the API, so the cross-check lines up. Pair it with **COW Prop Spoof** for full coverage. Resident hook → **PRO**, behind the *use-at-your-own-risk* gate; never for competitive games.
+
+### GPS spoof — improved
+*   **Stays put through live tracking.** The GPS coordinate spoof now holds through continuous location updates and Fused/GMS delivery, not just a one-off read — fixing reports where the fake location worked for a while then snapped back to the real position. It now overrides every coordinate read regardless of how the app receives it.
+
+### Cell Tower spoof — MCC/MNC
+*   **Fake the network operator too.** The Cell Tower spoof already faked LAC/CI; you can now also set an optional **MCC** and **MNC** so an app reading the serving cell (including `getAllCellInfo`) sees a consistent fake operator, not your real one. Leave them blank to keep the real MCC/MNC. **PRO.**
+
+### Screenshot bypass — wider coverage
+*   **Disable-FLAG_SECURE now covers more apps.** Two additional OEM screen-capture code paths are handled, so taking screenshots works in more apps that block it (parity with Lunaris). **FREE**, system-side.
+
+### Hook Status — now heartbeat-driven
+*   **Trust what the status page says.** The system-server spoof layer now writes a real per-boot **liveness heartbeat**, so **Hook Status** shows whether the layer is actually running *this boot* — not just that the device booted. Fixes a false "Not loading", and adds an aggregate **System-Server Spoofs** health panel.
+*   **No more phantom-ON.** System-server spoofs now stay greyed with a clear state chip until a reboot actually arms them, so a just-enabled hook never looks live before you've rebooted.
+
+### Fixes
+*   **Relaunching an app no longer flips auto-rotate.** The in-app Launch/relaunch button used `monkey`, which quietly turned **auto-rotate on**; it now uses `am start`, leaving your rotation setting alone.
+*   **Install Patches showed the wrong state.** The Install Patches row could read **Off** on open even when the patches were on, and the risk-gate confirmation could be hidden behind the sheet — both fixed.
+*   **Device-name leak on Xiaomi/POCO and Huawei.** Device-info apps could still show your real marketing name (e.g. "POCO F3") as the **Device name** even with spoofing on, because the OEM marketing-name property wasn't being faked. It's now spoofed to match the rest of the profile, across every partition variant. (Needs COW Prop Spoof on.)
+*   **HTTP user-agent leak.** The JVM's default HTTP user-agent (`http.agent`) now rebuilds from the spoofed model and Android version, so apps using it no longer leak the real device.
+
+### Quality of life
+*   **Keep your device-wide spoofs across updates.** When you update over an existing install, COPG now asks (volume keys, 7s) whether to **carry your system‑server / device‑wide spoof settings** forward — press **VOL+** to keep them on (they arm after one reboot, no re‑enabling). Do nothing, press **VOL−**, or use a phone with broken volume keys and they **start OFF (safe)** — choose that if the previous version bootlooped, then clean‑install. Your per‑app list is always updated fresh so you get the latest game/app profiles.
+*   **Open Console moved.** The in-app Console moved from the Home screen to **Settings → Developer**.
+
+## v7.4.0
+*Adds Install Patches — device-wide install-time patches so you can install modified, re-signed or downgraded APKs.*
+
+### Install Patches — new
+*   **Install modified / re-signed / downgraded APKs.** A new **Install Patches** entry under **Settings → Global Hooks** opens one sheet with four patches: **Disable signature verification**, **Allow downgrade**, **Disable install verifier** (Play Protect scan), and **Allow compressed resources.arsc**. They patch Android's package installer inside `system_server`, so nothing loads into any app — undetectable, and the signature-bypass is applied at the JCA/crypto layer so it covers V1/V2/V3 in one place. Disable signature verification also forces the package manager's `checkSignatures` result to *always match*, so cross-app signature trust-checks pass (the "signature verification always true" behaviour). **FREE**; lives under the **System-Server Spoofs** master switch (enable it and reboot to arm), with a boot-crash guard. Enabling signature bypass lowers a real security boundary for every install on the device — only install APKs you trust.
+    *   *Credit: idea/technique ports of **Lucky Patcher**'s signature-verification patches and **[PMPatch](https://github.com/vova7878-modules/PMPatch)** by vova7878 (whose v7878 engine COPG uses), plus **CorePatch**. COPG's implementation is its own.*
+
 ## v7.3.0
 *Three new spoofs — a per-app sensor-roster spoof, a WebView canvas fingerprint spoof and a Pixel "Tensor" feature unlock — plus a new Hook Status page so you can see at a glance which spoofs are actually live on your device.*
 
@@ -11,7 +59,7 @@
 *   **Give each app its own sensor fingerprint.** Anti-fraud and tracking SDKs hash your device's sensor list (accelerometer, gyroscope, magnetometer…) into a stable device ID — and if your build says one phone but the sensors say another, that mismatch flags you. COPG now rewrites each sensor's **name *and* vendor** with a per-app, stable-but-unique value, so the roster no longer matches your real hardware and two apps never see the same one. Resident hook → **PRO**, behind the *use-at-your-own-risk* gate, arm64/arm32; never for competitive games.
 
 ### WebView Canvas spoof — new
-*   **Break canvas fingerprinting in WebView apps.** Websites and in-app browsers identify you by reading a hidden `<canvas>` and hashing the pixels. The new **Canvas Spoof** toggle adds tiny, per-app, *stable* noise so every WebView-based app reads a different — but consistent — canvas fingerprint, including content loaded inside iframes. (WebGL is already covered by GPU spoof.) Resident hook → **PRO**, risk-gated.
+*   **Break canvas fingerprinting in WebView apps.** Websites and in-app browsers identify you by reading a hidden canvas element and hashing the pixels. The new **Canvas Spoof** toggle adds tiny, per-app, *stable* noise so every WebView-based app reads a different — but consistent — canvas fingerprint, including content loaded inside iframes. (WebGL is already covered by GPU spoof.) Resident hook → **PRO**, risk-gated.
 
 ### Tensor feature spoof — new
 *   **Unlock Pixel "Tensor" AI features in Google apps.** A new per-app **Tensor Feature Targets** toggle makes chosen apps see the Google **Tensor** system features, exactly as on a real Pixel — so Google apps expose their Tensor-gated AI and exclusive functionality. It runs **out-of-process inside `system_server`**, so nothing loads into the app and it's undetectable. **PRO**; lives under the **System-Server Spoofs** master switch — enable it and reboot to arm.
