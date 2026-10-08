@@ -5,13 +5,17 @@
 - https://t.me/COPG_module
 ---
 ## v7.5.0
-*Two new tools — Concurrent Mic and a dedicated Device tab — plus three new anti-fingerprinting spoofs (Google Account, Wallpaper ID, getprop Consistency), a more reliable GPS spoof, MCC/MNC on the Cell spoof, wider screenshot-bypass coverage, a heartbeat-driven Hook Status, and a batch of fixes.*
+*Install Patches (sideload modified / re-signed / downgraded APKs), two new tools — Concurrent Mic and a dedicated Device tab — three new anti-fingerprinting spoofs (Google Account, Wallpaper ID, getprop Consistency), a more reliable GPS spoof, MCC/MNC on the Cell spoof, wider screenshot-bypass coverage, a heartbeat-driven Hook Status, and a batch of fixes.*
 
 ### Concurrent Mic — new
 *   **Use the microphone in two apps at once.** Normally Android hands the mic to one app at a time, so you can't, say, talk in a game's voice chat while a recorder runs. The new **Concurrent Mic** toggle lets a second app capture the mic alongside the first. It's **opt-in and off by default** (with a boot crash-guard), since it works at a low level; turn it on only if you need it.
 
 ### Device tab — new
 *   **Device-wide controls now live in their own tab.** System- and device-level options moved out of Settings into a dedicated **Device** tab, so per-app spoofs (Library) and device-wide hooks (Device) are cleanly separated and easier to find.
+
+### Install Patches — new
+*   **Install modified / re-signed / downgraded APKs.** A new **Install Patches** entry under **Settings → Global Hooks** opens one sheet with four patches: **Disable signature verification**, **Allow downgrade**, **Disable install verifier** (Play Protect scan), and **Allow compressed resources.arsc**. They patch Android's package installer inside `system_server`, so nothing loads into any app — undetectable, and the signature-bypass is applied at the JCA/crypto layer so it covers V1/V2/V3 in one place. Disable signature verification also forces the package manager's `checkSignatures` result to *always match*, so cross-app signature trust-checks pass (the "signature verification always true" behaviour). **FREE**; lives under the **System-Server Spoofs** master switch (enable it and reboot to arm), with a boot-crash guard. Enabling signature bypass lowers a real security boundary for every install on the device — only install APKs you trust.
+    *   *Credit: idea/technique ports of **Lucky Patcher**'s signature-verification patches and **[PMPatch](https://github.com/vova7878-modules/PMPatch)** by vova7878 (whose v7878 engine COPG uses), plus **CorePatch**. COPG's implementation is its own.*
 
 ### Google Account spoof — new
 *   **Hide or fake the Google accounts an app sees.** Anti-fraud SDKs (e.g. DoorDash's Forter) read the list of Google accounts signed in on your phone — the Gmail addresses plus a hidden per-account ID — and use it as a device-link signal that survives clearing app data and reinstalling, quietly tying two "different" accounts back to one phone. The new **Google Account** toggle makes a chosen app read a different account list than the rest of your phone: leave it on **Hide** so the app sees no accounts, or switch to **Fake email** to show one made-up account per persona. Applied **out-of-process in `system_server`**, so nothing of COPG loads into the app — stealth, pairip/anti-cheat-safe. Relaunch the app to apply. **PRO.**
@@ -42,15 +46,8 @@
 *   **HTTP user-agent leak.** The JVM's default HTTP user-agent (`http.agent`) now rebuilds from the spoofed model and Android version, so apps using it no longer leak the real device.
 
 ### Quality of life
-*   **Keep your device-wide spoofs across updates.** When you update over an existing install, COPG now asks (volume keys, 7s) whether to **carry your system‑server / device‑wide spoof settings** forward — press **VOL+** to keep them on (they arm after one reboot, no re‑enabling). Do nothing, press **VOL−**, or use a phone with broken volume keys and they **start OFF (safe)** — choose that if the previous version bootlooped, then clean‑install. Your per‑app list is always updated fresh so you get the latest game/app profiles.
+*   **Keep your device-wide spoofs across updates.** When you update over an existing install, COPG now asks (volume keys, 10s) whether to **carry your system‑server / device‑wide spoof settings** forward — press **VOL+** to keep them on (they arm after one reboot, no re‑enabling). Do nothing, press **VOL−**, or use a phone with broken volume keys and they **start OFF (safe)** — choose that if the previous version bootlooped, then clean‑install. Your per‑app list is always updated fresh so you get the latest game/app profiles.
 *   **Open Console moved.** The in-app Console moved from the Home screen to **Settings → Developer**.
-
-## v7.4.0
-*Adds Install Patches — device-wide install-time patches so you can install modified, re-signed or downgraded APKs.*
-
-### Install Patches — new
-*   **Install modified / re-signed / downgraded APKs.** A new **Install Patches** entry under **Settings → Global Hooks** opens one sheet with four patches: **Disable signature verification**, **Allow downgrade**, **Disable install verifier** (Play Protect scan), and **Allow compressed resources.arsc**. They patch Android's package installer inside `system_server`, so nothing loads into any app — undetectable, and the signature-bypass is applied at the JCA/crypto layer so it covers V1/V2/V3 in one place. Disable signature verification also forces the package manager's `checkSignatures` result to *always match*, so cross-app signature trust-checks pass (the "signature verification always true" behaviour). **FREE**; lives under the **System-Server Spoofs** master switch (enable it and reboot to arm), with a boot-crash guard. Enabling signature bypass lowers a real security boundary for every install on the device — only install APKs you trust.
-    *   *Credit: idea/technique ports of **Lucky Patcher**'s signature-verification patches and **[PMPatch](https://github.com/vova7878-modules/PMPatch)** by vova7878 (whose v7878 engine COPG uses), plus **CorePatch**. COPG's implementation is its own.*
 
 ## v7.3.0
 *Three new spoofs — a per-app sensor-roster spoof, a WebView canvas fingerprint spoof and a Pixel "Tensor" feature unlock — plus a new Hook Status page so you can see at a glance which spoofs are actually live on your device.*
