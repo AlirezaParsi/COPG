@@ -130,6 +130,12 @@ your own latitude/longitude. Covers the normal location APIs **and** Google's Fu
 lat/lng change (accuracy/altitude stay real). Resident hook behind a *use‑at‑your‑own‑risk* gate —
 never for anti‑cheat games.
 
+#### 🗼 Cell Tower Spoof *(PRO)*
+Report a **fake serving cell** to an app — set the area code (LAC/TAC), cell ID (CID/CI/NCI) and
+optional **MCC/MNC** (network operator), so apps reading the cell towers (including `getAllCellInfo`)
+see a consistent fake location **and** carrier instead of your real one. Pairs with GPS + SIM so
+location, coordinates and network all agree. Resident hook behind a *use‑at‑your‑own‑risk* gate.
+
 #### 🧭 Sensor Spoof *(PRO · new)*
 Give each app its **own sensor fingerprint**. Anti‑fraud SDKs hash the device's sensor list
 (accelerometer, gyroscope, magnetometer…) into a stable ID — and a build that says one phone while the
@@ -145,6 +151,23 @@ including inside iframes. (WebGL is already covered by GPU spoof.) Resident hook
 Make chosen apps see Google's Pixel **Tensor** system features — so Google apps expose their Tensor‑gated
 **AI / exclusive functionality**. Runs **out‑of‑process in `system_server`**, so nothing loads into the
 app and it's undetectable (under the System‑Server Spoofs master switch — enable + reboot).
+
+#### 👤 Google Account Spoof *(PRO · new)*
+Make a chosen app read a **different Google‑account list** than the rest of your phone — **Hide** all
+accounts, or show one **fake email** per persona. Anti‑fraud SDKs (DoorDash / Forter) use the signed‑in
+accounts and a hidden per‑account ID to tie "different" accounts back to one device across data‑clears;
+this breaks that link. Out‑of‑process in `system_server` — stealth, pairip / anti‑cheat‑safe.
+
+#### 🏞️ Wallpaper ID Spoof *(PRO · new)*
+Report a **per‑app wallpaper ID** — a number Android bumps on every wallpaper change that survives
+data‑clear / reinstall, which fraud SDKs use as a device‑link signal. Set a normal‑looking value per
+persona so each looks like a different, real phone. Out‑of‑process (`system_server`), stealth, pairip‑safe.
+
+#### ⌨️ getprop Consistency *(PRO · new)*
+Some apps don't trust the Android APIs — they shell out to the **`getprop`** command and compare it
+against what the app reads directly, and a mismatch exposes the spoof. This makes a chosen app's child
+`getprop` return the **same spoofed values** as the API, so the cross‑check lines up. Pair it with the
+COW Prop Spoof. Resident hook behind a *use‑at‑your‑own‑risk* gate — never for anti‑cheat games.
 
 #### 🛡️ Privacy Hides
 **Hide VPN** — covers both the Java (network‑interface / capabilities) and native interface checks,
