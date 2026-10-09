@@ -4,6 +4,13 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.5.1
+*Hotfix: Concurrent Mic now works on the official release build.*
+
+### Concurrent Mic — fixed
+*   **Concurrent Mic now actually works from the released module.** In v7.5.0 the feature worked on self-compiled builds but silently did nothing on the official release — the shipped audio payload failed to load into the audio server, so the mic was never shared between apps. Fixed the loader so the release build installs the hook correctly. If you enabled Concurrent Mic on v7.5.0 and nothing happened, update to v7.5.1 and try again (a reboot applies it).
+
+---
 ## v7.5.0
 *Install Patches (sideload modified / re-signed / downgraded APKs), two new tools — Concurrent Mic and a dedicated Device tab — three new anti-fingerprinting spoofs (Google Account, Wallpaper ID, getprop Consistency), a more reliable GPS spoof, MCC/MNC on the Cell spoof, wider screenshot-bypass coverage, a heartbeat-driven Hook Status, and a batch of fixes.*
 
