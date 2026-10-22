@@ -1,0 +1,23 @@
+schemaVersion: 1
+id: COPG
+name: COPG
+summary: "Advanced Android customization & spoofing — per-app device, CPU, GPU, Build, SIM, DRM and ID control with a WebUI."
+description: README.md
+license: Apache-2.0
+homepage: https://vendors.copg.my
+support: https://t.me/TheAOSP
+icon: webroot/icon.png
+tags:
+  - gaming
+  - spoofing
+  - tweaks
+  - webui
+  - zygisk
+compatibility:
+  androidMinApi: 29
+  architectures:
+    - arm64-v8a
+    - armeabi-v7a
+    - x86
+release:
+  assetPattern: "COPG-*.zip"
