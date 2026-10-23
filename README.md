@@ -41,17 +41,17 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 
 ## 🧰 Features
 
-> **Legend** — `FREE` no license · `PRO` license-unlocked · `NEW` new this release · ⚠️ **risk-gated**: a resident (detectable) hook behind an in-app *use-at-your-own-risk* warning — **never for anti-cheat games**. Everything unmarked is **stealth** — the module unloads before the app runs, so nothing of COPG stays mapped in memory.
+> **Legend** — `FREE` no license · `PRO` license-unlocked · ⚠️ **risk-gated**: a resident (detectable) hook behind an in-app *use-at-your-own-risk* warning — **never for anti-cheat games**. Everything unmarked is **stealth** — the module unloads before the app runs, so nothing of COPG stays mapped in memory.
 
 <details open>
 <summary><b>🎯 Device &amp; Hardware</b></summary>
 
 - **Device Spoofing** `FREE` — per-app Build profile: brand, model, fingerprint, SDK, baseband, serial + 12 extra Build fields, so each app sees the exact flagship it rewards.
-- **Per-User Spoofing** `NEW` — a different device per Android user / app-clone (HyperOS, One UI, work profiles); each clone gets its own derived Android ID / serial / advertising ID / IMEI. The app picker's **Apps for** drawer finds clones automatically.
+- **Per-User Spoofing** — a different device per Android user / app-clone (HyperOS, One UI, work profiles); each clone gets its own derived Android ID / serial / advertising ID / IMEI. The app picker's **Apps for** drawer finds clones automatically.
 - **CPU Spoofing** `FREE` — report flagship-class silicon for apps that gate features on the chipset.
 - **GPU Spoofing** `PRO` ⚠️ — OpenGL renderer/vendor + Vulkan device name, per app.
 - **Refresh-Rate Spoof** `FREE` ⚠️ — a custom panel refresh rate (120 / 144 / 165 Hz) plus the full supported-modes list.
-- **Sensor Spoof** `PRO` `NEW` ⚠️ — a per-app sensor-list fingerprint (name + vendor) so sensor-hashing anti-fraud SDKs see a consistent device.
+- **Sensor Spoof** `PRO` ⚠️ — a per-app sensor-list fingerprint (name + vendor) so sensor-hashing anti-fraud SDKs see a consistent device.
 
 </details>
 
@@ -63,9 +63,9 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 - **DRM / Widevine** `PRO` — report a higher Widevine security level (L1 / L2 / L3) and spoof the DRM device & system ID.
 - **Advertising ID** `PRO` — each app its own Google Advertising ID (auto per-app, or pin a UUID).
 - **App Set ID** `PRO` ⚠️ — each app its own Google App Set ID (auto per-app, or pin a UUID).
-- **Wallpaper ID** `PRO` `NEW` — a per-app wallpaper ID, a data-clear-surviving link signal fraud SDKs read. *(stealth, system_server)*
-- **getprop Consistency** `PRO` `NEW` ⚠️ — make an app's child `getprop` return the same spoofed values as the API, so the cross-check lines up (pair with the COW prop spoof).
-- **Google Account** `PRO` `NEW` — a different Google-account list per app: hide all accounts, or one fake email per persona. *(stealth, system_server — beats DoorDash / Forter linking)*
+- **Wallpaper ID** `PRO` — a per-app wallpaper ID, a data-clear-surviving link signal fraud SDKs read. *(stealth, system_server)*
+- **getprop Consistency** `PRO` ⚠️ — make an app's child `getprop` return the same spoofed values as the API, so the cross-check lines up (pair with the COW prop spoof).
+- **Google Account** `PRO` — a different Google-account list per app: hide all accounts, or one fake email per persona. *(stealth, system_server — beats DoorDash / Forter linking)*
 
 </details>
 
@@ -84,9 +84,9 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 <summary><b>🧩 App &amp; System</b></summary>
 
 - **Play Source + PairIP Bypass** `PRO` — make an app look Play-installed and block Google's PairIP license check, so paid/locked apps open. *(stealth, out-of-app)*
-- **Tensor Feature Unlock** `PRO` `NEW` — chosen apps see Google's Pixel **Tensor** system features (Tensor-gated AI). *(stealth, system_server)*
+- **Tensor Feature Unlock** `PRO` — chosen apps see Google's Pixel **Tensor** system features (Tensor-gated AI). *(stealth, system_server)*
 - **WebView User-Agent** `PRO` — give any WebView app its own browser User-Agent, from a reusable named profile.
-- **WebView Canvas** `PRO` `NEW` ⚠️ — per-app stable canvas-fingerprint noise (including iframes); breaks canvas tracking. *(WebGL is covered by GPU spoof.)*
+- **WebView Canvas** `PRO` ⚠️ — per-app stable canvas-fingerprint noise (including iframes); breaks canvas tracking. *(WebGL is covered by GPU spoof.)*
 - **Fake Uptime** `PRO` — make an app think the device has run for days (Java + native readers), useful against anti-fraud / referral flows.
 
 </details>
@@ -97,7 +97,7 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 - **Privacy Hides** — **Hide VPN** (Java + native, pairip-safe) `FREE` · **Mock-Location hide** `PRO` · **Hide Developer Options + USB debugging** `FREE` — pass the checks banking / privacy apps run.
 - **Screenshot + Storage** `FREE` — disable **FLAG_SECURE** device-wide to capture apps that block it (banking, chat, wallets); **No Storage Restrict** re-enables picking Android/data, obb, the SD-card root and Download in the file picker.
 - **Install Patches** `FREE` — install modified / re-signed / downgraded APKs: disable signature verification, allow downgrade, skip the install verifier (Play Protect scan), allow compressed `resources.arsc`. *(system_server — this lowers a real security boundary; only install APKs you trust.)*
-- **Concurrent Mic** `FREE` `NEW` 🏆 — **the only module that lets two apps use the microphone at the same time** (a game's voice chat + a screen recorder, or recording while on a call). Android normally silences one capturer; COPG stops that device-wide. *(out-of-process, audio server, no reboot)*
+- **Concurrent Mic** `FREE` 🏆 — **the only module that lets two apps use the microphone at the same time** (a game's voice chat + a screen recorder, or recording while on a call). Android normally silences one capturer; COPG stops that device-wide. *(out-of-process, audio server, no reboot)*
 
 </details>
 
