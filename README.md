@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-7.3.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Version](https://img.shields.io/badge/version-7.6.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
 [![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
 [![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
@@ -37,167 +37,76 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 **comfort‑tweak controller**, and a beautiful on‑device **WebUI** to manage everything — all
 **without rebooting**.
 
-<table>
-<tr>
-<td width="50%" valign="top">
+## 🧰 Features
 
-#### 🎯 Device Spoofing
-Per‑app device profiles (brand, model, fingerprint, SDK, **baseband**, **per‑app serial** and 12
-extra Build fields) so each game sees the exact flagship it rewards.
+> **Legend** — `FREE` no license · `PRO` license-unlocked · `NEW` new this release · ⚠️ **risk-gated**: a resident (detectable) hook behind an in-app *use-at-your-own-risk* warning — **never for anti-cheat games**. Everything unmarked is **stealth** — the module unloads before the app runs, so nothing of COPG stays mapped in memory.
 
-#### 👥 Per‑User Spoofing *(new)*
-Give the **same app a different device per Android user** — dual‑apps / app clones (HyperOS, One UI),
-work profiles, second users. The main copy reads one phone, the clone reads another; each clone even
-gets its own derived Android ID / serial / advertising ID / IMEI. The app picker's **"Apps for"**
-drawer finds your clones automatically.
+<details open>
+<summary><b>🎯 Device &amp; Hardware</b></summary>
 
-#### ⚙️ CPU Spoofing
-Spoof the CPU to flagship‑class silicon for apps that gate features on the chipset.
+- **Device Spoofing** `FREE` — per-app Build profile: brand, model, fingerprint, SDK, baseband, serial + 12 extra Build fields, so each app sees the exact flagship it rewards.
+- **Per-User Spoofing** `NEW` — a different device per Android user / app-clone (HyperOS, One UI, work profiles); each clone gets its own derived Android ID / serial / advertising ID / IMEI. The app picker's **Apps for** drawer finds clones automatically.
+- **CPU Spoofing** `FREE` — report flagship-class silicon for apps that gate features on the chipset.
+- **GPU Spoofing** `PRO` ⚠️ — OpenGL renderer/vendor + Vulkan device name, per app.
+- **Refresh-Rate Spoof** `FREE` ⚠️ — a custom panel refresh rate (120 / 144 / 165 Hz) plus the full supported-modes list.
+- **Sensor Spoof** `PRO` `NEW` ⚠️ — a per-app sensor-list fingerprint (name + vendor) so sensor-hashing anti-fraud SDKs see a consistent device.
 
-#### 🎨 GPU Spoofing *(PRO · opt‑in)*
-Spoof the **GPU** — OpenGL renderer/vendor &amp; Vulkan device name — per app for games that gate
-graphics on the chip. **GPU spoofing is a PRO feature** (unlocked with a license). It's a **resident**
-hook, so it sits behind a clear *use‑at‑your‑own‑risk* gate — **never enable it for anti‑cheat games.**
+</details>
 
-#### 🖥️ Refresh‑Rate Spoof *(free)*
-Make an app read a **custom display refresh rate** (e.g. 120 / 144 / 165 Hz) — the current rate **and**
-the full supported‑modes list — for device‑info apps and games that show or gate on the panel's Hz.
-Resident hook behind a *use‑at‑your‑own‑risk* gate — never for anti‑cheat games.
+<details>
+<summary><b>🧬 Identity &amp; Fingerprint</b></summary>
 
-#### 📡 IMEI &amp; Device ID *(PRO)*
-Fake the **IMEI / device ID** — **per app**, or **device‑wide** with the new **Global IMEI** (hooks the
-phone service so Settings, `*#06#` and every app read it; runs in a separate process apps can't scan, so
-**no risk gate**).
+- **Prop + Android ID** `PRO` — stealth copy-on-write prop spoof (fingerprint, build props) and per-app Android ID. *(CPU, device profiles, Build/serial and block-CPU stay `FREE`.)*
+- **IMEI / Device ID** `PRO` — fake IMEI per app, or **device-wide Global IMEI** (Settings, `*#06#` and every app — runs in a separate process, no risk gate).
+- **DRM / Widevine** `PRO` — report a higher Widevine security level (L1 / L2 / L3) and spoof the DRM device & system ID.
+- **Advertising ID** `PRO` — each app its own Google Advertising ID (auto per-app, or pin a UUID).
+- **App Set ID** `PRO` ⚠️ — each app its own Google App Set ID (auto per-app, or pin a UUID).
+- **Wallpaper ID** `PRO` `NEW` — a per-app wallpaper ID, a data-clear-surviving link signal fraud SDKs read. *(stealth, system_server)*
+- **getprop Consistency** `PRO` `NEW` ⚠️ — make an app's child `getprop` return the same spoofed values as the API, so the cross-check lines up (pair with the COW prop spoof).
+- **Google Account** `PRO` `NEW` — a different Google-account list per app: hide all accounts, or one fake email per persona. *(stealth, system_server — beats DoorDash / Forter linking)*
 
-#### 🔒 DRM / Widevine *(PRO)*
-Report a higher **Widevine security level** (L1 / L2 / L3) and spoof the DRM **device &amp; system ID**
-for apps that gate or display it.
+</details>
 
-#### 🌍 Timezone &amp; Language *(free)*
-Give each app its own **timezone** and its own **language / region** (BCP‑47) — apps read and even
-**render** in the fake locale. Applied the stealth, system‑side way, so nothing loads into the app.
+<details>
+<summary><b>📡 Network &amp; Location</b></summary>
 
-#### ⏱️ Fake Uptime *(PRO)*
-Make an app think the device has been running for **days** — shifts both the Java and native uptime
-readers, useful against anti‑fraud / referral flows that distrust a freshly‑reset device.
+- **SIM / Carrier** `PRO` — carrier name, operator code (MCC/MNC) & country, per app and per SIM slot; also per-app/slot IMSI & ICCID. **Safe** mode is stealth; **Aggressive** mode is resident ⚠️.
+- **Cell Tower** `PRO` ⚠️ — a fake serving cell: area code (LAC/TAC), cell ID (CID/CI/NCI) + optional MCC/MNC, consistent across `getAllCellInfo`.
+- **GPS Location** `PRO` ⚠️ — put an app anywhere (135 built-in places, or custom lat/lng); covers the normal location APIs and Google's Fused/GMS provider.
+- **Per-App Proxy** `PRO` — route one app through your own SOCKS5 / HTTP / SOCKS4 proxy (kernel-level, no interface the app can see, ban-safe). Pair with a matching SIM/region so device, SIM and IP agree.
+- **Timezone + Language** `FREE` — a per-app timezone and language/region (BCP-47); apps read and even render in the fake locale. *(stealth, system-side)*
 
-#### 🌐 WebView User‑Agent *(PRO)*
-Give any WebView‑based app its own **browser User‑Agent** — from a reusable named profile — for sites
-and in‑app pages that gate content, layout or pricing on the browser identity.
+</details>
 
-#### 📸 Screenshot &amp; Storage Unlocks *(free)*
-**Disable FLAG_SECURE** device‑wide to screenshot / screen‑record apps that block it (banking, chat,
-wallets) — done in the system, invisible to the app · **No Storage Restrict** re‑enables picking
-Android/data, obb, the SD‑card root and Download in the system file picker. Both toggle with no reboot.
+<details>
+<summary><b>🧩 App &amp; System</b></summary>
 
-#### 🎟️ Play Source &amp; PairIP Bypass *(PRO)*
-Make an app look **Play‑installed** (installer → Google Play) and **block Google's PairIP license
-check** so paid / locked apps open normally. Both run in the system, out of the app — nothing loads
-into the app's process, so they're **not detectable**.
+- **Play Source + PairIP Bypass** `PRO` — make an app look Play-installed and block Google's PairIP license check, so paid/locked apps open. *(stealth, out-of-app)*
+- **Tensor Feature Unlock** `PRO` `NEW` — chosen apps see Google's Pixel **Tensor** system features (Tensor-gated AI). *(stealth, system_server)*
+- **WebView User-Agent** `PRO` — give any WebView app its own browser User-Agent, from a reusable named profile.
+- **WebView Canvas** `PRO` `NEW` ⚠️ — per-app stable canvas-fingerprint noise (including iframes); breaks canvas tracking. *(WebGL is covered by GPU spoof.)*
+- **Fake Uptime** `PRO` — make an app think the device has run for days (Java + native readers), useful against anti-fraud / referral flows.
 
-</td>
-<td width="50%" valign="top">
+</details>
 
-#### 🧬 Prop Spoofing &amp; Android ID
-Stealth **copy‑on‑write** prop spoof (fingerprint, build props &amp; more) *(PRO)* and per‑app
-**Android ID** *(PRO)* — both are stealth: the module unloads before the game runs, so nothing of
-COPG stays mapped in memory — safe even for anti‑cheat games. (CPU spoof, device profiles, Build/serial
-fields and block‑CPU stay free.)
+<details>
+<summary><b>🔒 Privacy &amp; Unlocks</b></summary>
 
-#### 📶 SIM / Carrier Spoofing *(PRO)*
-Make an app read a different **network carrier** — name, operator code (MCC/MNC) &amp; country — per
-app, even a **different carrier per SIM slot**. Also spoof the per‑app, per‑slot **IMSI** and **ICCID**
-(SIM serial). **Safe** mode is fully stealth (anti‑cheat safe); **Aggressive** mode also covers the
-newer subscription API but is resident (opt‑in, never for anti‑cheat games).
+- **Privacy Hides** — **Hide VPN** (Java + native, pairip-safe) `FREE` · **Mock-Location hide** `PRO` · **Hide Developer Options + USB debugging** `FREE` — pass the checks banking / privacy apps run.
+- **Screenshot + Storage** `FREE` — disable **FLAG_SECURE** device-wide to capture apps that block it (banking, chat, wallets); **No Storage Restrict** re-enables picking Android/data, obb, the SD-card root and Download in the file picker.
+- **Install Patches** `FREE` — install modified / re-signed / downgraded APKs: disable signature verification, allow downgrade, skip the install verifier (Play Protect scan), allow compressed `resources.arsc`. *(system_server — this lowers a real security boundary; only install APKs you trust.)*
+- **Concurrent Mic** `FREE` `NEW` — let two apps use the microphone at once (game voice + a screen recorder). *(out-of-process, audio server, no reboot)*
 
-#### 🆔 Per‑App Advertising ID *(PRO)*
-Give each app its **own Google Advertising ID** — automatic per‑app, or pin an exact UUID — for ad /
-reward / referral / multi‑account apps where each install should look like a different device.
+</details>
 
-#### 🧩 Per‑App App Set ID *(PRO)*
-Give each app its **own Google App Set ID** — the resettable fingerprint signal ad / analytics SDKs
-read via Play Services — automatic per‑app, or pin an exact UUID, so each looks like a separate device.
-It's a **resident** hook behind a *use‑at‑your‑own‑risk* gate — **never for anti‑cheat games.**
+<details>
+<summary><b>🎛️ Comfort Tweaks</b></summary>
 
-#### 🌐 Per‑App Proxy *(PRO)*
-Route a single app through your own **SOCKS5 / HTTP / SOCKS4** proxy so its traffic exits from that IP
-and country — no VPN, no interface the app can see, nothing runs inside the app (kernel‑level, ban‑safe).
-Save proxies and assign one per app; pair with a matching SIM/region so device, SIM and IP all agree.
+- **Per-App Comfort Tweaks** `FREE` — auto Do-Not-Disturb, disable auto-brightness, keep screen on, stop logging, and a per-app screen DPI — applied only while a tagged game is active, then restored.
 
-#### 📍 GPS Location Spoof *(PRO)*
-Put an app **anywhere on the map** — pick a country/city from the built‑in list (135 places) or drop in
-your own latitude/longitude. Covers the normal location APIs **and** Google's Fused/GMS provider; only
-lat/lng change (accuracy/altitude stay real). Resident hook behind a *use‑at‑your‑own‑risk* gate —
-never for anti‑cheat games.
+</details>
 
-#### 🗼 Cell Tower Spoof *(PRO)*
-Report a **fake serving cell** to an app — set the area code (LAC/TAC), cell ID (CID/CI/NCI) and
-optional **MCC/MNC** (network operator), so apps reading the cell towers (including `getAllCellInfo`)
-see a consistent fake location **and** carrier instead of your real one. Pairs with GPS + SIM so
-location, coordinates and network all agree. Resident hook behind a *use‑at‑your‑own‑risk* gate.
-
-#### 🧭 Sensor Spoof *(PRO · new)*
-Give each app its **own sensor fingerprint**. Anti‑fraud SDKs hash the device's sensor list
-(accelerometer, gyroscope, magnetometer…) into a stable ID — and a build that says one phone while the
-sensors say another is a red flag. COPG rewrites each sensor's **name *and* vendor** with a per‑app,
-stable‑but‑unique value. Resident hook behind a *use‑at‑your‑own‑risk* gate — never for anti‑cheat games.
-
-#### 🖼️ WebView Canvas Spoof *(PRO · new)*
-Break **canvas fingerprinting** in WebView apps. Sites hash a hidden `<canvas>` to identify you; COPG adds
-tiny, per‑app, *stable* noise so every WebView app reads a different but consistent canvas fingerprint,
-including inside iframes. (WebGL is already covered by GPU spoof.) Resident hook, risk‑gated.
-
-#### 🧠 Tensor Feature Unlock *(PRO · new)*
-Make chosen apps see Google's Pixel **Tensor** system features — so Google apps expose their Tensor‑gated
-**AI / exclusive functionality**. Runs **out‑of‑process in `system_server`**, so nothing loads into the
-app and it's undetectable (under the System‑Server Spoofs master switch — enable + reboot).
-
-#### 👤 Google Account Spoof *(PRO · new)*
-Make a chosen app read a **different Google‑account list** than the rest of your phone — **Hide** all
-accounts, or show one **fake email** per persona. Anti‑fraud SDKs (DoorDash / Forter) use the signed‑in
-accounts and a hidden per‑account ID to tie "different" accounts back to one device across data‑clears;
-this breaks that link. Out‑of‑process in `system_server` — stealth, pairip / anti‑cheat‑safe.
-
-#### 🏞️ Wallpaper ID Spoof *(PRO · new)*
-Report a **per‑app wallpaper ID** — a number Android bumps on every wallpaper change that survives
-data‑clear / reinstall, which fraud SDKs use as a device‑link signal. Set a normal‑looking value per
-persona so each looks like a different, real phone. Out‑of‑process (`system_server`), stealth, pairip‑safe.
-
-#### ⌨️ getprop Consistency *(PRO · new)*
-Some apps don't trust the Android APIs — they shell out to the **`getprop`** command and compare it
-against what the app reads directly, and a mismatch exposes the spoof. This makes a chosen app's child
-`getprop` return the **same spoofed values** as the API, so the cross‑check lines up. Pair it with the
-COW Prop Spoof. Resident hook behind a *use‑at‑your‑own‑risk* gate — never for anti‑cheat games.
-
-#### 🛡️ Privacy Hides
-**Hide VPN** — covers both the Java (network‑interface / capabilities) and native interface checks,
-pairip‑safe *(free)* · **Mock‑Location hide** *(PRO)* · **Hide Developer Options + USB
-debugging** (free) — pass the checks that banking &amp; privacy‑sensitive apps run.
-
-#### 🎛️ Per‑App Comfort Tweaks
-Auto **Do‑Not‑Disturb**, **disable auto‑brightness**, **keep screen on**, **stop logging** and a
-per‑app **screen DPI** — applied only while a tagged game is active, then restored.
-
-#### 📦 Install Patches *(free)*
-Device‑wide package‑installer patches so you can install **modified, re‑signed or downgraded APKs**:
-disable **signature verification** (and force signature‑match checks to pass), **allow downgrade**,
-**disable the install verifier** (Play Protect scan) and **allow compressed `resources.arsc`**. It patches
-Android's installer inside `system_server`, so nothing loads into any app. Under the System‑Server Spoofs
-master switch (enable + reboot). This lowers a real security boundary for every install — only install
-APKs you trust.
-
-#### 🎙️ Concurrent Mic *(free · new)*
-Let **two apps use the microphone at once** — a game's in‑voice **plus** a screen recorder, or a call
-app while another app records. Android normally silences one capturer for privacy; COPG stops that
-silencing device‑wide while enabled. It works **out‑of‑process in the audio server** (nothing loads
-into the app), and toggles from the WebUI with **no reboot**.
-
-</td>
-</tr>
-</table>
-
-> 🔁 **Add or remove devices, games &amp; apps without a reboot.** ✨ Fully customizable. 🌍 10‑language
-> WebUI with Light / Dark / AMOLED themes.
+> 🔁 Add or remove devices, games & apps **without a reboot** · 🌍 10-language WebUI · 🎨 Light / Dark / AMOLED themes.
 
 ---
 
