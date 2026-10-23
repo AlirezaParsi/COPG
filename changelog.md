@@ -4,6 +4,46 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.6.0
+*Android 17 support, a new one-tap Random Device identity, an Integrations dashboard, a stealthier CPU-spoof backend, and a batch of crash and compatibility fixes.*
+
+### Android 17 — supported
+*   **COPG now runs on Android 17 (SDK 37).** Earlier builds could boot-loop a phone on A17 as soon as a system-wide hook (CorePatch, Google Account, Wallpaper ID, locale, VPN-hide, and friends) tried to install. The v7878 engine is now built from source and made A17-safe, so those device-wide hooks arm cleanly on the new release. If you were stuck on A16 or had the system-server spoofs gated off, they're back on.
+    *   *Engine A17 fix: big thanks to the **HMA OSS** developer for the engine fix that made this possible.*
+
+### Random Device — new
+*   **A one-tap random phone.** The device list has a new **Random** profile at the top: pick it and the app sees a complete, self-consistent made-up phone — brand, model, fingerprint and build fields that all match — instead of a specific preset. It sits alongside **This Device** as a pinned option in the device picker. **FREE.**
+*   **Fresh identity every launch (`randid`).** With the new **Randomize IDs** switch on a package, every derived identifier that COPG can roll — ANDROID_ID, serial, GAID, App Set ID, IMEI, wallpaper ID — is re-rolled each time the app launches, so it looks like a brand-new device on every start rather than one stable fake. Pair it with the Random profile for a full rotation, or use it on any profile. **PRO**, stealth where the underlying spoof is stealth.
+
+### Integrations dashboard — new
+*   **See the tools COPG is working with.** A new **Integrations** sheet under Settings lists the root manager, the Zygisk implementation and optional helper modules (such as NoMount) that COPG detects, each with a live status — active, installed, or absent — and its version. If a helper is too old to use safely (an out-of-date NoMount), it's flagged **Update needed** with a tap-to-read explanation of what to do. Makes it obvious at a glance what's powering the module on your setup.
+
+### CPU spoof — stealthier backend
+*   **Hides the CPU swap from mount scanners (optional).** When the **NoMount** kernel module is installed, the per-app `/proc/cpuinfo` spoof now goes through NoMount's in-kernel path redirect instead of a bind mount — so it no longer shows up in the app's own `/proc/self/mountinfo` (the trace that some anti-cheats flag as tampering). Without NoMount, COPG falls back to the normal bind mount, unchanged. The on-boot foreground reconcile honors the NoMount backend too.
+*   **Needs NoMount 2.2.0 or newer.** Older NoMount builds had a kernel freeze/panic bug, so COPG now uses the traceless redirect only on 2.2.0+ and automatically stays on the safe bind mount on anything older (the Integrations card flags a NoMount that's too old).
+
+### Zygisk status — improved
+*   **Correct Zygisk name and version in the System tab.** The System tab now reports the real Zygisk implementation (Zygisk Next, ReZygisk, BReZygisk), its version, and whether it's actually injecting vs merely installed — read straight from the daemon rather than guessed, so a misnamed or disabled variant is no longer reported wrong.
+
+### GPU spoof — fixed
+*   **No more crash on Android 16 / newer chips.** On ARMv8.5 devices (and newer ROMs that map system libraries with branch-target hardening), turning on the GPU spoof could crash an app at launch with a `SIGILL` — most visibly games that query Vulkan during start-up. The inline hook now keeps the required landing instruction at the patch site, so it's safe on every device. *(The GPU spoof stays resident/detectable and behind the use-at-your-own-risk gate — still never for competitive games.)*
+
+### Concurrent Mic — fixed
+*   **Turning it off no longer needs a reboot.** Disabling **Concurrent Mic** now takes effect live; previously the audio server couldn't read the toggle under SELinux, so the feature stayed on until the next reboot.
+
+### CorePatch — fixed
+*   **No more Samsung lock/reboot loop.** On some Samsung devices the signature-verification patch could trip a "device locked, try again in 3 days" / inactivity-reboot loop. The signature check is now scoped to the package installer only (not every signature comparison on the device), and the mis-triggered Samsung inactivity-reboot is handled, so the loop is gone.
+
+### Other fixes
+*   **SIM/carrier** — a shelled-out `getprop` of the carrier props now matches what the API reports (closes a `getprop`-vs-API mismatch for `sim`/`simx`).
+*   **VPN hide** — reports the real underlying interface so a VPN-detector no longer sees a network-type mismatch; added an older-Android file-view layer for `vpnn`.
+*   **Home** — tap the **Devices** / **Packages** stat cards to jump straight to that Library tab.
+
+### Thanks
+*   **Huge thanks to @PARADOXCODM** for testing roughly **20 Android 17 builds** back-to-back while we chased the boot loop — including having to **factory-reset his own device** after one of our builds bricked the boot. A17 support in this release exists because of that patience. 🙏
+*   Thanks to the **HMA OSS** developer for the v7878 engine fix behind the Android 17 support.
+
+---
 ## v7.5.1
 *Hotfix: Concurrent Mic now works on the official release build.*
 
