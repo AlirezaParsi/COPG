@@ -43,7 +43,7 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 
 > **Legend** — `FREE` no license · `PRO` license-unlocked · ⚠️ **risk-gated**: a resident (detectable) hook behind an in-app *use-at-your-own-risk* warning — **never for anti-cheat games**. Everything unmarked is **stealth** — the module unloads before the app runs, so nothing of COPG stays mapped in memory.
 
-<details open>
+<details>
 <summary><b>🎯 Device &amp; Hardware</b></summary>
 
 - **Device Spoofing** `FREE` — per-app Build profile: brand, model, fingerprint, SDK, baseband, serial + 12 extra Build fields, so each app sees the exact flagship it rewards.
