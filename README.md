@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-7.6.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Version](https://img.shields.io/github/v/release/AlirezaParsi/COPG?style=for-the-badge&color=818cf8&label=version)](https://github.com/AlirezaParsi/COPG/releases)
 [![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
 [![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
@@ -36,6 +36,8 @@ fully‑featured flagship device — unlocking the high‑FPS modes, HD graphics
 are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, a userspace
 **comfort‑tweak controller**, and a beautiful on‑device **WebUI** to manage everything — all
 **without rebooting**.
+
+> 🎙️ **A COPG exclusive — concurrent microphone.** COPG is the **only Zygisk / Magisk / KernelSU module that lets two apps use the microphone at the same time** on Android — run a game's in-game voice chat *and* a screen recorder together, or keep recording while you're on a call. No other root module does simultaneous microphone access. See **[Concurrent Mic](#-features)** below.
 
 ## 🧰 Features
 
@@ -95,7 +97,7 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 - **Privacy Hides** — **Hide VPN** (Java + native, pairip-safe) `FREE` · **Mock-Location hide** `PRO` · **Hide Developer Options + USB debugging** `FREE` — pass the checks banking / privacy apps run.
 - **Screenshot + Storage** `FREE` — disable **FLAG_SECURE** device-wide to capture apps that block it (banking, chat, wallets); **No Storage Restrict** re-enables picking Android/data, obb, the SD-card root and Download in the file picker.
 - **Install Patches** `FREE` — install modified / re-signed / downgraded APKs: disable signature verification, allow downgrade, skip the install verifier (Play Protect scan), allow compressed `resources.arsc`. *(system_server — this lowers a real security boundary; only install APKs you trust.)*
-- **Concurrent Mic** `FREE` `NEW` — let two apps use the microphone at once (game voice + a screen recorder). *(out-of-process, audio server, no reboot)*
+- **Concurrent Mic** `FREE` `NEW` 🏆 — **the only module that lets two apps use the microphone at the same time** (a game's voice chat + a screen recorder, or recording while on a call). Android normally silences one capturer; COPG stops that device-wide. *(out-of-process, audio server, no reboot)*
 
 </details>
 
