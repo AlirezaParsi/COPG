@@ -4,6 +4,18 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.6.1
+*Makes the per-app ANDROID_ID spoof consistent across every read path, and fixes a `getprop` that could leak the real value.*
+
+### ANDROID_ID — consistent everywhere
+*   **The `aid` spoof no longer disagrees with itself.** Before, an app could read the faked ANDROID_ID from the normal settings lookup but still get the *real* one through a direct provider `query`/`call`, or by reading `settings_ssaid.xml` — and that mismatch is itself a giveaway. The `aid` tag now spoofs the value in the system server at the source, so every read path returns the same ID. The **Hook Status** screen gained an ANDROID_ID consistency badge on the `aid` row so you can confirm it at a glance.
+
+### getprop — matches the API
+*   **A shelled-out `getprop` now returns the spoofed value.** Closed a case where a `getprop` run through a wrapped shell slipped past the spoof and exposed the real property, so the command line and the framework API agree again.
+
+### Other
+*   Stability and hardening fixes.
+
 ## v7.6.0
 *Android 17 support, a new one-tap Random Device identity, an Integrations dashboard, a stealthier CPU-spoof backend, and a batch of crash and compatibility fixes.*
 
