@@ -60,6 +60,9 @@ are otherwise gated to specific hardware. It pairs that with a **CPU spoofer**, 
 
 - **Prop + Android ID** `PRO` — stealth copy-on-write prop spoof (fingerprint, build props) and per-app Android ID. *(CPU, device profiles, Build/serial and block-CPU stay `FREE`.)*
 - **IMEI / Device ID** `PRO` — fake IMEI per app, or **device-wide Global IMEI** (Settings, `*#06#` and every app — runs in a separate process, no risk gate).
+- **Wi-Fi / Bluetooth MAC** `PRO` ⚠️ — a per-app fake Wi-Fi and Bluetooth MAC address: stable per app, fresh each launch, or pinned to an exact address.
+- **Boot ID** `PRO` ⚠️ — a per-app `/proc` boot_id, so a value meant to be unique-per-boot stops linking your accounts across apps.
+- **Randomize IDs Each Launch** `PRO` — re-roll every derived ID (Android ID, serial, Advertising ID, App Set ID, IMEI, boot ID, MAC) on every cold launch; pair with the Random device profile for a brand-new identity each time.
 - **DRM / Widevine** `PRO` — report a higher Widevine security level (L1 / L2 / L3) and spoof the DRM device & system ID.
 - **Advertising ID** `PRO` — each app its own Google Advertising ID (auto per-app, or pin a UUID).
 - **App Set ID** `PRO` ⚠️ — each app its own Google App Set ID (auto per-app, or pin a UUID).
@@ -210,9 +213,10 @@ straight from the manager. On **Magisk**, install the **KSU WebUI** app and open
 - 📋 **Library** — add &amp; manage **device profiles** and **per‑app spoof lists** with search,
   sort &amp; filters
 - ➕ **Add Package** — pick any installed app, choose a device profile, toggle **CPU / GPU / SIM /
-  Prop / Android ID / Advertising ID (GAID) / App Set ID / DRM / IMEI / Sensor / Canvas / Tensor /
-  GPS / Proxy / Timezone / Language / WebView User‑Agent / Fake Uptime / Mock‑Location / Hide VPN /
-  Hide Developer Options** and the **DND / Auto‑Brightness / Keep‑Screen‑On / Screen‑DPI** tweaks
+  Prop / Android ID / Advertising ID (GAID) / App Set ID / DRM / IMEI / Wi‑Fi MAC / Bluetooth MAC /
+  Boot ID / Sensor / Canvas / Tensor / GPS / Proxy / Timezone / Language / WebView User‑Agent /
+  Fake Uptime / Mock‑Location / Hide VPN / Hide Developer Options / Randomize IDs** and the
+  **DND / Auto‑Brightness / Keep‑Screen‑On / Screen‑DPI** tweaks
 - 📊 **Dashboard** — live system info: Android, ABI, Zygisk variant, root &amp; kernel
 - ✅ **Hook Status** — device‑wide board (Settings) showing the spoof values COPG has actually served
   recently (model, CPU, Android ID, sensors, carrier…) with which app and when
@@ -251,7 +255,8 @@ Package **tags** are colon suffixes — e.g. `:cpu=<model>` (CPU spoof + pick th
 `:lang=<bcp47>` (language / region), `:ua=<profile>` (WebView User‑Agent), `:uptime=<sec>` (fake uptime),
 `:sensor` (sensor‑roster spoof), `:webfp` (WebView canvas spoof), `:tensorfeat` (Pixel Tensor features),
 `:gps=<lat>,<lng>` (GPS location), `:proxy` (per‑app proxy),
-`:mock` (mock‑location hide), `:vpn` / `:vpns` (VPN hide), `:hidedev` (hide developer options),
+`:mac` / `:btmac` (Wi‑Fi / Bluetooth MAC), `:bootid` (boot ID), `:randid` (randomize IDs each launch),
+`:mock` (mock‑location hide), `:vpn` / `:vpnn` (VPN hide · in‑app / + native), `:hidedev` (hide developer options),
 `:blocked` (force real CPU), `:dnd` / `:dab` / `:kso` / `:nolog` / `:dpi=<n>` (comfort tweaks).
 
 </details>

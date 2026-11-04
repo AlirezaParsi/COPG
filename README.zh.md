@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-6.8.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
+[![Version](https://img.shields.io/badge/version-7.3.0-818cf8?style=for-the-badge)](https://github.com/AlirezaParsi/COPG/releases)
 [![Zygisk](https://img.shields.io/badge/Zygisk-Compatible-34d399?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
 [![Android](https://img.shields.io/badge/Android-9.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Downloads](https://img.shields.io/github/downloads/AlirezaParsi/COPG/total?style=for-the-badge&color=f59e0b)](https://github.com/AlirezaParsi/COPG/releases)
@@ -113,6 +113,18 @@ Android/data、obb、SD 卡根目录和 Download。两者均可无需重启即�
 可按应用自动生成，也可固定精确 UUID，让每个应用看起来都是独立设备。
 这是一个 **常驻** 钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏。**
 
+#### 🔗 Wi‑Fi / 蓝牙 MAC *(PRO)*
+给每个应用各自伪造的 **Wi‑Fi 与蓝牙 MAC 地址** —— 可按应用稳定派生、每次启动刷新，或固定为精确地址。
+常驻内联钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏或银行类应用。**
+
+#### 🔑 Boot ID *(PRO)*
+给每个应用各自伪造的 `/proc` **boot_id** —— 本应每次开机唯一的值不再把你的多个账号关联到同一台设备。
+常驻钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏。**
+
+#### 🎲 每次启动随机化 ID *(PRO)*
+每次冷启动时重新生成所有派生 ID（Android ID、序列号、广告 ID、App Set ID、IMEI、boot ID、MAC）——
+搭配随机设备档案即可在每次启动获得全新身份。
+
 #### 🌐 按应用代理 *(PRO)*
 让单个应用通过你自己的 **SOCKS5 / HTTP / SOCKS4** 代理，使其流量从该 IP 与国家出口 ——
 无 VPN、无应用可见的网络接口、应用内无任何运行组件（内核级，防封安全）。
@@ -122,6 +134,21 @@ Android/data、obb、SD 卡根目录和 Download。两者均可无需重启即�
 把应用放到 **地图上任意位置** —— 从内置列表选择国家/城市（135 个地点），或直接填入你自己的经纬度。
 覆盖常规定位 API **以及** Google 的 Fused/GMS 提供器；仅改动经纬度（精度/海拔保持真实）。
 常驻钩子，位于 *风险自负* 开关后面 —— 切勿用于反作弊游戏。
+
+#### 🧭 传感器伪装 *(PRO · 新)*
+给每个应用各自的 **传感器指纹**。反欺诈 SDK 会把设备的传感器列表（加速度计、陀螺仪、磁力计……）
+哈希成一个稳定 ID —— 如果 Build 说是一台手机、而传感器却是另一台，这种不一致就是破绽。COPG 为每个
+传感器的 **名称和厂商** 都改写为按应用稳定但唯一的值。常驻钩子，位于 *风险自负* 开关后面 —— 切勿用于反作弊游戏。
+
+#### 🖼️ WebView 画布伪装 *(PRO · 新)*
+破解 WebView 应用中的 **画布指纹（canvas fingerprint）**。网站会对隐藏的 `<canvas>` 取哈希来识别你；
+COPG 加入微小、按应用、*稳定* 的噪声，使每个 WebView 应用读到不同但一致的画布指纹，包括 iframe 内部。
+（WebGL 已由 GPU 伪装覆盖。）常驻钩子，风险自负。
+
+#### 🧠 Tensor 功能解锁 *(PRO · 新)*
+让选定的应用看到 Google Pixel 的 **Tensor** 系统功能 —— 从而让 Google 应用开放其依赖 Tensor 的
+**AI / 专属功能**。运行在 **`system_server` 进程之外**，因此不会有任何东西加载进应用，不可被检测
+（位于「系统服务伪装」总开关下 —— 开启后需重启）。
 
 #### 🛡️ 隐私隐藏
 **隐藏 VPN** —— 同时覆盖 Java（网络接口 / 能力）与原生接口检测，pairip 安全 *(免费)* ·
@@ -236,10 +263,13 @@ Android/data、obb、SD 卡根目录和 Download。两者均可无需重启即�
 
 - 📋 **库** —— 添加与管理 **设备档案** 和 **按应用伪装列表**，支持搜索、排序与筛选
 - ➕ **添加应用** —— 选择任意已安装应用，选定设备档案，切换 **CPU / GPU / SIM /
-  属性 / Android ID / 广告 ID (GAID) / App Set ID / DRM / IMEI / 时区 / 语言 /
-  WebView User‑Agent / 伪造运行时长 / 模拟定位隐藏 / 隐藏 VPN / 隐藏开发者选项** 以及
+  属性 / Android ID / 广告 ID (GAID) / App Set ID / DRM / IMEI / Wi‑Fi MAC / 蓝牙 MAC /
+  Boot ID / 传感器 / 画布 / Tensor / GPS / 代理 / 时区 / 语言 / WebView User‑Agent /
+  伪造运行时长 / 模拟定位隐藏 / 隐藏 VPN / 隐藏开发者选项 / 随机化 ID** 以及
   **勿扰 / 自动亮度 / 屏幕常亮 / 屏幕 DPI** 调节
 - 📊 **仪表盘** —— 实时系统信息：Android、ABI、Zygisk 变体、root 与内核
+- ✅ **钩子状态** —— 全设备面板（设置），显示 COPG 最近实际应用的伪装值（型号、CPU、Android ID、
+  传感器、运营商……）以及对应的应用和时间
 - 🆔 **广告 ID** —— 查看、随机化、设置自定义值或恢复真实 ID（设置 · 免费）
 - 📡 **全局钩子** —— 全设备的 **全局 IMEI**（设置）：让每个应用、`*#06#` 和拨号盘都读到同一个伪造 IMEI
 - 💾 **备份 / 恢复** 与 **从 GitHub 同步**
@@ -272,7 +302,10 @@ Android/data、obb、SD 卡根目录和 Download。两者均可无需重启即�
 `:serial`（按应用序列号）、`:gaid`（广告 ID）、`:appset`（App Set ID）、`:drm`（Widevine）、
 `:imei`（IMEI）、`:sim=<carrier>` / `:simx=<carrier>`（SIM · 安全 / 激进）、`:tz=<zone>`（时区）、
 `:lang=<bcp47>`（语言 / 地区）、`:ua=<profile>`（WebView User‑Agent）、`:uptime=<sec>`（伪造运行时长）、
-`:mock`（模拟定位隐藏）、`:vpn` / `:vpns`（VPN 隐藏）、`:hidedev`（隐藏开发者选项）、
+`:sensor`（传感器伪装）、`:webfp`（WebView 画布伪装）、`:tensorfeat`（Pixel Tensor 功能）、
+`:gps=<lat>,<lng>`（GPS 定位）、`:proxy`（按应用代理）、
+`:mac` / `:btmac`（Wi‑Fi / 蓝牙 MAC）、`:bootid`（boot ID）、`:randid`（每次启动随机化 ID）、
+`:mock`（模拟定位隐藏）、`:vpn` / `:vpnn`（VPN 隐藏 · 应用内 / + 原生）、`:hidedev`（隐藏开发者选项）、
 `:blocked`（强制真实 CPU）、`:dnd` / `:dab` / `:kso` / `:nolog` / `:dpi=<n>`（舒适化调节）。
 
 </details>
