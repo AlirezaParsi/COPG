@@ -4,6 +4,40 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.7.0
+*Three new per-app spoofs — Wi-Fi MAC, Bluetooth MAC and boot id — plus SKU build fields, and the GPU spoof unlocks a game's high-graphics options again.*
+
+### Wi-Fi MAC — new
+*   **Fake the Wi-Fi MAC per app (`mac`).** An app now reads a MAC you control instead of the phone's real one: `mac` for a steady fake, `mac=rnd` for a fresh one each launch, or `mac=<12 hex>` to set an exact address. **PRO.** Resident and behind the use-at-your-own-risk gate — never for competitive games.
+
+### Bluetooth MAC — new
+*   **Fake the Bluetooth MAC per app (`btmac`).** The same three forms — `btmac`, `btmac=rnd`, `btmac=<12 hex>` — for the Bluetooth address a device check can read. **PRO**, stealth (nothing stays mapped after it applies).
+
+### Boot ID — new
+*   **Per-app boot id (`bootid`).** Each app gets its own boot id, so a value that's meant to be the same for every app since the last reboot no longer links your accounts together. **PRO**, behind the use-at-your-own-risk gate.
+
+### SKU — new
+*   **SKU and ODM SKU added to the device profile.** Two more build fields you can set per device, so an app that reads the device SKU (for example the SKU row in DevCheck) sees the spoofed phone instead of your real one.
+
+### GPU spoof — unlocks high graphics again
+*   **Games that gate max FPS / HD on a flagship GPU unlock it on the spoofed profile.** The GPU spoof now reaches the exact GPU read those games use to decide which graphics options to offer, so the high-end presets open up again. *(Still resident/detectable and behind the use-at-your-own-risk gate — never for competitive games.)*
+*   **Monster Hunter Outlanders added to the device list**, ready-made with a flagship GPU so its high-graphics options unlock out of the box (both the Global and TW/HK/MO builds). **Needs PRO** — it uses the GPU spoof.
+
+### Other fixes
+*   **Hide dev-options / USB-debugging — stronger.** Now also hides it from apps that read the setting straight from the system instead of the normal lookup (a path a few detectors like Momo use), so the app still sees it off.
+*   **System-server spoofs — lower battery & CPU use.** They now wake only when you actually change a setting, instead of re-reading the config a few times a second around the clock — so they use noticeably less CPU and battery while idle, and a toggle still applies instantly.
+*   **GPU Vulkan stability** — fixed a crash at launch on some devices when the GPU spoof was on.
+*   **Resident hooks leave a cleaner footprint** — the inline hooks no longer leave a writable-and-executable page mapped, a pattern some scanners flag as tampering. More hardening here is still in progress.
+*   **Locale spoof** — no longer affects system processes (issue #80).
+*   **Root detection** — the System tab reads the *active* root manager, not a leftover binary from one you switched away from.
+*   **WebUI** — a brand filter on the Devices tab; forms no longer overflow the screen in landscape.
+*   **Translations** — all 8 community languages brought fully up to date (Arabic, German, Spanish, Indonesian, Portuguese-BR, Thai, Turkish, Chinese), including every string added or reworded since the last sync.
+
+### Heads up
+*   **32-bit phones are no longer supported** — this release is 64-bit (arm64) only. Nearly every phone from the last several years is 64-bit, so this affects only very old devices.
+
+---
+
 ## v7.6.1
 *Makes the per-app ANDROID_ID spoof consistent across every read path, and fixes a `getprop` that could leak the real value.*
 
