@@ -4,6 +4,25 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.7.1
+*Works on Zygisk Next 1.5.3 again, your config survives updates, and a few device-profile and WebUI additions.*
+
+### Zygisk Next 1.5.3 — fixed
+*   **COPG spoofed nothing on Zygisk Next 1.5.3.** The new Zygisk Next stopped granting a permission COPG used to read its own config, so every app looked "not configured" and ran unspoofed (the license still showed valid). COPG now ships that permission itself, so it works on 1.5.3 and older versions alike.
+
+### Updates keep your setup
+*   **Updating no longer wipes your config.** Every update used to replace your devices, packages and tags with the defaults. Now your existing COPG.json and list.json are kept, and the install screen says so. A missing or broken file still falls back to the default.
+
+### Device profile
+*   **Custom system props editor.** In a device's advanced section you can now fake any short existing system prop (for example `ril.product_code`, `ril.official_cscver`, `ro.omc.build.version`) for apps with COW Prop Spoof (`cow`) on.
+*   **Base OS field.** New build field for `Build.VERSION.BASE_OS` (and the matching prop for `cow` apps).
+*   **Separate Product field.** Product was silently overwritten with the model on every save, so a real product name (e.g. `e3qxxx` vs model `SM-S928B`) could never be set. It's its own field now; left blank it falls back to the fingerprint's product, then the model.
+
+### WebUI
+*   **Edit several packages together.** Long-press to select packages, then **Edit together**: change only the toggles you want (device, GPU, `cow`, `aid`, …) and they apply to every selected app, leaving each app's other settings as they were. Handy for clones and per-user copies.
+
+---
+
 ## v7.7.0
 *Three new per-app spoofs — Wi-Fi MAC, Bluetooth MAC and boot id — plus SKU build fields, and the GPU spoof unlocks a game's high-graphics options again.*
 
