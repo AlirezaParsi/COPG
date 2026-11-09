@@ -4,6 +4,20 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.7.2
+*Protected apps that used to close on launch with COPG installed now work, plus a new device field and more complete translations.*
+
+### Protected apps — fixed
+*   **Some apps closed instantly when COPG was installed, even with no spoof set on them.** A few apps wrapped in certain third-party protectors would detect COPG and exit on launch (untagged apps included). COPG now leaves no trace in those apps unless you actually turn a spoof on, so they launch and stay open normally.
+*   **Extra stealth hardening** for apps that unload COPG after spoofing, so nothing of COPG is left behind for an app to find.
+
+### Device profile
+*   **Separate Device field.** `Build.DEVICE` (the product device codename) is now its own field in the device modal. Leave it blank to keep matching the fingerprint automatically; fill it only if you need a different value.
+
+### Translations
+*   **Arabic, German, Spanish, Indonesian, Thai and Chinese are now complete** — every screen is fully translated.
+
+---
 ## v7.7.1
 *Works on Zygisk Next 1.5.3 again, your config survives updates, and a few device-profile and WebUI additions.*
 
