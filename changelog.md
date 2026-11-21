@@ -4,6 +4,58 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
+## v7.8.1
+*Two new spoofs (GSF ID and OAID), a new Paper look for the WebUI (now the default), bug reports in one tap, your proxy no longer leaks DNS or your real IP, GPS and mock location keep working when the system returns no fix, turning CPU spoof off reverts to the real CPU, installs work on more broken ROMs, and Russian joins the languages.*
+
+### New spoofs
+*   **GSF ID** (`gsf`, `gsf=<id>`). Per-app Google Services Framework ID, the device anchor that Android ID and IMEI don't cover. Works even on devices that have no GSF ID of their own. Pin an exact ID or hit Randomize in the package editor. PRO, behind the "use at your own risk" warning.
+*   **OAID** (`oaid`, `oaid=<uuid>`). Per-app OAID, the advertising ID Chinese ROMs and SDKs use instead of GAID: covers the Huawei, Xiaomi, vivo, OPPO, ASUS and Lenovo providers and the MSA service. PRO, behind the same warning.
+
+### Per-app proxy
+*   **DNS no longer leaks past the proxy.** Name lookups were still going out over your real connection even with an app routed through a proxy, exposing your real IP and region. DNS is now tunnelled through the proxy with the rest of the app's traffic.
+*   **Block IPv6 and custom DNS.** Two new per-proxy options: Block IPv6 (stops a v6 leak around an IPv4 proxy) and a custom DNS resolver field.
+
+### Location
+*   **GPS and Mock Location Hide no longer drop out when there's no fix.** On newer Android the spoof stopped applying when the system handed back no location; it now builds a fix from your set position so the spoofed coordinates keep coming.
+*   **No IPv6 leak from VPN Hide / GPS.** Public IPv6 addresses are no longer exposed through the network interface list.
+
+### CPU spoof
+*   **Turning CPU spoof off reverts to the real CPU.** Disabling CPU spoof for an app used to leave the fake `/proc/cpuinfo` mounted, so it kept reading the spoofed CPU. It now switches back to the real one immediately.
+
+### GPU
+*   **Vulkan GPU name spoof fixed on more devices.** On some Adreno and Mali phones the Vulkan device name stayed real (apps like DevCheck showed the true GPU). It now applies reliably, and Mali's OpenGL driver is spoofed too.
+*   **Spoof OpenGL only, keep Vulkan real.** A new per-app `novk` option fakes the GL renderer but leaves Vulkan untouched, for apps that misbehave when Vulkan is spoofed.
+
+### Install & uninstall
+*   **Device code works on more broken ROMs.** On some ROMs with broken module installation the device code couldn't be generated. The binaries now install under a fixed name and self-heal at boot, so enrolment works on those devices.
+*   **Cleaner uninstall.** Uninstall now clears leftover files from past updates and unmounts any CPU spoof left on `/proc/cpuinfo`.
+
+### WebUI
+*   **New Paper style, now the default.** A flat, quiet design: solid surfaces, one accent color, no glow or gradients, and system values set like a spec sheet. The original look is still there as **Glass** under Settings → Style.
+*   **Mode and Accent.** In Paper, pick Light, Dark, AMOLED or Auto, and any of six accents (Indigo, Blue, Emerald, Ember, Rose, Frost) for each. New installs start on Paper + Light.
+*   **New Glass themes:** COPG, Emerald, Ember, Rose and Nord.
+*   **The license is now a pass.** Settings shows your license as a card with days left (or Lifetime) and its status; tap it to open the activation steps. Free users see a clear "Unlock PRO" slot.
+*   **Easier device code sharing.** A real Copy button leads Share, Save file and QR, and confirms when copied. The QR panel no longer shows up empty before you ask for it.
+*   **About** moved into its own sheet, with links to the Telegram group and Releases.
+*   **Full system info on Home.** Long values like the ABI list and Zygisk build now wrap instead of being cut off.
+*   **Cleaner package cards.** Tag labels are gone from the Library; the Android user an entry is scoped to shows in the line above the name.
+*   **Spoofing list in categories.** The package editor's 37 spoof toggles are grouped into Identifiers, Hardware, SIM & Carrier, Network, Location, System & Props and Web & App, each showing how many are on, plus a filter box. Randomize IDs sits at the top.
+*   **Edit together applies exactly what you set.** Bulk-editing several apps now gives every selected app the same spoofs as the form.
+*   **Bug report in one tap.** Settings → Export bug report collects logs, crashes and config into one `.tar.gz` (pick which parts), then shows the file with Copy and Share. License files are never included.
+*   **Faster.** App names load instantly across launches, names and icons refresh on their own when an app updates, long lists scroll smoother, and common actions run in a single shell call.
+*   **Supporter note** on the License card explaining what a license supports.
+
+### Under the hood
+*   **All COPG state in one folder.** Runtime files now live under `/data/adb/.config/COPG`; existing installs are moved there on update.
+*   **App icons survive updates.** Cached icons are carried over, so the Library no longer re-downloads them after updating.
+
+### Translations
+*   **Russian added.** Turkish and Portuguese (Brazil) are complete too, so every language is at full parity with English, including all the new screens above.
+
+### Config
+*   **Free Fire India** (`com.garena.game.ffi`) added to the device list, blocked for ban safety.
+
+---
 ## v7.7.2
 *Protected apps that used to close on launch with COPG installed now work, plus a new device field and more complete translations.*
 
