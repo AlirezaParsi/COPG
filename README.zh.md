@@ -113,6 +113,16 @@ Android/data、obb、SD 卡根目录和 Download。两者均可无需重启即�
 可按应用自动生成，也可固定精确 UUID，让每个应用看起来都是独立设备。
 这是一个 **常驻** 钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏。**
 
+#### 🆔 按应用 GSF ID *(PRO)*
+给每个应用各自的 **Google 服务框架（GSF）ID** —— 一个 64 位的 check-in 设备锚点，独立于 Android ID ——
+可按应用自动生成，也可固定一个值。
+这是一个 **常驻** 钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏。**
+
+#### 🆔 按应用 OAID *(PRO)*
+给每个应用各自的 **OAID**（MSA 的匿名设备标识符，中国生态的广告 / 追踪 ID）——
+从 Huawei / Xiaomi / vivo / OPPO / ASUS / Lenovo 的标识符 provider 读取；可按应用自动生成，也可固定一个 UUID。
+这是一个 **常驻** 钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏。**
+
 #### 🔗 Wi‑Fi / 蓝牙 MAC *(PRO)*
 给每个应用各自伪造的 **Wi‑Fi 与蓝牙 MAC 地址** —— 可按应用稳定派生、每次启动刷新，或固定为精确地址。
 常驻内联钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏或银行类应用。**
@@ -122,7 +132,7 @@ Android/data、obb、SD 卡根目录和 Download。两者均可无需重启即�
 常驻钩子，位于 *风险自负* 开关后面 —— **切勿用于反作弊游戏。**
 
 #### 🎲 每次启动随机化 ID *(PRO)*
-每次冷启动时重新生成所有派生 ID（Android ID、序列号、广告 ID、App Set ID、IMEI、boot ID、MAC）——
+每次冷启动时重新生成所有派生 ID（Android ID、序列号、广告 ID、App Set ID、GSF ID、OAID、IMEI、boot ID、MAC）——
 搭配随机设备档案即可在每次启动获得全新身份。
 
 #### 🌐 按应用代理 *(PRO)*
@@ -299,7 +309,7 @@ COPG 加入微小、按应用、*稳定* 的噪声，使每个 WebView 应用读
 
 应用 **标签** 是冒号后缀 —— 例如 `:cpu=<model>`（CPU 伪装 + 选芯片）、
 `:gpu=<model>`（GPU 伪装 + 选 GPU）、`:cow`（属性伪装）、`:aid`（Android ID）、
-`:serial`（按应用序列号）、`:gaid`（广告 ID）、`:appset`（App Set ID）、`:drm`（Widevine）、
+`:serial`（按应用序列号）、`:gaid`（广告 ID）、`:appset`（App Set ID）、`:gsf`（GSF ID）、`:oaid`（OAID）、`:drm`（Widevine）、
 `:imei`（IMEI）、`:sim=<carrier>` / `:simx=<carrier>`（SIM · 安全 / 激进）、`:tz=<zone>`（时区）、
 `:lang=<bcp47>`（语言 / 地区）、`:ua=<profile>`（WebView User‑Agent）、`:uptime=<sec>`（伪造运行时长）、
 `:sensor`（传感器伪装）、`:webfp`（WebView 画布伪装）、`:tensorfeat`（Pixel Tensor 功能）、
