@@ -4,7 +4,7 @@
 #### **Telegram Channel**:
 - https://t.me/COPG_module
 ---
-## v7.8.1
+## v7.8.2
 *Two new spoofs (GSF ID and OAID), a new Paper look for the WebUI (now the default), bug reports in one tap, your proxy no longer leaks DNS or your real IP, GPS and mock location keep working when the system returns no fix, turning CPU spoof off reverts to the real CPU, installs work on more broken ROMs, and Russian joins the languages.*
 
 ### New spoofs
